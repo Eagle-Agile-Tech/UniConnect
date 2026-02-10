@@ -1,3 +1,4 @@
 abstract final class Assets{
-  static const logo = 'assets/images/logo.png';
+  static const logo = 'assets/logos/logo.png';
+  static const googleLogo = 'assets/logos/google_logo.png';
 }
