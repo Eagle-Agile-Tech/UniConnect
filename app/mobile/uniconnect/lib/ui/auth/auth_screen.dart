@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:uniconnect/ui/auth/signup/signup_screen.dart';
-import 'package:uniconnect/ui/core/theme/dimens.dart';
-
 import 'login/login_screen.dart';
 
 class AuthScreen extends StatelessWidget {
@@ -17,6 +15,7 @@ class AuthScreen extends StatelessWidget {
             dividerColor: Colors.transparent,
             indicatorSize: TabBarIndicatorSize.tab,
             indicator: UnderlineTabIndicator(
+
               borderRadius: BorderRadius.circular(10),
               borderSide: const BorderSide(width: 4),
               insets: EdgeInsetsGeometry.symmetric(horizontal: 48)
@@ -29,8 +28,8 @@ class AuthScreen extends StatelessWidget {
         ),
         body: TabBarView(
           children: [
-            LoginScreen(),
-            SignupScreen(),
+            const LoginScreen(),
+            const SignupScreen(),
           ],
         ),
       ),

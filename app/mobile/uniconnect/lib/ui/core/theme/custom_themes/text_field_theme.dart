@@ -12,9 +12,7 @@ abstract final class UCTextFormFieldTheme {
     errorStyle: const TextStyle().copyWith(fontStyle: FontStyle.normal),
     alignLabelWithHint: true,
     contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-    floatingLabelStyle: const TextStyle().copyWith(
-      color: UCColors.primary,
-    ),
+    floatingLabelStyle: const TextStyle().copyWith(color: UCColors.primary),
     border: const OutlineInputBorder().copyWith(
       borderRadius: BorderRadius.circular(14),
       borderSide: const BorderSide(color: UCColors.primary),
