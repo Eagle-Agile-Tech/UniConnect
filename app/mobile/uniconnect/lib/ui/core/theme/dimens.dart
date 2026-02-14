@@ -15,6 +15,13 @@ abstract final class Dimens{
   static const double lg = 24.0;
   static const double xl = 32.0;
 
+  // Avatar
+  static const double avatarXs = 24.0; //  comment avatar
+  static const double avatarSm = 32.0; //  post thumbnail
+  static const double avatarMd = 40.0; //  feed avatar
+  static const double avatarLg = 56.0; //   profile page
+  static const double avatarXl = 72.0; //   main profile picture
+
   // Icon sizes
   static const double iconXs = 12.0;
   static const double iconSm = 16.0;
