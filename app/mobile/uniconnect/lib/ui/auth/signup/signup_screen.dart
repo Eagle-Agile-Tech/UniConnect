@@ -12,9 +12,9 @@ class SignupScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Form(
-      child: Padding(
-        padding: UCSpacingStyle.paddingWithAppBarHeight,
-        child: SingleChildScrollView(
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: UCSpacingStyle.paddingWithAppBarHeight,
           child: Column(
             children: [
               Row(
