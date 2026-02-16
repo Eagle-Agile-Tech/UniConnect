@@ -27,6 +27,8 @@ class AcademicProfile extends StatelessWidget {
                         ),
                       ),
                       enableFilter: true,
+                      requestFocusOnTap: true,
+                      enableSearch: true,
                       label: const Text('University'),
                       dropdownMenuEntries: UCDummyData.universityEntries,
                     ),

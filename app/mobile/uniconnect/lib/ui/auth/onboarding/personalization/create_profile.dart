@@ -46,6 +46,8 @@ class CreateProfile extends StatelessWidget {
                 dropdownMenuEntries: UCDummyData.interestEntries,
                 enableFilter: true,
                 label: const Text('Interests'),
+                requestFocusOnTap: true,
+                enableSearch: true,
                 menuStyle: MenuStyle(
                   maximumSize: WidgetStateProperty.all(
                     const Size.fromHeight(300),
