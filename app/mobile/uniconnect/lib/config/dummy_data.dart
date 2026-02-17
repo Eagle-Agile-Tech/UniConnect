@@ -92,4 +92,7 @@ abstract final class UCDummyData {
       ),
     ),
   );
+
+  static const String postCaption =
+      '''Just had an amazing day exploring the campus! The vibe here is incredible, and I can't wait to dive into all the opportunities. This is just the beginning of an unforgettable journey. I took this picture at the main quad, and it perfectly captures the excitement I feel right now. Here's to new friendships, late-night study sessions, and unforgettable memories!''';
 }
