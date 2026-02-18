@@ -4,6 +4,7 @@ import 'package:uniconnect/config/dummy_data.dart';
 import 'package:uniconnect/ui/core/common/widgets/post_card.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
 import 'package:uniconnect/ui/home/widgets/drawer_content.dart';
+import 'package:uniconnect/ui/post/create_post.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -21,7 +22,7 @@ class HomeScreen extends StatelessWidget {
         ),
         actions: [
           IconButton(
-            onPressed: () {},
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const CreatePostScreen())),
             icon: const Icon(
               Icons.add_circle_outline_outlined,
               size: Dimens.iconLg,
