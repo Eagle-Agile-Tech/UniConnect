@@ -3,6 +3,7 @@ import 'package:uniconnect/config/assets.dart';
 import 'package:uniconnect/config/dummy_data.dart';
 import 'package:uniconnect/ui/core/common/widgets/post_card.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
+import 'package:uniconnect/ui/home/widgets/drawer_content.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -34,12 +35,17 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
       ),
-      drawer: Drawer(child: Center(child: Text('Drawer'))),
+      drawer: Drawer(
+        child: DrawerContent(),
+      ),
       body: SingleChildScrollView(
         child: Column(
           children: [
             const SizedBox(height: Dimens.spaceBtwItems),
-            UCPostCard(name: 'Iman Yilma', avatar: Assets.avatar1, caption: UCDummyData.postCaption, image: Assets.post2,),
+            UCPostCard(name: 'Iman Yilma', avatar: Assets.avatar1, caption: UCDummyData.postCaption1, image: Assets.post2,),
+            const SizedBox(height: Dimens.spaceBtwItems,),
+            UCPostCard(name: 'Feysel Teshome', avatar: Assets.avatar2, caption: UCDummyData.postCaption2, image: Assets.post3,),
+            const SizedBox(height: Dimens.spaceBtwItems,),
           ],
         ),
       ),
