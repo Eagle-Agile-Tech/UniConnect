@@ -93,6 +93,8 @@ abstract final class UCDummyData {
     ),
   );
 
-  static const String postCaption =
+  static const String postCaption1 =
       '''Just had an amazing day exploring the campus! The vibe here is incredible, and I can't wait to dive into all the opportunities. This is just the beginning of an unforgettable journey. I took this picture at the main quad, and it perfectly captures the excitement I feel right now. Here's to new friendships, late-night study sessions, and unforgettable memories!''';
+  static const String postCaption2 =
+      '''Had a fantastic time at the university's welcome event! Met so many amazing people and got to know more about the clubs and activities on campus. The energy was contagious, and I can't wait to get involved in all the fun stuff happening here.''';
 }

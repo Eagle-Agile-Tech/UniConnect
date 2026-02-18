@@ -10,12 +10,14 @@ class UCPostCard extends StatefulWidget {
     required this.avatar,
     required this.name,
     required this.image,
-    super.key});
+    super.key,
+  });
 
   final String caption;
   final String avatar;
   final String name;
   final String image;
+
   @override
   State<UCPostCard> createState() => _UCPostCardState();
 }
@@ -34,47 +36,37 @@ class _UCPostCardState extends State<UCPostCard> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           ListTile(
-            leading: CircleAvatar(
-              backgroundImage: AssetImage(widget.avatar),
-            ),
+            leading: CircleAvatar(backgroundImage: AssetImage(widget.avatar)),
             title: Text(
               widget.name,
-              style: Theme
-                  .of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
             subtitle: Text('08:39 AM'),
             trailing: IconButton(
-              onPressed: () =>
-                  showModalBottomSheet(
-                    context: context,
-                    showDragHandle: true,
-                    isScrollControlled: true,
-                    elevation: 10,
-                    useSafeArea: true,
-                    sheetAnimationStyle: AnimationStyle(
-                      duration: Duration(milliseconds: 500),
-                      reverseDuration: Duration(milliseconds: 400),
-                    ),
-                    builder: (context) {
-                      return Wrap(
-                        children: [
-                          ListTile(
-                            leading: Text('😞'),
-                            title: Text('Not Interested'),
-                          ),
-                          ListTile(
-                            leading: Text('🚩'),
-                            title: Text('Repost post'),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
+              onPressed: () => showModalBottomSheet(
+                context: context,
+                showDragHandle: true,
+                isScrollControlled: true,
+                elevation: 10,
+                useSafeArea: true,
+                sheetAnimationStyle: AnimationStyle(
+                  duration: Duration(milliseconds: 500),
+                  reverseDuration: Duration(milliseconds: 400),
+                ),
+                builder: (context) {
+                  return Wrap(
+                    children: [
+                      ListTile(
+                        leading: Text('😞'),
+                        title: Text('Not Interested'),
+                      ),
+                      ListTile(leading: Text('🚩'), title: Text('Repost post')),
+                    ],
+                  );
+                },
+              ),
               icon: Icon(Icons.more_vert_outlined),
             ),
           ),
@@ -90,18 +82,15 @@ class _UCPostCardState extends State<UCPostCard> {
                       ? TextOverflow.visible
                       : TextOverflow.ellipsis,
                 ),
-                if (UCDummyData.postCaption.length > 250 && !_isExpanded)
+                if (widget.caption.length > 150 && !_isExpanded)
                   Align(
                     alignment: Alignment.bottomLeft,
                     child: InkWell(
-                      onTap: () =>
-                          setState(() => _isExpanded = !_isExpanded),
+                      onTap: () => setState(() => _isExpanded = !_isExpanded),
                       child: Text(
                         'Show More',
                         style: TextStyle(
-                          color: Theme
-                              .of(context)
-                              .primaryColor,
+                          color: Theme.of(context).primaryColor,
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                         ),
@@ -129,7 +118,7 @@ class _UCPostCardState extends State<UCPostCard> {
                 ),
 
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     IconButton(
                       onPressed: () {},
