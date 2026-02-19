@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:uniconnect/ui/core/common/styles/spacing_style.dart';
 import 'package:uniconnect/ui/core/common/widgets/signin_with_button.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
 
-import '../../../config/assets.dart';
+import '../../../routing/routes.dart';
 import '../../core/common/widgets/form_divider.dart';
 
 class SignupScreen extends StatelessWidget {
@@ -60,7 +61,7 @@ class SignupScreen extends StatelessWidget {
               ),
               SizedBox(height: Dimens.spaceBtwSections),
               ElevatedButton(
-                onPressed: null,
+                onPressed: () => context.push(Routes.verifyEmail),
                 style: ElevatedButton.styleFrom(
                   minimumSize: Size(double.infinity, 48),
                 ),

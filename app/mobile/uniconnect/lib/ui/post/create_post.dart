@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:uniconnect/ui/core/common/styles/spacing_style.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
 
 class CreatePostScreen extends StatelessWidget {

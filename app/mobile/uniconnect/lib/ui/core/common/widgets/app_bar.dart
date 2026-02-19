@@ -12,7 +12,7 @@ class UCAppBar extends StatelessWidget implements PreferredSizeWidget {
     return AppBar(
       titleSpacing: 0,
       elevation: 0,
-      automaticallyImplyLeading: true,
+      automaticallyImplyLeading: false,
       title: Padding(
         padding: const EdgeInsetsGeometry.symmetric(
           horizontal: Dimens.spaceBtwHeader,

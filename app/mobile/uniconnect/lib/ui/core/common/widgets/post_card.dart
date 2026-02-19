@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../../config/assets.dart';
-import '../../../../config/dummy_data.dart';
 import '../../theme/colors.dart';
 
 class UCPostCard extends StatefulWidget {

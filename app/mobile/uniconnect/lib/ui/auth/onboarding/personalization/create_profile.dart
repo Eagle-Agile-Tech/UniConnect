@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:uniconnect/config/dummy_data.dart';
+import 'package:uniconnect/routing/routes.dart';
 import 'package:uniconnect/ui/core/common/styles/spacing_style.dart';
 import 'package:uniconnect/ui/core/common/widgets/app_bar.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
@@ -57,7 +59,7 @@ class CreateProfile extends StatelessWidget {
               const SizedBox(height: Dimens.spaceBtwSections),
               SizedBox(height: MediaQuery.of(context).size.height * 0.05),
               ElevatedButton(
-                onPressed: () {},
+                onPressed: () => context.go(Routes.home),
                 style: ElevatedButton.styleFrom(
                   minimumSize: Size(double.infinity, 48),
                 ),

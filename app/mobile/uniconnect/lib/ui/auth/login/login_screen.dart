@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../routing/routes.dart';
 import '../../core/common/styles/spacing_style.dart';
 import '../../core/common/widgets/form_divider.dart';
 import '../../core/common/widgets/signin_with_button.dart';
@@ -28,7 +30,7 @@ class LoginScreen extends StatelessWidget {
             ),
             SizedBox(height: Dimens.defaultSpace),
             ElevatedButton(
-              onPressed: null,
+              onPressed: () => context.go(Routes.home),
               style: ElevatedButton.styleFrom(
                 minimumSize: Size(double.infinity, 48),
               ),

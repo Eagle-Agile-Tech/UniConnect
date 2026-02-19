@@ -23,7 +23,7 @@ abstract final class UCTextFormFieldTheme {
     ),
     focusedBorder: const OutlineInputBorder().copyWith(
       borderRadius: BorderRadius.circular(14),
-      borderSide: const BorderSide(color: Colors.blueAccent, width: 1.5),
+      borderSide: const BorderSide(color: UCColors.primary, width: 1.5),
     ),
     errorBorder: const OutlineInputBorder().copyWith(
       borderRadius: BorderRadius.circular(14),
