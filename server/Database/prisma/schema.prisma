@@ -1,0 +1,350 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// =========================
+// ENUMS
+// =========================
+enum Role { 
+  STUDENT 
+  ADMIN 
+  EXPERT 
+  INSTITUTION 
+  }
+enum Visibility { 
+  PUBLIC 
+  GROUP 
+  PRIVATE 
+  }
+enum ReactionType { 
+  LIKE 
+  LOVE 
+  INSIGHTFUL 
+  SUPPORT 
+  CELEBRATE 
+  }
+enum GroupType { 
+  PUBLIC 
+  PRIVATE 
+  }
+enum GroupMemberRole { 
+  MEMBER 
+  ADMIN 
+  }
+enum MembershipStatus { 
+  PENDING 
+  APPROVED 
+  REJECTED 
+  LEFT 
+  REMOVED 
+  }
+enum ChatType { 
+  DIRECT 
+  GROUP 
+  }
+enum ModerationStatus { 
+  PENDING 
+  APPROVED 
+  REJECTED 
+  }
+enum NotificationType { 
+  REACTION 
+  COMMENT 
+  FOLLOW 
+  MESSAGE 
+  SYSTEM
+   }
+enum NotificationReferenceType { 
+  POST 
+  COMMENT 
+  USER 
+  MESSAGE 
+  COMMUNITY 
+  }
+enum MediaType { 
+  IMAGE 
+  VIDEO 
+  DOCUMENT 
+  }
+enum MediaReferenceType { 
+  POST 
+  MESSAGE
+  USER 
+  COMMUNITY
+   }
+  enum EducationLevel {
+  UNDERGRADUATE
+  POSTGRADUATE
+  GRADUATED
+}
+
+// =========================
+// CORE MODELS
+// =========================
+model User {
+  id            String   @id @default(uuid())
+  username      String   @unique
+  email         String   @unique
+  passwordHash  String
+  role          Role     @default(STUDENT)
+  isVerified    Boolean  @default(false)
+  isDeleted     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  profile           UserProfile?
+  posts             Post[]
+  comments          PostComment[]
+  reactions         Reaction[]
+  messages          Message[]
+  communities       CommunityMember[]
+  expertProfile     ExpertProfile?
+  notificationsReceived Notification[] @relation("NotificationRecipient")
+  notificationsSent     Notification[] @relation("NotificationActor")
+  chatParticipations ChatParticipant[]
+  createdCommunities Community[]
+  mediaUploads      Media[]
+
+  @@index([email])
+  @@index([username])
+}
+
+model UserProfile {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  firstName      String
+  lastName       String
+  bio            String?
+  profileImage   String?
+  interests      String[] @default([])
+  university     String?
+  department     String?
+  level          EducationLevel?
+  yearOfStudy    Int?
+  graduationYear Int?
+
+  user           User @relation(fields: [userId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Institution {
+  id          String @id @default(uuid())
+  name        String
+  description String?
+  website     String?
+  logoUri     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  affiliatedExperts ExpertProfile[]
+}
+
+model ExpertProfile {
+  id                       String @id @default(uuid())
+  expertId                 String @unique
+  expertise                String
+  bio                      String?
+  profileImage             String?
+  affiliatedInstitutionId  String?
+
+  expert      User        @relation(fields: [expertId], references: [id])
+  institution Institution? @relation(fields: [affiliatedInstitutionId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([affiliatedInstitutionId])
+}
+
+// =========================
+// POSTS & COMMENTS
+// =========================
+model Post {
+  id               String   @id @default(uuid())
+  authorId         String
+  content          String
+  visibility       Visibility @default(PUBLIC)
+  tags             String[]   @default([])
+  category         String?
+  embedding        Float[]    @default([])
+  moderationStatus ModerationStatus @default(PENDING)
+  isDeleted        Boolean @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  author      User @relation(fields: [authorId], references: [id])
+  comments    PostComment[]
+  media       Media[] @relation("MediaPost") // structured relation
+
+  @@index([authorId])
+  @@index([createdAt])
+}
+
+model PostComment {
+  id              String @id @default(uuid())
+  postId          String
+  commenterId     String
+  parentCommentId String?
+  content         String
+  moderationStatus ModerationStatus @default(PENDING)
+  isDeleted        Boolean @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  post            Post @relation(fields: [postId], references: [id])
+  commenter       User @relation(fields: [commenterId], references: [id])
+
+  parentComment   PostComment? @relation("CommentReplies", fields: [parentCommentId], references: [id])
+  replies         PostComment[] @relation("CommentReplies")
+
+
+
+  @@index([postId])
+}
+
+// =========================
+// REACTIONS (polymorphic via reference)
+// =========================
+model Reaction {
+  id            String @id @default(uuid())
+  type          ReactionType
+  userId        String
+  referenceId   String
+  referenceType NotificationReferenceType
+  createdAt     DateTime @default(now())
+
+  user          User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, referenceId])
+  @@index([referenceId, referenceType])
+}
+
+// =========================
+// COMMUNITIES & MEMBERS
+// =========================
+model Community {
+  id          String @id @default(uuid())
+  name        String
+  description String?
+  type        GroupType @default(PUBLIC)
+  createdById String
+  isDeleted   Boolean @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdBy   User @relation(fields: [createdById], references: [id])
+  members     CommunityMember[]
+  media       Media[] @relation("MediaCommunity") // structured relation
+}
+
+model CommunityMember {
+  id          String @id @default(uuid())
+  communityId String
+  userId      String
+  role        GroupMemberRole @default(MEMBER)
+  status      MembershipStatus @default(PENDING)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  community   Community @relation(fields: [communityId], references: [id])
+  user        User @relation(fields: [userId], references: [id])
+
+  @@unique([communityId, userId])
+  @@index([userId])
+}
+
+// =========================
+// CHAT & MESSAGES
+// =========================
+model Chat {
+  id      String @id @default(uuid())
+  type    ChatType
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  participants  ChatParticipant[]
+  messages      Message[]
+}
+
+model ChatParticipant {
+  id        String @id @default(uuid())
+  chatId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  chat      Chat @relation(fields: [chatId], references: [id])
+  user      User @relation(fields: [userId], references: [id])
+
+  @@unique([chatId, userId])
+}
+
+model Message {
+  id        String @id @default(uuid())
+  chatId    String
+  senderId  String
+  content   String
+  isDeleted Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  chat      Chat @relation(fields: [chatId], references: [id])
+  sender    User @relation(fields: [senderId], references: [id])
+
+  media     Media[] @relation("MediaMessage") // structured relation
+  @@index([chatId])
+}
+
+// =========================
+// NOTIFICATIONS 
+// =========================
+model Notification {
+  id            String @id @default(uuid())
+  recipientId   String
+  actorId       String?
+  type          NotificationType
+  referenceId   String?
+  referenceType NotificationReferenceType?
+  isRead        Boolean @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  recipient     User @relation("NotificationRecipient", fields: [recipientId], references: [id])
+  actor         User? @relation("NotificationActor", fields: [actorId], references: [id])
+
+  @@index([recipientId])
+  @@index([isRead])
+}
+
+// =========================
+// MEDIA 
+// =========================
+model Media {
+  id           String @id @default(uuid())
+  uploaderId   String
+  postId       String?
+  communityId  String?
+  messageId    String?
+  referenceId  String? // polymorphic usage if needed
+  referenceType MediaReferenceType?
+
+  fileUrl      String
+  fileType     MediaType
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  uploader     User @relation(fields: [uploaderId], references: [id])
+  post         Post? @relation("MediaPost", fields: [postId], references: [id])
+  community    Community? @relation("MediaCommunity", fields: [communityId], references: [id])
+  message      Message? @relation("MediaMessage", fields: [messageId], references: [id])
+
+  @@index([referenceId])
+}
