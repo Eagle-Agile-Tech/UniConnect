@@ -17,4 +17,11 @@ abstract final class Assets{
   static const avatar4 = 'assets/images/avatar4.jpg';
   static const avatar5 = 'assets/images/avatar5.jpg';
   static const avatar6 = 'assets/images/avatar6.jpg';
+
+  // Explore
+  static const community = 'assets/images/communities.jpeg';
+  static const event = 'assets/images/events.jpg';
+  static const jobBoard = 'assets/images/joboard.jpeg';
+  static const tips = 'assets/images/tips.jpg';
+
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:uniconnect/ui/explore/explore_screen.dart';
 import 'package:uniconnect/ui/home/home_screen.dart';
 
 class NavigationWrapper extends StatefulWidget {
@@ -40,7 +41,7 @@ class _NavigationWrapperState extends State<NavigationWrapper> {
 
   final List<Widget> pages = [
     HomeScreen(),
-    Container(color: Colors.green),
+    ExploreScreen(),
     Container(color: Colors.blue),
     Container(color: Colors.yellow),
     Container(color: Colors.purple),
