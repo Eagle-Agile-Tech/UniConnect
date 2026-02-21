@@ -15,7 +15,7 @@ class ExploreItem extends StatelessWidget {
       padding: EdgeInsets.only(top: Dimens.sm, left: Dimens.sm),
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(Dimens.radiusLg),
       ),
       child: Stack(
         children: [
@@ -23,7 +23,7 @@ class ExploreItem extends StatelessWidget {
             title,
             style: TextStyle(
               color: Colors.white,
-              fontSize: 16,
+              fontSize: Dimens.fontMd,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -36,8 +36,8 @@ class ExploreItem extends StatelessWidget {
                 borderRadius: BorderRadius.circular(50),
                 child: Image.asset(
                   image,
-                  height: 100,
-                  width: 100,
+                  height: Dimens.cardImageHeight,
+                  width: Dimens.cardImageWidth,
                   fit: BoxFit.contain,
                 ),
               ),

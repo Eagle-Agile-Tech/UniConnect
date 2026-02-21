@@ -15,10 +15,9 @@ class AuthScreen extends StatelessWidget {
             dividerColor: Colors.transparent,
             indicatorSize: TabBarIndicatorSize.tab,
             indicator: UnderlineTabIndicator(
-
               borderRadius: BorderRadius.circular(10),
               borderSide: const BorderSide(width: 4),
-              insets: EdgeInsetsGeometry.symmetric(horizontal: 48)
+              insets: EdgeInsetsGeometry.symmetric(horizontal: 48),
             ),
             tabs: const [
               Tab(text: 'Log in'),
@@ -26,12 +25,7 @@ class AuthScreen extends StatelessWidget {
             ],
           ),
         ),
-        body: TabBarView(
-          children: [
-            const LoginScreen(),
-            const SignupScreen(),
-          ],
-        ),
+        body: TabBarView(children: [const LoginScreen(), const SignupScreen()]),
       ),
     );
   }

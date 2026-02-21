@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:uniconnect/config/assets.dart';
+import 'package:uniconnect/routing/routes.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
 import 'package:uniconnect/ui/explore/widgets/explore_item.dart';
 
@@ -58,9 +60,12 @@ class _ExploreScreenState extends State<ExploreScreen> {
               leading: Icon(Icons.search, size: Dimens.iconLg),
               shape: WidgetStateProperty.all(
                 RoundedRectangleBorder(
-                  borderRadius: BorderRadiusGeometry.circular(12),
+                  borderRadius: BorderRadiusGeometry.circular(Dimens.radiusLg),
                 ),
               ),
+              onTap: (){
+                context.push(Routes.search);
+              },
             ),
             const SizedBox(height: Dimens.spaceBtwItems),
             GridView.count(
@@ -114,7 +119,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
             ),
             const SizedBox(height: Dimens.spaceBtwItems),
             SizedBox(
-              height: 100,
+              height: Dimens.carouselImageHeight,
               child: CarouselView(
                 controller: _controller,
                 itemExtent: _itemWidth,
@@ -153,12 +158,12 @@ class _ExploreScreenState extends State<ExploreScreen> {
                     duration: Duration(milliseconds: 200),
                     width: isActive ? 24 : 8,
                     height: 8,
-                    margin: EdgeInsets.symmetric(horizontal: 4),
+                    margin: EdgeInsets.symmetric(horizontal: Dimens.xs),
                     decoration: BoxDecoration(
                       color: isActive
                           ? Theme.of(context).primaryColor
                           : Colors.grey,
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: BorderRadius.circular(Dimens.radiusSm),
                     ),
                   ),
                 );

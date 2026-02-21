@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:uniconnect/ui/chat/chat_screen.dart';
 import 'package:uniconnect/ui/explore/explore_screen.dart';
 import 'package:uniconnect/ui/home/home_screen.dart';
 
@@ -42,7 +43,7 @@ class _NavigationWrapperState extends State<NavigationWrapper> {
   final List<Widget> pages = [
     HomeScreen(),
     ExploreScreen(),
-    Container(color: Colors.blue),
+    ChatScreen(),
     Container(color: Colors.yellow),
     Container(color: Colors.purple),
   ];
