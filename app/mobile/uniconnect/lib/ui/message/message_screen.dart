@@ -39,106 +39,108 @@ class MessageScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          const SizedBox(height: Dimens.spaceBtwSections),
-          Expanded(
-            child: Column(
-              children: [
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Container(
-                    padding: EdgeInsets.all(10),
-                    margin: EdgeInsets.only(right: 70, left: 10),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.all(Radius.circular(12)),
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          'So where the hell is my Gucci bag, bruh? I am dead serious',
-                          style: TextStyle(fontSize: 16),
-                        ),
-                        Align(
-                          alignment: Alignment.bottomRight,
-                          child: Text(
-                            '12:45 PM',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600]?.withValues(alpha: 0.8),
+      body: SafeArea(
+        child: Column(
+          children: [
+            const SizedBox(height: Dimens.spaceBtwSections),
+            Expanded(
+              child: Column(
+                children: [
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      padding: EdgeInsets.all(10),
+                      margin: EdgeInsets.only(right: 70, left: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.all(Radius.circular(12)),
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            'So where the hell is my Gucci bag, bruh? I am dead serious',
+                            style: TextStyle(fontSize: 16),
+                          ),
+                          Align(
+                            alignment: Alignment.bottomRight,
+                            child: Text(
+                              '12:45 PM',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600]?.withValues(alpha: 0.8),
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: Dimens.sm),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Container(
-                    padding: EdgeInsets.all(10),
-                    margin: EdgeInsets.only(left: 70, right: 10),
-                    decoration: BoxDecoration(
-                      color: Colors.blueAccent[400]?.withValues(alpha: 0.9),
-                      borderRadius: BorderRadius.all(Radius.circular(12)),
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          'It\'s all outsold. let me get you Chanel bag instead',
-                          style: TextStyle(fontSize: 16, color: Colors.white),
-                        ),
-                        Align(
-                          alignment: Alignment.bottomRight,
-                          child: Text(
-                            '12:46 PM',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.white.withValues(alpha: 0.8),
+                  const SizedBox(height: Dimens.sm),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      padding: EdgeInsets.all(10),
+                      margin: EdgeInsets.only(left: 70, right: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.blueAccent[400]?.withValues(alpha: 0.9),
+                        borderRadius: BorderRadius.all(Radius.circular(12)),
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            'It\'s all outsold. let me get you Chanel bag instead',
+                            style: TextStyle(fontSize: 16, color: Colors.white),
+                          ),
+                          Align(
+                            alignment: Alignment.bottomRight,
+                            child: Text(
+                              '12:46 PM',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.white.withValues(alpha: 0.8),
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            color: Colors.white,
-            child: Row(
-              children: [
-                IconButton(
-                  onPressed: () {},
-                  icon: Icon(Icons.emoji_emotions_outlined),
-                  color: Colors.grey[600],
-                ),
-                Expanded(
-                  child: TextField(
-                    decoration: InputDecoration().copyWith(
-                      hintText: 'Type a message',
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      errorBorder: InputBorder.none,
-                      disabledBorder: InputBorder.none,
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              color: Colors.white,
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: () {},
+                    icon: Icon(Icons.emoji_emotions_outlined),
+                    color: Colors.grey[600],
+                  ),
+                  Expanded(
+                    child: TextField(
+                      decoration: InputDecoration().copyWith(
+                        hintText: 'Type a message',
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        errorBorder: InputBorder.none,
+                        disabledBorder: InputBorder.none,
+                      ),
                     ),
                   ),
-                ),
-                SizedBox(width: 8),
-                // TODO: change to send icon when text is entered
-                IconButton(
-                  onPressed: () {},
-                  icon: Icon(Icons.mic),
-                  color: Colors.deepPurple[600]?.withValues(alpha: 0.6),
-                ),
-              ],
+                  SizedBox(width: 8),
+                  // TODO: change to send icon when text is entered
+                  IconButton(
+                    onPressed: () {},
+                    icon: Icon(Icons.mic),
+                    color: Colors.deepPurple[600]?.withValues(alpha: 0.6),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

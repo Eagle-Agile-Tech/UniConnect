@@ -46,130 +46,132 @@ class _ExploreScreenState extends State<ExploreScreen> {
           ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: Dimens.sm),
-        child: Column(
-          children: [
-            const SizedBox(height: Dimens.sm),
-            SearchBar(
-              hintText: 'What are you looking for?',
-              hintStyle: WidgetStatePropertyAll(
-                TextStyle(fontWeight: FontWeight.w600),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: Dimens.sm),
+          child: Column(
+            children: [
+              const SizedBox(height: Dimens.sm),
+              SearchBar(
+                hintText: 'What are you looking for?',
+                hintStyle: WidgetStatePropertyAll(
+                  TextStyle(fontWeight: FontWeight.w600),
+                ),
+                elevation: WidgetStateProperty.all(0),
+                leading: Icon(Icons.search, size: Dimens.iconLg),
+                shape: WidgetStateProperty.all(
+                  RoundedRectangleBorder(
+                    borderRadius: BorderRadiusGeometry.circular(Dimens.radiusLg),
+                  ),
+                ),
+                onTap: (){
+                  context.push(Routes.search);
+                },
               ),
-              elevation: WidgetStateProperty.all(0),
-              leading: Icon(Icons.search, size: Dimens.iconLg),
-              shape: WidgetStateProperty.all(
-                RoundedRectangleBorder(
-                  borderRadius: BorderRadiusGeometry.circular(Dimens.radiusLg),
-                ),
-              ),
-              onTap: (){
-                context.push(Routes.search);
-              },
-            ),
-            const SizedBox(height: Dimens.spaceBtwItems),
-            GridView.count(
-              shrinkWrap: true,
-              crossAxisCount: 2,
-              childAspectRatio: 1.8,
-              mainAxisSpacing: Dimens.sm,
-              crossAxisSpacing: Dimens.sm,
-              children: [
-                ExploreItem(
-                  color: Color(0xFF00786A),
-                  title: 'Communities',
-                  image: Assets.event,
-                ),
-                ExploreItem(
-                  color: Colors.deepOrange,
-                  title: 'Events',
-                  image: Assets.event,
-                ),
-                ExploreItem(
-                  color: Colors.deepPurpleAccent,
-                  title: 'Hackathon',
-                  image: Assets.jobBoard,
-                ),
-                ExploreItem(
-                  color: Color(0xFF10B981),
-                  title: 'Job Boards',
-                  image: Assets.jobBoard,
-                ),
-                ExploreItem(
-                  color: Color(0xFF744B93),
-                  title: 'Tips & Tricks',
-                  image: Assets.event,
-                ),
-                ExploreItem(
-                  color: Color(0xFF315E59),
-                  title: 'Support',
-                  image: Assets.event,
-                ),
-                ExploreItem(
-                  color: Color(0xFFA5CB24),
-                  title: 'Mentorship',
-                  image: Assets.tips,
-                ),
-                ExploreItem(
-                  color: Color(0xFFF9D704),
-                  title: 'Universities',
-                  image: Assets.tips,
-                ),
-              ],
-            ),
-            const SizedBox(height: Dimens.spaceBtwItems),
-            SizedBox(
-              height: Dimens.carouselImageHeight,
-              child: CarouselView(
-                controller: _controller,
-                itemExtent: _itemWidth,
-                shrinkExtent: _itemWidth,
-                itemSnapping: true,
-                elevation: 5,
-                padding: EdgeInsets.all(Dimens.sm),
+              const SizedBox(height: Dimens.spaceBtwItems),
+              GridView.count(
+                shrinkWrap: true,
+                crossAxisCount: 2,
+                childAspectRatio: 1.8,
+                mainAxisSpacing: Dimens.sm,
+                crossAxisSpacing: Dimens.sm,
                 children: [
-                  ...List.generate(_totalItems, (index) {
-                    return Container(
-                      color: Colors.grey,
-                      child: Image.asset(Assets.post2, fit: BoxFit.cover),
-                    );
-                  }),
+                  ExploreItem(
+                    color: Color(0xFF00786A),
+                    title: 'Communities',
+                    image: Assets.event,
+                  ),
+                  ExploreItem(
+                    color: Colors.deepOrange,
+                    title: 'Events',
+                    image: Assets.event,
+                  ),
+                  ExploreItem(
+                    color: Colors.deepPurpleAccent,
+                    title: 'Hackathon',
+                    image: Assets.jobBoard,
+                  ),
+                  ExploreItem(
+                    color: Color(0xFF10B981),
+                    title: 'Job Boards',
+                    image: Assets.jobBoard,
+                  ),
+                  ExploreItem(
+                    color: Color(0xFF744B93),
+                    title: 'Tips & Tricks',
+                    image: Assets.event,
+                  ),
+                  ExploreItem(
+                    color: Color(0xFF315E59),
+                    title: 'Support',
+                    image: Assets.event,
+                  ),
+                  ExploreItem(
+                    color: Color(0xFFA5CB24),
+                    title: 'Mentorship',
+                    image: Assets.tips,
+                  ),
+                  ExploreItem(
+                    color: Color(0xFFF9D704),
+                    title: 'Universities',
+                    image: Assets.tips,
+                  ),
                 ],
               ),
-            ),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(_totalItems, (index) {
-                bool isActive = index == _currentIndex;
-                return InkWell(
-                  hoverColor: Colors.transparent,
-                  focusColor: Colors.transparent,
-                  splashColor: Colors.transparent,
-                  highlightColor: Colors.transparent,
-                  onTap: () {
-                    _controller.animateTo(
-                      index * _itemWidth,
-                      duration: Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                    );
-                  },
-                  child: AnimatedContainer(
-                    duration: Duration(milliseconds: 200),
-                    width: isActive ? 24 : 8,
-                    height: 8,
-                    margin: EdgeInsets.symmetric(horizontal: Dimens.xs),
-                    decoration: BoxDecoration(
-                      color: isActive
-                          ? Theme.of(context).primaryColor
-                          : Colors.grey,
-                      borderRadius: BorderRadius.circular(Dimens.radiusSm),
+              const SizedBox(height: Dimens.spaceBtwItems),
+              SizedBox(
+                height: Dimens.carouselImageHeight,
+                child: CarouselView(
+                  controller: _controller,
+                  itemExtent: _itemWidth,
+                  shrinkExtent: _itemWidth,
+                  itemSnapping: true,
+                  elevation: 5,
+                  padding: EdgeInsets.all(Dimens.sm),
+                  children: [
+                    ...List.generate(_totalItems, (index) {
+                      return Container(
+                        color: Colors.grey,
+                        child: Image.asset(Assets.post2, fit: BoxFit.cover),
+                      );
+                    }),
+                  ],
+                ),
+              ),
+        
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(_totalItems, (index) {
+                  bool isActive = index == _currentIndex;
+                  return InkWell(
+                    hoverColor: Colors.transparent,
+                    focusColor: Colors.transparent,
+                    splashColor: Colors.transparent,
+                    highlightColor: Colors.transparent,
+                    onTap: () {
+                      _controller.animateTo(
+                        index * _itemWidth,
+                        duration: Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    },
+                    child: AnimatedContainer(
+                      duration: Duration(milliseconds: 200),
+                      width: isActive ? 24 : 8,
+                      height: 8,
+                      margin: EdgeInsets.symmetric(horizontal: Dimens.xs),
+                      decoration: BoxDecoration(
+                        color: isActive
+                            ? Theme.of(context).primaryColor
+                            : Colors.grey,
+                        borderRadius: BorderRadius.circular(Dimens.radiusSm),
+                      ),
                     ),
-                  ),
-                );
-              }),
-            ),
-          ],
+                  );
+                }),
+              ),
+            ],
+          ),
         ),
       ),
     );
