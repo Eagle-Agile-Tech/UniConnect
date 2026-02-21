@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:uniconnect/ui/chat/chat_screen.dart';
 import 'package:uniconnect/ui/explore/explore_screen.dart';
 import 'package:uniconnect/ui/home/home_screen.dart';
+import 'package:uniconnect/ui/profile/profile_screen.dart';
+
+import '../ui/notification/notification_screen.dart';
 
 class NavigationWrapper extends StatefulWidget {
   const NavigationWrapper({super.key});
@@ -44,8 +47,8 @@ class _NavigationWrapperState extends State<NavigationWrapper> {
     HomeScreen(),
     ExploreScreen(),
     ChatScreen(),
-    Container(color: Colors.yellow),
-    Container(color: Colors.purple),
+    NotificationScreen(),
+    ProfileScreen(),
   ];
 
   @override
