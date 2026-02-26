@@ -1,6 +1,7 @@
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
@@ -71,17 +72,39 @@ enum MediaType {
   VIDEO 
   DOCUMENT 
   }
-enum MediaReferenceType { 
-  POST 
-  MESSAGE
-  USER 
-  COMMUNITY
-   }
   enum EducationLevel {
   UNDERGRADUATE
   POSTGRADUATE
   GRADUATED
 }
+enum NetworkStatus {
+  CONNECTED
+  PENDING
+}
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  SOFT_DELETE
+  RESTORE
+  APPROVE
+  REJECT
+  LOGIN
+  LOGOUT
+  ROLE_CHANGE
+  STATUS_CHANGE
+  SEND
+  JOIN
+  LEAVE
+}
+
+enum AuditStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  CANCELLED
+}
+
 
 // =========================
 // CORE MODELS
@@ -101,18 +124,28 @@ model User {
   profile           UserProfile?
   posts             Post[]
   comments          PostComment[]
-  reactions         Reaction[]
   messages          Message[]
   communities       CommunityMember[]
   expertProfile     ExpertProfile?
   notificationsReceived Notification[] @relation("NotificationRecipient")
   notificationsSent     Notification[] @relation("NotificationActor")
+  postReactions         PostReaction[]
+  commentReactions      CommentReaction[]
+  messageReactions      MessageReaction[]
   chatParticipations ChatParticipant[]
   createdCommunities Community[]
   mediaUploads      Media[]
+  favorites         Favorite[]
+  networksA         Network[] @relation("UserNetworkA")
+  networksB         Network[] @relation("UserNetworkB")
+  originalPosts     Post[] @relation("PostRepostAuthor")
+  auditlogs         AuditLog[]
+  sessions Session[]
+
 
   @@index([email])
   @@index([username])
+ 
 }
 
 model UserProfile {
@@ -175,18 +208,31 @@ model Post {
   visibility       Visibility @default(PUBLIC)
   tags             String[]   @default([])
   category         String?
-  embedding        Float[]    @default([])
+  embedding        Unsupported("vector(1536)")
   moderationStatus ModerationStatus @default(PENDING)
   isDeleted        Boolean @default(false)
+  shareCount       Int    @default(0)
+  originalPostId   String? // for shared comments, reference to original post
+  originalAuthorId String? // for shared comments, reference to original author
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
   author      User @relation(fields: [authorId], references: [id])
   comments    PostComment[]
   media       Media[] @relation("MediaPost") // structured relation
+  favorites   Favorite[]
+  reposts      Post[] @relation("PostRepost")
+  originalPost   Post? @relation("PostRepost", fields: [originalPostId], references: [id])
+  originalAuthor User? @relation("PostRepostAuthor", fields: [originalAuthorId], references: [id])
+  postReactions PostReaction[]
+  
 
   @@index([authorId])
   @@index([createdAt])
+  @@index([visibility])
+  @@index([moderationStatus])
+  @@index([visibility, moderationStatus, createdAt])
+  @@index([authorId, createdAt])
 }
 
 model PostComment {
@@ -205,6 +251,7 @@ model PostComment {
 
   parentComment   PostComment? @relation("CommentReplies", fields: [parentCommentId], references: [id])
   replies         PostComment[] @relation("CommentReplies")
+  commentReactions CommentReaction[]
 
 
 
@@ -214,18 +261,58 @@ model PostComment {
 // =========================
 // REACTIONS (polymorphic via reference)
 // =========================
-model Reaction {
+model PostReaction {
+  id        String @id @default(uuid())
+  type      ReactionType
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+  post Post @relation(fields: [postId], references: [id])
+
+  @@unique([userId, postId])
+  @@index([postId])
+}
+
+model CommentReaction {
+  id        String @id @default(uuid())
+  type      ReactionType
+  userId    String
+  commentId String
+  createdAt DateTime @default(now())
+
+  user    User @relation(fields: [userId], references: [id])
+  comment PostComment @relation(fields: [commentId], references: [id])
+
+  @@unique([userId, commentId])
+  @@index([commentId])
+}
+
+model MessageReaction {
+  id        String @id @default(uuid())
+  type      ReactionType
+  userId    String
+  messageId String
+  createdAt DateTime @default(now())
+
+  user    User @relation(fields: [userId], references: [id])
+  message Message @relation(fields: [messageId], references: [id])
+
+  @@unique([userId, messageId])
+  @@index([messageId])
+}
+model Favorite {
   id            String @id @default(uuid())
-  type          ReactionType
   userId        String
-  referenceId   String
-  referenceType NotificationReferenceType
+  postId        String
   createdAt     DateTime @default(now())
 
   user          User @relation(fields: [userId], references: [id])
+  post          Post @relation(fields: [postId], references: [id])
 
-  @@unique([userId, referenceId])
-  @@index([referenceId, referenceType])
+  @@unique([userId, postId])
+  @@index([postId])
 }
 
 // =========================
@@ -268,6 +355,7 @@ model CommunityMember {
 model Chat {
   id      String @id @default(uuid())
   type    ChatType
+  uniqueKey  String? @unique // for direct chats, a unique key combining user IDs to prevent duplicates
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -280,6 +368,8 @@ model ChatParticipant {
   chatId    String
   userId    String
   createdAt DateTime @default(now())
+
+  lastReadAt DateTime?
 
   chat      Chat @relation(fields: [chatId], references: [id])
   user      User @relation(fields: [userId], references: [id])
@@ -298,6 +388,7 @@ model Message {
 
   chat      Chat @relation(fields: [chatId], references: [id])
   sender    User @relation(fields: [senderId], references: [id])
+  messageReactions MessageReaction[]
 
   media     Media[] @relation("MediaMessage") // structured relation
   @@index([chatId])
@@ -320,8 +411,7 @@ model Notification {
   recipient     User @relation("NotificationRecipient", fields: [recipientId], references: [id])
   actor         User? @relation("NotificationActor", fields: [actorId], references: [id])
 
-  @@index([recipientId])
-  @@index([isRead])
+@@index([recipientId, isRead])
 }
 
 // =========================
@@ -333,8 +423,7 @@ model Media {
   postId       String?
   communityId  String?
   messageId    String?
-  referenceId  String? // polymorphic usage if needed
-  referenceType MediaReferenceType?
+ 
 
   fileUrl      String
   fileType     MediaType
@@ -346,5 +435,87 @@ model Media {
   community    Community? @relation("MediaCommunity", fields: [communityId], references: [id])
   message      Message? @relation("MediaMessage", fields: [messageId], references: [id])
 
-  @@index([referenceId])
+  @@index([postId])
+  @@index([communityId])
+  @@index([messageId])
 }
+
+// =========================
+// NETWORKING
+// ========================
+model Network {
+  id          String @id @default(uuid())
+  userAId   String
+  userBId  String
+  status NetworkStatus @default(PENDING)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userA    User @relation("UserNetworkA", fields: [userAId], references: [id])
+  userB   User @relation("UserNetworkB", fields: [userBId], references: [id])
+
+  @@unique([userAId, userBId])
+  @@index([userBId , status])
+  @@index([userAId, status])
+ 
+}
+
+// =========================
+// LOG AND SESSION
+// ========================
+
+model Session {
+  id            String    @id @default(uuid())
+  userId        String
+  token         String    @unique // JWT or session token (hashed in production)
+  refreshToken  String?   @unique
+  deviceInfo    Json?
+  ipAddress     String?
+  location      Json?
+  userAgent     String?
+  lastActiveAt  DateTime  @default(now()) // Last API call with this session
+  expiresAt     DateTime
+  createdAt     DateTime  @default(now())
+  isRevoked     Boolean   @default(false)
+  revokedAt     DateTime?
+
+  // Relations
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+  @@index([isRevoked])
+  @@map("sessions")
+}
+
+
+model AuditLog {
+  id           String       @id @default(uuid())
+  userId       String?
+  actionType   AuditAction
+  entityType   String
+  entityId     String?
+  oldValue     Json?
+  newValue     Json?
+  changes      Json?
+  metadata     Json?
+  ipAddress    String?
+  userAgent    String?
+  status       AuditStatus  @default(SUCCESS)
+  errorMessage String?
+  createdAt    DateTime     @default(now())
+  isArchived   Boolean      @default(false)
+  archivedAt   DateTime?
+
+  // Relations
+  user         User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([actionType])
+  @@index([createdAt])
+  @@index([isArchived])
+  @@map("audit_logs")
+}
+
