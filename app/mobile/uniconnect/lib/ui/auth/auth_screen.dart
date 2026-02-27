@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:uniconnect/ui/auth/signup/signup_screen.dart';
+import 'package:uniconnect/ui/auth/onboarding/signup/signup_screen.dart';
 import 'login/login_screen.dart';
 
 class AuthScreen extends StatelessWidget {
