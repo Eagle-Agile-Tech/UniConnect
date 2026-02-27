@@ -8,7 +8,7 @@ abstract final class UCTextFormFieldTheme {
     prefixIconColor: Colors.grey,
     suffixIconColor: Colors.grey,
     labelStyle: const TextStyle().copyWith(color: Colors.black, fontSize: 14),
-    hintStyle: const TextStyle().copyWith(color: Colors.black, fontSize: 16,),
+    hintStyle: const TextStyle().copyWith(color: Colors.black, fontSize: 12,),
     errorStyle: const TextStyle().copyWith(fontStyle: FontStyle.normal),
     alignLabelWithHint: true,
     contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),

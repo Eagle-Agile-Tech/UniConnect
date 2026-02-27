@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:uniconnect/ui/core/theme/colors.dart';
 import 'package:uniconnect/ui/core/theme/custom_themes/elevated_button_theme.dart';
-import 'package:uniconnect/ui/core/theme/custom_themes/outlined_button_theme.dart';
 import 'package:uniconnect/ui/core/theme/custom_themes/text_field_theme.dart';
 import 'package:uniconnect/ui/core/theme/custom_themes/text_theme.dart';
 
@@ -25,6 +24,7 @@ abstract final class UCTheme {
     colorScheme: UCColorScheme.lightScheme,
     inputDecorationTheme: UCTextFormFieldTheme.lightInputDecorationThemeData,
     elevatedButtonTheme: UCElevatedButtonTheme.lightElevatedButtonThemeData,
+    //bottomSheetTheme:
   );
 
   static ThemeData darkTheme = ThemeData(
