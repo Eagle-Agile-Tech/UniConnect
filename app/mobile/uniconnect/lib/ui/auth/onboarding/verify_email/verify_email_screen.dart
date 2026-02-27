@@ -12,7 +12,7 @@ class VerifyEmailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: UCAppBar('Verify Email',),
+      appBar: UCAppBar('Verify Email', showBack: false, centerTitle: true),
       body: SingleChildScrollView(
         child: Padding(
           padding: UCSpacingStyle.paddingWithAppBarHeight,
