@@ -3,13 +3,14 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uniconnect/data/repository/user/user_repository_remote.dart';
 import 'package:uniconnect/domain/models/onboarding/onboarding_state.dart';
+import 'package:uniconnect/utils/result.dart';
 
 import '../../../../utils/enums.dart';
 
 final onboardingProvider =
-NotifierProvider<OnboardingViewmodel, OnboardingState>(
-    OnboardingViewmodel.new
-);
+    NotifierProvider<OnboardingViewmodel, OnboardingState>(
+      OnboardingViewmodel.new,
+    );
 
 class OnboardingViewmodel extends Notifier<OnboardingState> {
   late final UserRepositoryRemote _userRepo;
@@ -18,11 +19,13 @@ class OnboardingViewmodel extends Notifier<OnboardingState> {
   OnboardingState build() => OnboardingState();
 
   // Account
-  void updateAccount(String firstName,
-      String lastName,
-      String username,
-      String email,
-      String password,) {
+  void updateAccount(
+    String firstName,
+    String lastName,
+    String username,
+    String email,
+    String password,
+  ) {
     state = state.copyWith(
       firstName: firstName,
       lastName: lastName,
@@ -32,55 +35,56 @@ class OnboardingViewmodel extends Notifier<OnboardingState> {
     );
   }
 
-  Future<void> submitAccount() async {
+  Future<Err?> submitAccount() async {
     _userRepo = ref.read(userRepositoryProvider);
     state = state.copyWith(isLoading: true, errorMessage: null);
-      final result = await _userRepo.createUserAccount(
-          firstName: state.firstName,
-          lastName: state.lastName,
-          username: state.username,
-          email: state.email,
-          password: state.password);
-      result.fold((data){
+    final result = await _userRepo.createUserAccount(
+      firstName: state.firstName,
+      lastName: state.lastName,
+      username: state.username,
+      email: state.email,
+      password: state.password,
+    );
+    return result.fold(
+      (data) {
         state = state.copyWith(
           currentStep: OnboardingStep.verifyEmail,
           isLoading: false,
           otp: data.otpCode,
-          id: data.userId
+          id: data.userId,
         );
-      }, (error,stackTrace){
+        return null;
+      },
+      (error, stackTrace) {
         state = state.copyWith(
           isLoading: false,
           errorMessage: error.toString(),
         );
-      });
+        return Result.error(error) as Err;
+      },
+    );
   }
 
-  // Verify Email
-  void updateOTP(String otp) {
-    state = state.copyWith(otp: otp, isLoading: true);
-  }
-
-  Future<void> verifyOtp(String otp) async {
-    state = state.copyWith(isLoading: true, otp: otp);
-    try {
+  Err? verifyOtp(String otp) {
       //TODO: call to api to fetch otp and verify
-      await Future.delayed(Duration(seconds: 2));
+      if (otp != state.otp) {
+        return Result.error('Invalid OTP') as Err;
+      }
       state = state.copyWith(
         isEmailVerified: true,
         currentStep: OnboardingStep.academic,
         isLoading: false,
       );
-    } catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: e.toString());
-    }
+      return null;
   }
 
   // Academic
-  void updateAcademic(String university,
-      String degree,
-      String currentYear,
-      String expectedGraduationYear,) {
+  void updateAcademic(
+    String university,
+    String degree,
+    String currentYear,
+    String expectedGraduationYear,
+  ) {
     state = state.copyWith(
       university: university,
       degree: degree,
@@ -108,7 +112,9 @@ class OnboardingViewmodel extends Notifier<OnboardingState> {
       //TODO: call to api to submit profile details and complete onboarding
       await Future.delayed(Duration(seconds: 2));
       state = state.copyWith(
-          currentStep: OnboardingStep.completed, isLoading: false);
+        currentStep: OnboardingStep.completed,
+        isLoading: false,
+      );
     } catch (e) {
       state = state.copyWith(isLoading: false, errorMessage: e.toString());
     }

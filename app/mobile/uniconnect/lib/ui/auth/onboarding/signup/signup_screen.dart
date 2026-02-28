@@ -137,7 +137,18 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     _emailController.text.trim(),
                     _passwordController.text.trim(),
                   );
-                  await onboarding.submitAccount();
+                  final status = await onboarding.submitAccount();
+                  // Todo: make this navigation more robust by listening to the state changes
+                  if (status != null){
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(status.toString()))
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Account created successfully! Please verify your email.'))
+                    );
+                    context.go(Routes.verifyEmail);
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   minimumSize: Size(double.infinity, 48),

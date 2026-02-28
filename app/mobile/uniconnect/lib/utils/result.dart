@@ -27,4 +27,9 @@ final class Err<T> extends Result<T> {
 
   final Object error;
   final StackTrace? stackTrace;
+
+  @override
+  String toString() {
+    return '$error\n';
+  }
 }
