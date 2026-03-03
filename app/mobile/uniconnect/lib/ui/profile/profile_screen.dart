@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uniconnect/config/assets.dart';
-import 'package:uniconnect/ui/core/common/styles/spacing_style.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
+import 'package:uniconnect/ui/profile/view_models/user_provider.dart';
 
 import '../../config/dummy_data.dart';
 import '../core/common/widgets/post_card.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.read(userProvider);
     return Scaffold(
       body: SingleChildScrollView(
         padding: EdgeInsets.only(top: Dimens.appBarHeight),
@@ -29,14 +31,16 @@ class ProfileScreen extends StatelessWidget {
                         children: [
                           CircleAvatar(
                             radius: Dimens.avatarLg,
-                            backgroundImage: const AssetImage(Assets.avatar1),
+                            backgroundImage: NetworkImage(
+                              user!.profilePicture!,
+                            ),
                             backgroundColor: Theme.of(
                               context,
                             ).primaryColor.withAlpha(30),
                           ),
                           const SizedBox(height: Dimens.sm),
                           Text(
-                            '@Iman_',
+                            "@${user.username}",
                             style: Theme.of(context).textTheme.labelLarge
                                 ?.copyWith(
                                   color: Theme.of(
@@ -53,12 +57,12 @@ class ProfileScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Iman Yilma',
+                              '${user.firstName} ${user.lastName}',
                               style: Theme.of(context).textTheme.headlineSmall
                                   ?.copyWith(fontWeight: FontWeight.bold),
                             ),
                             Text(
-                              'Jimma University',
+                              user.university,
                               style: Theme.of(context).textTheme.bodyMedium
                                   ?.copyWith(
                                     color: Theme.of(context).hintColor,
@@ -66,54 +70,54 @@ class ProfileScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: Dimens.xs),
                             Text(
-                              'Software Engineer',
+                              user.degree,
                               style: Theme.of(context).textTheme.titleMedium,
                             ),
                             const SizedBox(height: Dimens.sm),
                             Text(
-                              'Smile | Over the Moon | Coffee Lover',
+                              user.bio ?? 'No bio available',
                               style: Theme.of(context).textTheme.bodySmall,
                               maxLines: 3,
                               overflow: TextOverflow.ellipsis,
                             ),
-                            const SizedBox(height: Dimens.sm),
+                            const SizedBox(height: Dimens.md),
+                            Row(
+                              children: [
+                                ElevatedButton(
+                                  onPressed: () {},
+                                  style: ElevatedButton.styleFrom(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(0),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: Dimens.lg,
+                                      vertical: Dimens.sm,
+                                    ),
+                                  ),
+                                  child: const Text('Follow'),
+                                ),
+                                const SizedBox(width: Dimens.sm),
+                                ElevatedButton(
+                                  onPressed: () {},
+                                  style: ElevatedButton.styleFrom(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(0),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: Dimens.lg,
+                                      vertical: Dimens.sm,
+                                    ),
+                                  ),
+                                  child: const Text('Message'),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
                       ),
                     ],
                   ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {},
-                        style: ElevatedButton.styleFrom(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(0),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: Dimens.lg,
-                            vertical: Dimens.sm,
-                          ),
-                        ),
-                        child: const Text('Follow'),
-                      ),
-                      const SizedBox(width: Dimens.sm),
-                      ElevatedButton(
-                        onPressed: () {},
-                        style: ElevatedButton.styleFrom(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(0),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: Dimens.lg,
-                            vertical: Dimens.sm,
-                          ),
-                        ),
-                        child: const Text('Message'),
-                      ),
-                    ],
-                  ),
+
                 ],
               ),
             ),
@@ -139,9 +143,9 @@ class ProfileScreen extends StatelessWidget {
                 child: Wrap(
                   spacing: Dimens.sm,
                   runSpacing: Dimens.sm,
-                  children: List.generate(5, (index) {
+                  children: List.generate(user.interests!.length, (index) {
                     return Chip(
-                      label: const Text('Flutter'),
+                      label: Text(user.interests![index]),
                       visualDensity: VisualDensity.compact,
                       backgroundColor: Theme.of(
                         context,

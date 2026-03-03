@@ -1,8 +1,12 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uniconnect/config/dummy_data.dart';
 import 'package:uniconnect/data/repository/user/user_repository_remote.dart';
 import 'package:uniconnect/domain/models/onboarding/onboarding_state.dart';
+import 'package:uniconnect/domain/models/user/user.dart';
+import 'package:uniconnect/ui/profile/view_models/user_provider.dart';
 import 'package:uniconnect/utils/result.dart';
 
 import '../../../../utils/enums.dart';
@@ -52,6 +56,7 @@ class OnboardingViewmodel extends Notifier<OnboardingState> {
           isLoading: false,
           otp: data.otpCode,
           id: data.userId,
+          createdAt: data.createdAt,
         );
         return null;
       },
@@ -66,16 +71,15 @@ class OnboardingViewmodel extends Notifier<OnboardingState> {
   }
 
   Err? verifyOtp(String otp) {
-      //TODO: call to api to fetch otp and verify
-      if (otp != state.otp) {
-        return Result.error('Invalid OTP') as Err;
-      }
-      state = state.copyWith(
-        isEmailVerified: true,
-        currentStep: OnboardingStep.academic,
-        isLoading: false,
-      );
-      return null;
+    if (otp != state.otp) {
+      return Result.error('Invalid OTP') as Err;
+    }
+    state = state.copyWith(
+      isEmailVerified: true,
+      currentStep: OnboardingStep.academic,
+      isLoading: false,
+    );
+    return null;
   }
 
   // Academic
@@ -83,40 +87,84 @@ class OnboardingViewmodel extends Notifier<OnboardingState> {
     String university,
     String degree,
     String currentYear,
-    String expectedGraduationYear,
+    DateTime expectedGraduationYear,
   ) {
     state = state.copyWith(
       university: university,
       degree: degree,
       currentYear: currentYear,
       expectedGraduationYear: expectedGraduationYear,
+      currentStep: OnboardingStep.profile,
     );
-  }
-
-  void submitAcademic() {
-    state = state.copyWith(currentStep: OnboardingStep.profile);
   }
 
   // Profile
-  void updateProfile(String? bio, String? interests, String? profilePicture) {
+  void updateProfile(
+    String? bio,
+    List<InterestRecord>? interests,
+    File? profilePicture,
+  ) {
     state = state.copyWith(
       bio: bio ?? state.bio,
-      interests: interests ?? state.interests,
-      profilePicture: profilePicture ?? state.profilePicture,
+      interests: interests,
+      profilePicture: profilePicture,
     );
   }
 
-  Future<void> completeOnboarding() async {
+  Future<Err?> completeOnboarding() async {
     state = state.copyWith(isLoading: true);
     try {
       //TODO: call to api to submit profile details and complete onboarding
-      await Future.delayed(Duration(seconds: 2));
-      state = state.copyWith(
-        currentStep: OnboardingStep.completed,
-        isLoading: false,
+      final result = await _userRepo.createUserProfile(
+        id: state.id,
+        bio: state.bio,
+        interests: state.interests
+            ?.map((interest) => interest.interest)
+            .toList(),
+        profilePicture: state.profilePicture,
+        university: state.university,
+        degree: state.degree,
+        currentYear: state.currentYear,
+        expectedGraduationYear: state.expectedGraduationYear!,
+        createdAt: state.createdAt!,
+      );
+      return result.fold(
+        (data) {
+          state = state.copyWith(
+            currentStep: OnboardingStep.completed,
+            isLoading: false,
+          );
+          ref.read(userProvider.notifier).state = User(
+            id: state.id,
+            firstName: state.firstName,
+            lastName: state.lastName,
+            username: state.username,
+            email: state.email,
+            university: state.university,
+            degree: state.degree,
+            currentYear: state.currentYear,
+            expectedGraduationYear: state.expectedGraduationYear!,
+            bio: state.bio,
+            interests: state.interests
+                ?.map((interest) => interest.interest)
+                .toList(),
+            profilePicture: data,
+            createdAt: state.createdAt!,
+            updatedAt: state.createdAt!,
+          );
+          return null;
+        },
+        (error, stackTrace) {
+          state = state.copyWith(
+            isLoading: false,
+            errorMessage: error.toString(),
+          );
+          return Result.error(error) as Err;
+        },
       );
     } catch (e) {
       state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      return Result.error('Failed to complete onboarding') as Err;
     }
   }
 }
