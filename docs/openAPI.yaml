@@ -1,0 +1,2401 @@
+openapi: 3.1.0
+info:
+  title: UniConnect API
+  version: 2.0.0
+  description: |
+    REST API for UniConnect — university social & professional networking platform.
+
+    Features:
+    • JWT + refresh token authentication
+    • Role-based access (STUDENT, EXPERT, ADMIN, INSTITUTION)
+    • Cursor-based pagination
+    • Content moderation (automated + human review)
+    • AI-powered recommendations (feed, users, communities)
+    • Polymorphic reactions & media attachments
+    • Communities, direct/group chats, networking (connections)
+servers:
+- url: https://api.uniconnect.com/v1
+  description: Production
+- url: https://dev.api.uniconnect.com/v1
+  description: Development
+tags:
+- name: Auth
+- name: Users
+- name: Posts
+- name: Comments
+- name: Reactions
+- name: Media
+- name: Communities
+- name: Chats
+- name: Notifications
+- name: Networking
+- name: Moderation
+- name: Recommendations
+security:
+- BearerAuth: []
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      - code
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+          nullable: true
+      example:
+        error: Invalid credentials
+        code: ERR_INVALID_CREDENTIALS
+    PaginationMeta:
+      type: object
+      properties:
+        nextCursor:
+          type: string
+          nullable: true
+          description: Opaque cursor — pass unchanged
+        hasMore:
+          type: boolean
+    PaginatedResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items: {}
+        meta:
+          type: object
+          properties:
+            nextCursor:
+              type: string
+              nullable: true
+              description: Opaque cursor — pass unchanged
+            hasMore:
+              type: boolean
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        username:
+          type: string
+        role:
+          type: string
+          enum:
+          - STUDENT
+          - ADMIN
+          - EXPERT
+          - INSTITUTION
+        isVerified:
+          type: boolean
+        profile:
+          type: object
+          properties:
+            firstName:
+              type: string
+            lastName:
+              type: string
+            bio:
+              type: string
+              nullable: true
+            profileImage:
+              type: string
+              format: uri
+              nullable: true
+            university:
+              type: string
+              nullable: true
+            department:
+              type: string
+              nullable: true
+            level:
+              type: string
+              enum:
+              - UNDERGRADUATE
+              - POSTGRADUATE
+              - GRADUATED
+              nullable: true
+        createdAt:
+          type: string
+          format: date-time
+    UserProfile:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        bio:
+          type: string
+          nullable: true
+        profileImage:
+          type: string
+          format: uri
+          nullable: true
+        university:
+          type: string
+          nullable: true
+        department:
+          type: string
+          nullable: true
+        level:
+          type: string
+          enum:
+          - UNDERGRADUATE
+          - POSTGRADUATE
+          - GRADUATED
+          nullable: true
+    TokenResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        expiresIn:
+          type: integer
+          description: Seconds until access token expires
+    Media:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        fileUrl:
+          type: string
+          format: uri
+        fileType:
+          type: string
+          enum:
+          - IMAGE
+          - VIDEO
+          - DOCUMENT
+        createdAt:
+          type: string
+          format: date-time
+    Post:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        authorId:
+          type: string
+          format: uuid
+        content:
+          type: string
+        visibility:
+          type: string
+          enum:
+          - PUBLIC
+          - GROUP
+          - PRIVATE
+        tags:
+          type: array
+          items:
+            type: string
+        media:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              fileUrl:
+                type: string
+                format: uri
+              fileType:
+                type: string
+                enum:
+                - IMAGE
+                - VIDEO
+                - DOCUMENT
+              createdAt:
+                type: string
+                format: date-time
+        reactionCount:
+          type: integer
+        commentCount:
+          type: integer
+        moderationStatus:
+          type: string
+          enum:
+          - PENDING
+          - APPROVED
+          - REJECTED
+        createdAt:
+          type: string
+          format: date-time
+    PostListResponse:
+      allOf:
+      - type: object
+        properties:
+          data:
+            type: array
+            items: {}
+          meta:
+            type: object
+            properties:
+              nextCursor:
+                type: string
+                nullable: true
+                description: Opaque cursor — pass unchanged
+              hasMore:
+                type: boolean
+      - properties:
+          data:
+            type: array
+            items:
+              type: object
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                  readOnly: true
+                authorId:
+                  type: string
+                  format: uuid
+                content:
+                  type: string
+                visibility:
+                  type: string
+                  enum:
+                  - PUBLIC
+                  - GROUP
+                  - PRIVATE
+                tags:
+                  type: array
+                  items:
+                    type: string
+                media:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      fileUrl:
+                        type: string
+                        format: uri
+                      fileType:
+                        type: string
+                        enum:
+                        - IMAGE
+                        - VIDEO
+                        - DOCUMENT
+                      createdAt:
+                        type: string
+                        format: date-time
+                reactionCount:
+                  type: integer
+                commentCount:
+                  type: integer
+                moderationStatus:
+                  type: string
+                  enum:
+                  - PENDING
+                  - APPROVED
+                  - REJECTED
+                createdAt:
+                  type: string
+                  format: date-time
+    Comment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        postId:
+          type: string
+          format: uuid
+        commenterId:
+          type: string
+          format: uuid
+        content:
+          type: string
+        parentCommentId:
+          type: string
+          format: uuid
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+    CommentListResponse:
+      allOf:
+      - type: object
+        properties:
+          data:
+            type: array
+            items: {}
+          meta:
+            type: object
+            properties:
+              nextCursor:
+                type: string
+                nullable: true
+                description: Opaque cursor — pass unchanged
+              hasMore:
+                type: boolean
+      - properties:
+          data:
+            type: array
+            items:
+              type: object
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                postId:
+                  type: string
+                  format: uuid
+                commenterId:
+                  type: string
+                  format: uuid
+                content:
+                  type: string
+                parentCommentId:
+                  type: string
+                  format: uuid
+                  nullable: true
+                createdAt:
+                  type: string
+                  format: date-time
+    Community:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        type:
+          type: string
+          enum:
+          - PUBLIC
+          - PRIVATE
+        createdById:
+          type: string
+          format: uuid
+        memberCount:
+          type: integer
+          readOnly: true
+        createdAt:
+          type: string
+          format: date-time
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        chatId:
+          type: string
+          format: uuid
+        senderId:
+          type: string
+          format: uuid
+        content:
+          type: string
+        media:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              fileUrl:
+                type: string
+                format: uri
+              fileType:
+                type: string
+                enum:
+                - IMAGE
+                - VIDEO
+                - DOCUMENT
+              createdAt:
+                type: string
+                format: date-time
+        createdAt:
+          type: string
+          format: date-time
+    MessageListResponse:
+      allOf:
+      - type: object
+        properties:
+          data:
+            type: array
+            items: {}
+          meta:
+            type: object
+            properties:
+              nextCursor:
+                type: string
+                nullable: true
+                description: Opaque cursor — pass unchanged
+              hasMore:
+                type: boolean
+      - properties:
+          data:
+            type: array
+            items:
+              type: object
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                chatId:
+                  type: string
+                  format: uuid
+                senderId:
+                  type: string
+                  format: uuid
+                content:
+                  type: string
+                media:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      fileUrl:
+                        type: string
+                        format: uri
+                      fileType:
+                        type: string
+                        enum:
+                        - IMAGE
+                        - VIDEO
+                        - DOCUMENT
+                      createdAt:
+                        type: string
+                        format: date-time
+                createdAt:
+                  type: string
+                  format: date-time
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum:
+          - REACTION
+          - COMMENT
+          - FOLLOW
+          - MESSAGE
+          - SYSTEM
+        actorId:
+          type: string
+          format: uuid
+          nullable: true
+        referenceId:
+          type: string
+          nullable: true
+        referenceType:
+          type: string
+          enum:
+          - POST
+          - COMMENT
+          - USER
+          - MESSAGE
+          - COMMUNITY
+          nullable: true
+        isRead:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+    NotificationListResponse:
+      allOf:
+      - type: object
+        properties:
+          data:
+            type: array
+            items: {}
+          meta:
+            type: object
+            properties:
+              nextCursor:
+                type: string
+                nullable: true
+                description: Opaque cursor — pass unchanged
+              hasMore:
+                type: boolean
+      - properties:
+          data:
+            type: array
+            items:
+              type: object
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                type:
+                  type: string
+                  enum:
+                  - REACTION
+                  - COMMENT
+                  - FOLLOW
+                  - MESSAGE
+                  - SYSTEM
+                actorId:
+                  type: string
+                  format: uuid
+                  nullable: true
+                referenceId:
+                  type: string
+                  nullable: true
+                referenceType:
+                  type: string
+                  enum:
+                  - POST
+                  - COMMENT
+                  - USER
+                  - MESSAGE
+                  - COMMUNITY
+                  nullable: true
+                isRead:
+                  type: boolean
+                createdAt:
+                  type: string
+                  format: date-time
+    ModerationReport:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        reporterId:
+          type: string
+          format: uuid
+        entityType:
+          type: string
+          enum:
+          - POST
+          - COMMENT
+          - MESSAGE
+          - COMMUNITY
+          - USER
+        entityId:
+          type: string
+          format: uuid
+        reason:
+          type: string
+        status:
+          type: string
+          enum:
+          - PENDING
+          - REVIEWED
+          - RESOLVED
+        createdAt:
+          type: string
+          format: date-time
+    ModerationActionRequest:
+      type: object
+      required:
+      - action
+      properties:
+        action:
+          type: string
+          enum:
+          - APPROVE
+          - REJECT
+          - HIDE
+          - DELETE
+        reason:
+          type: string
+        moderatorNotes:
+          type: string
+          nullable: true
+    Recommendation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum:
+          - POST
+          - USER
+          - COMMUNITY
+        score:
+          type: number
+          format: float
+        reason:
+          type: string
+          nullable: true
+        item:
+          type: object
+          additionalProperties: true
+    RecommendationResponse:
+      allOf:
+      - type: object
+        properties:
+          data:
+            type: array
+            items: {}
+          meta:
+            type: object
+            properties:
+              nextCursor:
+                type: string
+                nullable: true
+                description: Opaque cursor — pass unchanged
+              hasMore:
+                type: boolean
+      - properties:
+          data:
+            type: array
+            items:
+              type: object
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                type:
+                  type: string
+                  enum:
+                  - POST
+                  - USER
+                  - COMMUNITY
+                score:
+                  type: number
+                  format: float
+                reason:
+                  type: string
+                  nullable: true
+                item:
+                  type: object
+                  additionalProperties: true
+  responses:
+    Unauthorized:
+      description: Authentication required or invalid token
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+            - error
+            - code
+            properties:
+              error:
+                type: string
+              code:
+                type: string
+              details:
+                type: object
+                additionalProperties: true
+                nullable: true
+            example:
+              error: Invalid credentials
+              code: ERR_INVALID_CREDENTIALS
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+            - error
+            - code
+            properties:
+              error:
+                type: string
+              code:
+                type: string
+              details:
+                type: object
+                additionalProperties: true
+                nullable: true
+            example:
+              error: Invalid credentials
+              code: ERR_INVALID_CREDENTIALS
+paths:
+  /auth/register:
+    post:
+      tags:
+        - Auth
+      summary: Register new user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - firstName
+                - lastName
+                - username
+                - email
+                - password
+              properties:
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                username:
+                  type: string
+                  minLength: 3
+                  maxLength: 30
+                  pattern: '^[a-zA-Z0-9_]+$'
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+                  refreshToken:
+                    type: string
+                  expiresIn:
+                    type: integer
+                    description: Seconds until access token expires
+        "400":
+          description: Invalid input (missing fields, weak password, invalid format)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Validation failed
+                code: ERR_VALIDATION
+                details:
+                  username: "Username already taken or invalid format"
+        "409":
+          description: Conflict — username or email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Username or email already in use
+                code: ERR_CONFLICT
+        "429":
+          description: Too many registration attempts (rate limit)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Rate limit exceeded
+                code: ERR_RATE_LIMIT
+
+  /auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+                  refreshToken:
+                    type: string
+                  expiresIn:
+                    type: integer
+                    description: Seconds until access token expires
+        "400":
+          description: Missing or malformed credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "401":
+          description: Invalid credentials or unverified account
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Invalid email or password
+                code: ERR_INVALID_CREDENTIALS
+        "403":
+          description: Account locked / temporarily blocked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Account is locked due to too many failed attempts
+                code: ERR_ACCOUNT_LOCKED
+        "429":
+          description: Too many login attempts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/refresh:
+    post:
+      tags:
+        - Auth
+      summary: Refresh access token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refreshToken
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+                  refreshToken:
+                    type: string
+                  expiresIn:
+                    type: integer
+                    description: Seconds until access token expires
+        "400":
+          description: Missing or malformed refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "401":
+          description: Invalid or expired refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Invalid refresh token
+                code: ERR_INVALID_TOKEN
+        "403":
+          description: Refresh token revoked or session invalidated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/verify-email:
+    post:
+      tags:
+        - Auth
+      summary: Verify email
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+              properties:
+                token:
+                  type: string
+      responses:
+        "200":
+          description: Email verified
+        "400":
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "410":
+          description: Token expired or already used
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Verification token expired
+                code: ERR_TOKEN_EXPIRED
+
+  /auth/logout:
+    post:
+      tags:
+        - Auth
+      summary: Logout current session
+      description: |
+        Invalidates the current refresh token (and optionally the access token).
+        Client should delete both tokens from storage after successful call.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken:
+                  type: string
+                  description: Optional — if you want to explicitly revoke a specific refresh token
+      responses:
+        '204':
+          description: Successfully logged out
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          description: Malformed request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/resend-verification:
+    post:
+      tags:
+        - Auth
+      summary: Resend email verification link
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '202':
+          description: Verification email resent (if account exists and not yet verified) — same response even if email doesn't exist (anti-enumeration)
+        '400':
+          description: Invalid email format or already verified
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Too many requests (rate limit)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/forgot-password:
+    post:
+      tags:
+        - Auth
+      summary: Request password reset link
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '202':
+          description: If the email exists, a reset link has been sent — same response always (anti-enumeration)
+        '400':
+          description: Invalid email format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Too many reset requests (rate limit)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/reset-password:
+    post:
+      tags:
+        - Auth
+      summary: Set new password using reset token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+                - newPassword
+              properties:
+                token:
+                  type: string
+                  description: Password reset token received via email
+                newPassword:
+                  type: string
+                  minLength: 8
+                  description: New password
+      responses:
+        '200':
+          description: Password successfully reset
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Password has been reset successfully
+        '400':
+          description: Invalid request (missing fields, weak password)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid, expired, or already used reset token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Invalid or expired reset token
+                code: ERR_INVALID_TOKEN
+
+  /auth/upload-id:
+    post:
+      tags:
+        - Auth
+      summary: Upload ID document for manual verification
+      security: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - documentImage
+                - universityId
+              properties:
+                documentImage:
+                  type: string
+                  format: binary
+                universityId:
+                  type: string
+                documentType:
+                  type: string
+                submittedNotes:
+                  type: string
+      responses:
+        '201':
+          description: Verification request submitted
+        '400':
+          description: Missing or invalid fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/verification-status:
+    get:
+      tags:
+        - Auth
+      summary: Get current user's verification request status
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  verificationStatus:
+                    type: string
+                  verificationMethod:
+                    type: string
+                  submittedAt:
+                    type: string
+                    format: date-time
+                  reviewedAt:
+                    type: string
+                    format: date-time
+                  adminComment:
+                    type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /media/upload:
+    post:
+      tags:
+        - Media
+      summary: Upload media file
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  fileUrl:
+                    type: string
+                    format: uri
+                  fileType:
+                    type: string
+                    enum:
+                      - IMAGE
+                      - VIDEO
+                      - DOCUMENT
+                  createdAt:
+                    type: string
+                    format: date-time
+  /posts:
+    get:
+      tags:
+      - Posts
+      summary: List posts (chronological or filtered)
+      parameters:
+      - name: cursor
+        in: query
+        schema:
+          type: string
+          nullable: true
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          default: 10
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items: {}
+                    meta:
+                      type: object
+                      properties:
+                        nextCursor:
+                          type: string
+                          nullable: true
+                          description: Opaque cursor — pass unchanged
+                        hasMore:
+                          type: boolean
+                - properties:
+                    data:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                            readOnly: true
+                          authorId:
+                            type: string
+                            format: uuid
+                          content:
+                            type: string
+                          visibility:
+                            type: string
+                            enum:
+                            - PUBLIC
+                            - GROUP
+                            - PRIVATE
+                          tags:
+                            type: array
+                            items:
+                              type: string
+                          media:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id:
+                                  type: string
+                                  format: uuid
+                                fileUrl:
+                                  type: string
+                                  format: uri
+                                fileType:
+                                  type: string
+                                  enum:
+                                  - IMAGE
+                                  - VIDEO
+                                  - DOCUMENT
+                                createdAt:
+                                  type: string
+                                  format: date-time
+                          reactionCount:
+                            type: integer
+                          commentCount:
+                            type: integer
+                          moderationStatus:
+                            type: string
+                            enum:
+                            - PENDING
+                            - APPROVED
+                            - REJECTED
+                          createdAt:
+                            type: string
+                            format: date-time
+    post:
+      tags:
+      - Posts
+      summary: Create post
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - content
+              properties:
+                content:
+                  type: string
+                visibility:
+                  type: string
+                  enum:
+                  - PUBLIC
+                  - GROUP
+                  - PRIVATE
+                tags:
+                  type: array
+                  items:
+                    type: string
+                mediaIds:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                    readOnly: true
+                  authorId:
+                    type: string
+                    format: uuid
+                  content:
+                    type: string
+                  visibility:
+                    type: string
+                    enum:
+                    - PUBLIC
+                    - GROUP
+                    - PRIVATE
+                  tags:
+                    type: array
+                    items:
+                      type: string
+                  media:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        fileUrl:
+                          type: string
+                          format: uri
+                        fileType:
+                          type: string
+                          enum:
+                          - IMAGE
+                          - VIDEO
+                          - DOCUMENT
+                        createdAt:
+                          type: string
+                          format: date-time
+                  reactionCount:
+                    type: integer
+                  commentCount:
+                    type: integer
+                  moderationStatus:
+                    type: string
+                    enum:
+                    - PENDING
+                    - APPROVED
+                    - REJECTED
+                  createdAt:
+                    type: string
+                    format: date-time
+  /posts/{postId}/comments:
+    get:
+      tags:
+      - Comments
+      summary: List comments (with replies support)
+      parameters:
+      - name: postId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: cursor
+        in: query
+        schema:
+          type: string
+          nullable: true
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          default: 20
+      - name: parentCommentId
+        in: query
+        schema:
+          type: string
+          format: uuid
+          nullable: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items: {}
+                    meta:
+                      type: object
+                      properties:
+                        nextCursor:
+                          type: string
+                          nullable: true
+                          description: Opaque cursor — pass unchanged
+                        hasMore:
+                          type: boolean
+                - properties:
+                    data:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          postId:
+                            type: string
+                            format: uuid
+                          commenterId:
+                            type: string
+                            format: uuid
+                          content:
+                            type: string
+                          parentCommentId:
+                            type: string
+                            format: uuid
+                            nullable: true
+                          createdAt:
+                            type: string
+                            format: date-time
+    post:
+      tags:
+      - Comments
+      summary: Add comment
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: postId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - content
+              properties:
+                content:
+                  type: string
+                parentCommentId:
+                  type: string
+                  format: uuid
+                  nullable: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  postId:
+                    type: string
+                    format: uuid
+                  commenterId:
+                    type: string
+                    format: uuid
+                  content:
+                    type: string
+                  parentCommentId:
+                    type: string
+                    format: uuid
+                    nullable: true
+                  createdAt:
+                    type: string
+                    format: date-time
+  /communities:
+    get:
+      tags:
+      - Communities
+      summary: List communities
+      parameters:
+      - name: cursor
+        in: query
+        schema:
+          type: string
+          nullable: true
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          default: 20
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items: {}
+                    meta:
+                      type: object
+                      properties:
+                        nextCursor:
+                          type: string
+                          nullable: true
+                          description: Opaque cursor — pass unchanged
+                        hasMore:
+                          type: boolean
+                - properties:
+                    data:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                            readOnly: true
+                          name:
+                            type: string
+                          description:
+                            type: string
+                            nullable: true
+                          type:
+                            type: string
+                            enum:
+                            - PUBLIC
+                            - PRIVATE
+                          createdById:
+                            type: string
+                            format: uuid
+                          memberCount:
+                            type: integer
+                            readOnly: true
+                          createdAt:
+                            type: string
+                            format: date-time
+    post:
+      tags:
+      - Communities
+      summary: Create community
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - name
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                type:
+                  type: string
+                  enum:
+                  - PUBLIC
+                  - PRIVATE
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                    readOnly: true
+                  name:
+                    type: string
+                  description:
+                    type: string
+                    nullable: true
+                  type:
+                    type: string
+                    enum:
+                    - PUBLIC
+                    - PRIVATE
+                  createdById:
+                    type: string
+                    format: uuid
+                  memberCount:
+                    type: integer
+                    readOnly: true
+                  createdAt:
+                    type: string
+                    format: date-time
+  /communities/{communityId}/join:
+    post:
+      tags:
+      - Communities
+      summary: Request to join community
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: communityId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "202":
+          description: Join request sent
+  /communities/{communityId}/members/{userId}/approve:
+    post:
+      tags:
+      - Communities
+      summary: Approve join request (admin)
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: communityId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Approved
+  /chats/{chatId}/messages:
+    get:
+      tags:
+      - Chats
+      summary: List messages in chat
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: chatId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: cursor
+        in: query
+        schema:
+          type: string
+          nullable: true
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          default: 30
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items: {}
+                    meta:
+                      type: object
+                      properties:
+                        nextCursor:
+                          type: string
+                          nullable: true
+                          description: Opaque cursor — pass unchanged
+                        hasMore:
+                          type: boolean
+                - properties:
+                    data:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          chatId:
+                            type: string
+                            format: uuid
+                          senderId:
+                            type: string
+                            format: uuid
+                          content:
+                            type: string
+                          media:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id:
+                                  type: string
+                                  format: uuid
+                                fileUrl:
+                                  type: string
+                                  format: uri
+                                fileType:
+                                  type: string
+                                  enum:
+                                  - IMAGE
+                                  - VIDEO
+                                  - DOCUMENT
+                                createdAt:
+                                  type: string
+                                  format: date-time
+                          createdAt:
+                            type: string
+                            format: date-time
+    post:
+      tags:
+      - Chats
+      summary: Send message
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: chatId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - content
+              properties:
+                content:
+                  type: string
+                mediaIds:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  chatId:
+                    type: string
+                    format: uuid
+                  senderId:
+                    type: string
+                    format: uuid
+                  content:
+                    type: string
+                  media:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        fileUrl:
+                          type: string
+                          format: uri
+                        fileType:
+                          type: string
+                          enum:
+                          - IMAGE
+                          - VIDEO
+                          - DOCUMENT
+                        createdAt:
+                          type: string
+                          format: date-time
+                  createdAt:
+                    type: string
+                    format: date-time
+  /notifications:
+    get:
+      tags:
+      - Notifications
+      summary: List notifications
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: cursor
+        in: query
+        schema:
+          type: string
+          nullable: true
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          default: 20
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items: {}
+                    meta:
+                      type: object
+                      properties:
+                        nextCursor:
+                          type: string
+                          nullable: true
+                          description: Opaque cursor — pass unchanged
+                        hasMore:
+                          type: boolean
+                - properties:
+                    data:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          type:
+                            type: string
+                            enum:
+                            - REACTION
+                            - COMMENT
+                            - FOLLOW
+                            - MESSAGE
+                            - SYSTEM
+                          actorId:
+                            type: string
+                            format: uuid
+                            nullable: true
+                          referenceId:
+                            type: string
+                            nullable: true
+                          referenceType:
+                            type: string
+                            enum:
+                            - POST
+                            - COMMENT
+                            - USER
+                            - MESSAGE
+                            - COMMUNITY
+                            nullable: true
+                          isRead:
+                            type: boolean
+                          createdAt:
+                            type: string
+                            format: date-time
+  /notifications/mark-read:
+    post:
+      tags:
+      - Notifications
+      summary: Mark notifications as read
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            oneOf:
+            - type: object
+              properties:
+                notificationIds:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+            - type: object
+              properties:
+                all:
+                  const: true
+      responses:
+        "204":
+          description: Marked as read
+  /network/connect/{userId}:
+    post:
+      tags:
+      - Networking
+      summary: Send connection request
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "201":
+          description: Request sent
+  /moderation/reports:
+    post:
+      tags:
+      - Moderation
+      summary: Report content
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - entityType
+              - entityId
+              - reason
+              properties:
+                entityType:
+                  type: string
+                  enum:
+                  - POST
+                  - COMMENT
+                  - MESSAGE
+                  - COMMUNITY
+                  - USER
+                entityId:
+                  type: string
+                  format: uuid
+                reason:
+                  type: string
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  reporterId:
+                    type: string
+                    format: uuid
+                  entityType:
+                    type: string
+                    enum:
+                    - POST
+                    - COMMENT
+                    - MESSAGE
+                    - COMMUNITY
+                    - USER
+                  entityId:
+                    type: string
+                    format: uuid
+                  reason:
+                    type: string
+                  status:
+                    type: string
+                    enum:
+                    - PENDING
+                    - REVIEWED
+                    - RESOLVED
+                  createdAt:
+                    type: string
+                    format: date-time
+  /moderation/queue:
+    get:
+      tags:
+      - Moderation
+      summary: Get moderation queue
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: cursor
+        in: query
+        schema:
+          type: string
+          nullable: true
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          default: 20
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items: {}
+                    meta:
+                      type: object
+                      properties:
+                        nextCursor:
+                          type: string
+                          nullable: true
+                          description: Opaque cursor — pass unchanged
+                        hasMore:
+                          type: boolean
+                - properties:
+                    data:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                            readOnly: true
+                          authorId:
+                            type: string
+                            format: uuid
+                          content:
+                            type: string
+                          visibility:
+                            type: string
+                            enum:
+                            - PUBLIC
+                            - GROUP
+                            - PRIVATE
+                          tags:
+                            type: array
+                            items:
+                              type: string
+                          media:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id:
+                                  type: string
+                                  format: uuid
+                                fileUrl:
+                                  type: string
+                                  format: uri
+                                fileType:
+                                  type: string
+                                  enum:
+                                  - IMAGE
+                                  - VIDEO
+                                  - DOCUMENT
+                                createdAt:
+                                  type: string
+                                  format: date-time
+                          reactionCount:
+                            type: integer
+                          commentCount:
+                            type: integer
+                          moderationStatus:
+                            type: string
+                            enum:
+                            - PENDING
+                            - APPROVED
+                            - REJECTED
+                          createdAt:
+                            type: string
+                            format: date-time
+  /posts/{postId}/moderate:
+    post:
+      tags:
+      - Moderation
+      summary: Moderate post
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: postId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - action
+              properties:
+                action:
+                  type: string
+                  enum:
+                  - APPROVE
+                  - REJECT
+                  - HIDE
+                  - DELETE
+                reason:
+                  type: string
+                moderatorNotes:
+                  type: string
+                  nullable: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                    readOnly: true
+                  authorId:
+                    type: string
+                    format: uuid
+                  content:
+                    type: string
+                  visibility:
+                    type: string
+                    enum:
+                    - PUBLIC
+                    - GROUP
+                    - PRIVATE
+                  tags:
+                    type: array
+                    items:
+                      type: string
+                  media:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        fileUrl:
+                          type: string
+                          format: uri
+                        fileType:
+                          type: string
+                          enum:
+                          - IMAGE
+                          - VIDEO
+                          - DOCUMENT
+                        createdAt:
+                          type: string
+                          format: date-time
+                  reactionCount:
+                    type: integer
+                  commentCount:
+                    type: integer
+                  moderationStatus:
+                    type: string
+                    enum:
+                    - PENDING
+                    - APPROVED
+                    - REJECTED
+                  createdAt:
+                    type: string
+                    format: date-time
+  /recommendations/feed:
+    get:
+      tags:
+      - Recommendations
+      summary: Personalized AI feed
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: cursor
+        in: query
+        schema:
+          type: string
+          nullable: true
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          default: 10
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items: {}
+                    meta:
+                      type: object
+                      properties:
+                        nextCursor:
+                          type: string
+                          nullable: true
+                          description: Opaque cursor — pass unchanged
+                        hasMore:
+                          type: boolean
+                - properties:
+                    data:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          type:
+                            type: string
+                            enum:
+                            - POST
+                            - USER
+                            - COMMUNITY
+                          score:
+                            type: number
+                            format: float
+                          reason:
+                            type: string
+                            nullable: true
+                          item:
+                            type: object
+                            additionalProperties: true
+  /recommendations/users:
+    get:
+      tags:
+      - Recommendations
+      summary: Suggested users
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          default: 5
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    user:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                          readOnly: true
+                        username:
+                          type: string
+                        role:
+                          type: string
+                          enum:
+                          - STUDENT
+                          - ADMIN
+                          - EXPERT
+                          - INSTITUTION
+                        isVerified:
+                          type: boolean
+                        profile:
+                          type: object
+                          properties:
+                            firstName:
+                              type: string
+                            lastName:
+                              type: string
+                            bio:
+                              type: string
+                              nullable: true
+                            profileImage:
+                              type: string
+                              format: uri
+                              nullable: true
+                            university:
+                              type: string
+                              nullable: true
+                            department:
+                              type: string
+                              nullable: true
+                            level:
+                              type: string
+                              enum:
+                              - UNDERGRADUATE
+                              - POSTGRADUATE
+                              - GRADUATED
+                              nullable: true
+                        createdAt:
+                          type: string
+                          format: date-time
+                    reason:
+                      type: string
+  /recommendations/communities:
+    get:
+      tags:
+      - Recommendations
+      summary: Suggested communities
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          default: 5
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      format: uuid
+                      readOnly: true
+                    name:
+                      type: string
+                    description:
+                      type: string
+                      nullable: true
+                    type:
+                      type: string
+                      enum:
+                      - PUBLIC
+                      - PRIVATE
+                    createdById:
+                      type: string
+                      format: uuid
+                    memberCount:
+                      type: integer
+                      readOnly: true
+                    createdAt:
+                      type: string
+                      format: date-time
