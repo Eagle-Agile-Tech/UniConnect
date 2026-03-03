@@ -1,3 +1,4 @@
+import 'package:uniconnect/config/dummy_data.dart';
 import 'package:uniconnect/utils/enums.dart';
 
 abstract final class UCValidator {
@@ -60,6 +61,16 @@ abstract final class UCValidator {
     }
     if (password != confirmPassword) {
       return 'Passwords do not match.';
+    }
+    return null;
+  }
+
+  static String? validateInterest(List<InterestRecord>? interest) {
+    if (interest == null || interest.isEmpty) {
+      return 'Please select an interest.';
+    }
+    if (interest.toSet().length > 5) {
+      return 'You can select up to 5 interests.';
     }
     return null;
   }
