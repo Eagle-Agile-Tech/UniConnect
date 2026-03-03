@@ -17,6 +17,18 @@ enum Role {
   EXPERT 
   INSTITUTION 
   }
+  
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EMAIL_VERIFIED
+}
+
+enum VerificationMethod {
+  UNIVERSITY_EMAIL
+  ID_DOCUMENT_ADMIN
+}
 enum Visibility { 
   PUBLIC 
   GROUP 
@@ -110,63 +122,51 @@ enum AuditStatus {
 // CORE MODELS
 // =========================
 model User {
-  id            String   @id @default(uuid())
-  username      String   @unique
-  email         String   @unique
-  passwordHash  String
-  role          Role     @default(STUDENT)
-  isVerified    Boolean  @default(false)
-  isDeleted     Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                 String              @id @default(uuid())
+  firstName          String
+  lastName           String
+  email              String              @unique
+  passwordHash       String
 
-  // Relations
-  profile           UserProfile?
-  posts             Post[]
-  comments          PostComment[]
-  messages          Message[]
-  communities       CommunityMember[]
-  expertProfile     ExpertProfile?
-  notificationsReceived Notification[] @relation("NotificationRecipient")
-  notificationsSent     Notification[] @relation("NotificationActor")
-  postReactions         PostReaction[]
-  commentReactions      CommentReaction[]
-  messageReactions      MessageReaction[]
-  chatParticipations ChatParticipant[]
-  createdCommunities Community[]
-  mediaUploads      Media[]
-  favorites         Favorite[]
-  networksA         Network[] @relation("UserNetworkA")
-  networksB         Network[] @relation("UserNetworkB")
-  originalPosts     Post[] @relation("PostRepostAuthor")
-  auditlogs         AuditLog[]
-  sessions Session[]
+  role               Role                @default(STUDENT)
 
+  verificationStatus VerificationStatus  @default(PENDING)
+  verificationMethod VerificationMethod?
+
+  isDeleted          Boolean             @default(false)
+
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  // ── Relations ───────────────────────────────
+  profile              UserProfile?
+  idVerificationRequest IdVerificationRequest? @relation("UserVerificationRequest")
+  reviewedRequests IdVerificationRequest[] @relation("AdminReviewedRequests")
+
+  posts                Post[]
+  comments             PostComment[]
+  messages             Message[]
+  communities          CommunityMember[]
+  expertProfile        ExpertProfile?
+  notificationsReceived Notification[]     @relation("NotificationRecipient")
+  notificationsSent     Notification[]     @relation("NotificationActor")
+  postReactions        PostReaction[]
+  commentReactions     CommentReaction[]
+  messageReactions     MessageReaction[]
+  chatParticipations   ChatParticipant[]
+  createdCommunities   Community[]
+  mediaUploads         Media[]
+  favorites            Favorite[]
+  networksA            Network[]           @relation("UserNetworkA")
+  networksB            Network[]           @relation("UserNetworkB")
+  originalPosts        Post[]              @relation("PostRepostAuthor")
+  auditlogs            AuditLog[]
+  sessions             Session[]
+
+  
 
   @@index([email])
-  @@index([username])
- 
-}
-
-model UserProfile {
-  id             String   @id @default(uuid())
-  userId         String   @unique
-  firstName      String
-  lastName       String
-  bio            String?
-  profileImage   String?
-  interests      String[] @default([])
-  university     String?
-  department     String?
-  level          EducationLevel?
-  yearOfStudy    Int?
-  graduationYear Int?
-
-  user           User @relation(fields: [userId], references: [id])
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  @@index([userId])
+  @@index([verificationStatus])
 }
 
 model Institution {
@@ -175,10 +175,71 @@ model Institution {
   description String?
   website     String?
   logoUri     String?
+  isVerified  Boolean @default(false)
+  verificationDocument String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   affiliatedExperts ExpertProfile[]
+}
+model University {
+  id       String   @id @default(uuid())
+  name     String
+  domains  String[]
+
+  profiles UserProfile[]
+
+  createdAt DateTime @default(now())
+}
+model UserProfile {
+  id             String         @id @default(uuid())
+  userId         String         @unique
+
+  bio            String?
+  profileImage   String?
+  interests      String[]       @default([])
+
+  universityId   String?
+  university     University?    @relation(fields: [universityId], references: [id])
+
+  department     String?
+  level          EducationLevel?
+  yearOfStudy    Int?
+  graduationYear Int?
+
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([userId])
+  @@index([universityId])
+}
+
+model IdVerificationRequest {
+  id             String              @id @default(uuid())
+  userId         String              @unique
+
+  user           User                @relation("UserVerificationRequest",fields: [userId], references: [id], onDelete: Cascade)
+
+  documentImage  String
+  documentType   String?
+  submittedNotes String?
+
+  status         VerificationStatus  @default(PENDING)
+
+  reviewedById   String?
+  reviewedBy     User?               @relation("AdminReviewedRequests",fields: [reviewedById], references: [id])
+
+  reviewedAt     DateTime?
+  adminComment   String?
+
+  submittedAt    DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([reviewedAt])
 }
 
 model ExpertProfile {
@@ -187,15 +248,24 @@ model ExpertProfile {
   expertise                String
   bio                      String?
   profileImage             String?
-  affiliatedInstitutionId  String?
+  invitedByInstitutionId   String?
 
   expert      User        @relation(fields: [expertId], references: [id])
-  institution Institution? @relation(fields: [affiliatedInstitutionId], references: [id])
+  institution Institution? @relation(fields: [invitedByInstitutionId], references: [id])
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  @@index([affiliatedInstitutionId])
+   @@index([invitedByInstitutionId])
+}
+model ExpertInvitation {
+  id            String @id @default(uuid())
+  email         String
+  institutionId String
+  status        MembershipStatus @default(PENDING)
+  token         String @unique
+  createdAt     DateTime @default(now())
+  expiresAt     DateTime
 }
 
 // =========================
