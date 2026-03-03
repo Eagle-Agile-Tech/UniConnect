@@ -1,11 +1,14 @@
+import 'dart:io';
+
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:uniconnect/config/dummy_data.dart';
 
 import '../../../utils/enums.dart';
 
 part 'onboarding_state.freezed.dart';
 
 @freezed
-abstract class OnboardingState with _$OnboardingState{
+abstract class OnboardingState with _$OnboardingState {
   factory OnboardingState({
     @Default(OnboardingStep.account) OnboardingStep currentStep,
     @Default(false) bool isLoading,
@@ -18,6 +21,7 @@ abstract class OnboardingState with _$OnboardingState{
     @Default('') String username,
     @Default('') String email,
     @Default('') String password,
+    DateTime? createdAt,
 
     // Verification
     @Default('') String otp,
@@ -27,11 +31,11 @@ abstract class OnboardingState with _$OnboardingState{
     @Default('') String university,
     @Default('') String degree,
     @Default('') String currentYear,
-    @Default('') String expectedGraduationYear,
+    DateTime? expectedGraduationYear,
 
     // Profile
     @Default('') String bio,
-    @Default('') String interests,
-    String? profilePicture,
-}) = _OnboardingState;
+    List<InterestRecord>? interests,
+    File? profilePicture,
+  }) = _OnboardingState;
 }

@@ -1,12 +1,13 @@
 import 'dart:collection';
 import 'package:flutter/material.dart';
+import 'package:multi_select_flutter/multi_select_flutter.dart';
 import 'package:uniconnect/ui/core/theme/colors.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
 
 typedef UniversityRecord = ({String name, String acronomy});
 typedef University = DropdownMenuEntry<UniversityRecord>;
 typedef InterestRecord = ({String interest, String emoji});
-typedef Interest = DropdownMenuEntry<InterestRecord>;
+typedef Interest = MultiSelectItem<InterestRecord>;
 
 abstract final class UCDummyData {
   static const List<UniversityRecord> universities = [
@@ -50,6 +51,26 @@ abstract final class UCDummyData {
     (interest: 'Languages & Culture', emoji: '\u{1F5E3}\u{FE0F}'),
   ];
 
+  static final List<String> degree = [
+    'Computer Science',
+    'Business Administration',
+    'Psychology',
+    'Engineering',
+    'Biology',
+    'Economics',
+    'Political Science',
+    'Sociology',
+    'Education',
+    'Nursing',
+  ];
+
+  static final List<DropdownMenuEntry<String>> degreeEntries =
+      UnmodifiableListView<DropdownMenuEntry<String>>(
+        degree.map(
+          (degree) => DropdownMenuEntry<String>(value: degree, label: degree),
+        ),
+      );
+
   static final List<University> universityEntries =
       UnmodifiableListView<University>(
         universities.map<University>(
@@ -80,17 +101,9 @@ abstract final class UCDummyData {
   static final List<Interest> interestEntries = UnmodifiableListView<Interest>(
     studentInterests.map<Interest>(
       (interest) => Interest(
-        value: interest,
-        label: interest.interest,
-        labelWidget: Row(
-          children: [
-            Text(interest.interest),
-            const SizedBox(width: Dimens.sm),
-            Text(interest.emoji),
-          ],
+        interest, "${interest.emoji} ${interest.interest}"
         ),
       ),
-    ),
   );
 
   static const String postCaption1 =
