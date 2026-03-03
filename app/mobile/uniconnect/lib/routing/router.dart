@@ -4,7 +4,6 @@ import 'package:uniconnect/ui/auth/auth_screen.dart';
 import 'package:uniconnect/ui/auth/onboarding/academic_profile/academic_profile.dart';
 import 'package:uniconnect/ui/auth/onboarding/personalization/create_profile.dart';
 import 'package:uniconnect/ui/auth/onboarding/verify_email/verify_email_screen.dart';
-import 'package:uniconnect/ui/explore/explore_screen.dart';
 import 'package:uniconnect/ui/message/message_screen.dart';
 import 'package:uniconnect/ui/post/create_post.dart';
 import 'package:uniconnect/utils/navigation_wrapper.dart';

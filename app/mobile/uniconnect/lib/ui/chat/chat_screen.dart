@@ -3,7 +3,6 @@ import 'package:uniconnect/ui/chat/widgets/group_messages.dart';
 import 'package:uniconnect/ui/chat/widgets/personal_messages.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
 
-import '../../config/assets.dart';
 
 class ChatScreen extends StatelessWidget {
   const ChatScreen({super.key});
