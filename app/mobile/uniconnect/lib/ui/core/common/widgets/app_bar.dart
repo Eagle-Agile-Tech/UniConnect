@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:uniconnect/ui/core/common/widgets/back_button.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
 
