@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uniconnect/data/repository/post/post_repository.dart';
@@ -21,12 +22,35 @@ class PostRepositoryRemote implements PostRepository {
     return result.fold(
       (data) {
         List<dynamic> jsonList = jsonDecode(data);
-        final posts = jsonList.map((post) => Post.fromJson(post as Map<String, dynamic>)).toList();
+        final posts = jsonList
+            .map((post) => Post.fromJson(post as Map<String, dynamic>))
+            .toList();
         return Result.ok(posts);
       },
       (error, stackTrace) {
         return Result.error(error);
       },
+    );
+  }
+
+  @override
+  Future<Result> createPost({
+    required String content,
+    required List<File>? mediaUrls,
+    required String userId,
+    required DateTime createdAt,
+    List<String>? hashtags,
+  }) async {
+    final result = await _apiClient.createPost(
+      content: content,
+      mediaUrls: mediaUrls,
+      userId: userId,
+      createdAt: createdAt,
+      hashtags: hashtags,
+    );
+    return result.fold(
+      (data) => Result.ok(null),
+      (error, stackTrace) => Result.error(error),
     );
   }
 }
