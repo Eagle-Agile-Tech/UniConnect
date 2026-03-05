@@ -14,25 +14,27 @@ info:
     • Polymorphic reactions & media attachments
     • Communities, direct/group chats, networking (connections)
 servers:
-- url: https://api.uniconnect.com/v1
-  description: Production
-- url: https://dev.api.uniconnect.com/v1
-  description: Development
+  - url: https://api.uniconnect.com/v1
+    description: Production
+  - url: https://dev.api.uniconnect.com/v1
+    description: Development
 tags:
-- name: Auth
-- name: Users
-- name: Posts
-- name: Comments
-- name: Reactions
-- name: Media
-- name: Communities
-- name: Chats
-- name: Notifications
-- name: Networking
-- name: Moderation
-- name: Recommendations
+  - name: Auth
+  - name: Users
+  - name: Posts
+  - name: Comments
+  - name: Reactions
+  - name: Media
+  - name: Communities
+  - name: Chats
+  - name: Notifications
+  - name: Networking
+  - name: Moderation
+  - name: Recommendations
+  - name: Favorites
+  - name: Analytics
 security:
-- BearerAuth: []
+  - BearerAuth: []
 components:
   securitySchemes:
     BearerAuth:
@@ -43,8 +45,8 @@ components:
     ErrorResponse:
       type: object
       required:
-      - error
-      - code
+        - error
+        - code
       properties:
         error:
           type: string
@@ -93,10 +95,10 @@ components:
         role:
           type: string
           enum:
-          - STUDENT
-          - ADMIN
-          - EXPERT
-          - INSTITUTION
+            - STUDENT
+            - ADMIN
+            - EXPERT
+            - INSTITUTION
         isVerified:
           type: boolean
         profile:
@@ -122,9 +124,9 @@ components:
             level:
               type: string
               enum:
-              - UNDERGRADUATE
-              - POSTGRADUATE
-              - GRADUATED
+                - UNDERGRADUATE
+                - POSTGRADUATE
+                - GRADUATED
               nullable: true
         createdAt:
           type: string
@@ -152,9 +154,9 @@ components:
         level:
           type: string
           enum:
-          - UNDERGRADUATE
-          - POSTGRADUATE
-          - GRADUATED
+            - UNDERGRADUATE
+            - POSTGRADUATE
+            - GRADUATED
           nullable: true
     TokenResponse:
       type: object
@@ -178,9 +180,9 @@ components:
         fileType:
           type: string
           enum:
-          - IMAGE
-          - VIDEO
-          - DOCUMENT
+            - IMAGE
+            - VIDEO
+            - DOCUMENT
         createdAt:
           type: string
           format: date-time
@@ -199,9 +201,8 @@ components:
         visibility:
           type: string
           enum:
-          - PUBLIC
-          - GROUP
-          - PRIVATE
+            - PUBLIC
+            - PRIVATE
         tags:
           type: array
           items:
@@ -220,9 +221,9 @@ components:
               fileType:
                 type: string
                 enum:
-                - IMAGE
-                - VIDEO
-                - DOCUMENT
+                  - IMAGE
+                  - VIDEO
+                  - DOCUMENT
               createdAt:
                 type: string
                 format: date-time
@@ -233,86 +234,184 @@ components:
         moderationStatus:
           type: string
           enum:
-          - PENDING
-          - APPROVED
-          - REJECTED
+            - PENDING
+            - APPROVED
+            - REJECTED
         createdAt:
           type: string
           format: date-time
-    PostListResponse:
+    PostDetail:
       allOf:
-      - type: object
-        properties:
-          data:
-            type: array
-            items: {}
-          meta:
-            type: object
-            properties:
-              nextCursor:
-                type: string
-                nullable: true
-                description: Opaque cursor — pass unchanged
-              hasMore:
-                type: boolean
-      - properties:
-          data:
-            type: array
-            items:
+        - $ref: "#/components/schemas/Post"
+        - type: object
+          properties:
+            author:
+              $ref: "#/components/schemas/User"
+            shareCount:
+              type: integer
+              description: Number of times this post has been shared/reposted
+              example: 42
+            favoriteCount:
+              type: integer
+              description: Number of users who have favorited this post
+              example: 15
+            isDeleted:
+              type: boolean
+              description: Soft delete flag
+              default: false
+            category:
+              type: string
+              nullable: true
+              description: Post category for organization
+              example: "Announcement"
+            originalPostId:
+              type: string
+              format: uuid
+              nullable: true
+              description: Reference to original post if this is a repost
+            originalAuthorId:
+              type: string
+              format: uuid
+              nullable: true
+              description: Reference to original author if this is a repost
+            reactionCounts:
               type: object
               properties:
-                id:
+                LIKE:
+                  type: integer
+                LOVE:
+                  type: integer
+                INSIGHTFUL:
+                  type: integer
+                SUPPORT:
+                  type: integer
+                CELEBRATE:
+                  type: integer
+            updatedAt:
+              type: string
+              format: date-time
+    PostCreateRequest:
+      type: object
+      required:
+        - content
+      properties:
+        content:
+          type: string
+          maxLength: 5000
+          description: Post content
+        visibility:
+          type: string
+          enum: [PUBLIC, PRIVATE]
+          default: PUBLIC
+        tags:
+          type: array
+          items:
+            type: string
+          maxItems: 10
+        category:
+          type: string
+          nullable: true
+        mediaIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 10
+    PostUpdateRequest:
+      type: object
+      properties:
+        content:
+          type: string
+          maxLength: 5000
+        visibility:
+          type: string
+          enum: [PUBLIC, PRIVATE]
+        tags:
+          type: array
+          items:
+            type: string
+          maxItems: 10
+        category:
+          type: string
+          nullable: true
+        mediaIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+    PostListResponse:
+      allOf:
+        - type: object
+          properties:
+            data:
+              type: array
+              items: {}
+            meta:
+              type: object
+              properties:
+                nextCursor:
                   type: string
-                  format: uuid
-                  readOnly: true
-                authorId:
-                  type: string
-                  format: uuid
-                content:
-                  type: string
-                visibility:
-                  type: string
-                  enum:
-                  - PUBLIC
-                  - GROUP
-                  - PRIVATE
-                tags:
-                  type: array
-                  items:
+                  nullable: true
+                  description: Opaque cursor — pass unchanged
+                hasMore:
+                  type: boolean
+        - properties:
+            data:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
                     type: string
-                media:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      id:
-                        type: string
-                        format: uuid
-                      fileUrl:
-                        type: string
-                        format: uri
-                      fileType:
-                        type: string
-                        enum:
-                        - IMAGE
-                        - VIDEO
-                        - DOCUMENT
-                      createdAt:
-                        type: string
-                        format: date-time
-                reactionCount:
-                  type: integer
-                commentCount:
-                  type: integer
-                moderationStatus:
-                  type: string
-                  enum:
-                  - PENDING
-                  - APPROVED
-                  - REJECTED
-                createdAt:
-                  type: string
-                  format: date-time
+                    format: uuid
+                    readOnly: true
+                  authorId:
+                    type: string
+                    format: uuid
+                  content:
+                    type: string
+                  visibility:
+                    type: string
+                    enum:
+                      - PUBLIC
+                      - PRIVATE
+                  tags:
+                    type: array
+                    items:
+                      type: string
+                  media:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        fileUrl:
+                          type: string
+                          format: uri
+                        fileType:
+                          type: string
+                          enum:
+                            - IMAGE
+                            - VIDEO
+                            - DOCUMENT
+                        createdAt:
+                          type: string
+                          format: date-time
+                  reactionCount:
+                    type: integer
+                  commentCount:
+                    type: integer
+                  moderationStatus:
+                    type: string
+                    enum:
+                      - PENDING
+                      - APPROVED
+                      - REJECTED
+                  createdAt:
+                    type: string
+                    format: date-time
     Comment:
       type: object
       properties:
@@ -336,44 +435,44 @@ components:
           format: date-time
     CommentListResponse:
       allOf:
-      - type: object
-        properties:
-          data:
-            type: array
-            items: {}
-          meta:
-            type: object
-            properties:
-              nextCursor:
-                type: string
-                nullable: true
-                description: Opaque cursor — pass unchanged
-              hasMore:
-                type: boolean
-      - properties:
-          data:
-            type: array
-            items:
+        - type: object
+          properties:
+            data:
+              type: array
+              items: {}
+            meta:
               type: object
               properties:
-                id:
+                nextCursor:
                   type: string
-                  format: uuid
-                postId:
-                  type: string
-                  format: uuid
-                commenterId:
-                  type: string
-                  format: uuid
-                content:
-                  type: string
-                parentCommentId:
-                  type: string
-                  format: uuid
                   nullable: true
-                createdAt:
-                  type: string
-                  format: date-time
+                  description: Opaque cursor — pass unchanged
+                hasMore:
+                  type: boolean
+        - properties:
+            data:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  postId:
+                    type: string
+                    format: uuid
+                  commenterId:
+                    type: string
+                    format: uuid
+                  content:
+                    type: string
+                  parentCommentId:
+                    type: string
+                    format: uuid
+                    nullable: true
+                  createdAt:
+                    type: string
+                    format: date-time
     Community:
       type: object
       properties:
@@ -389,8 +488,8 @@ components:
         type:
           type: string
           enum:
-          - PUBLIC
-          - PRIVATE
+            - PUBLIC
+            - PRIVATE
         createdById:
           type: string
           format: uuid
@@ -428,9 +527,9 @@ components:
               fileType:
                 type: string
                 enum:
-                - IMAGE
-                - VIDEO
-                - DOCUMENT
+                  - IMAGE
+                  - VIDEO
+                  - DOCUMENT
               createdAt:
                 type: string
                 format: date-time
@@ -439,60 +538,60 @@ components:
           format: date-time
     MessageListResponse:
       allOf:
-      - type: object
-        properties:
-          data:
-            type: array
-            items: {}
-          meta:
-            type: object
-            properties:
-              nextCursor:
-                type: string
-                nullable: true
-                description: Opaque cursor — pass unchanged
-              hasMore:
-                type: boolean
-      - properties:
-          data:
-            type: array
-            items:
+        - type: object
+          properties:
+            data:
+              type: array
+              items: {}
+            meta:
               type: object
               properties:
-                id:
+                nextCursor:
                   type: string
-                  format: uuid
-                chatId:
-                  type: string
-                  format: uuid
-                senderId:
-                  type: string
-                  format: uuid
-                content:
-                  type: string
-                media:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      id:
-                        type: string
-                        format: uuid
-                      fileUrl:
-                        type: string
-                        format: uri
-                      fileType:
-                        type: string
-                        enum:
-                        - IMAGE
-                        - VIDEO
-                        - DOCUMENT
-                      createdAt:
-                        type: string
-                        format: date-time
-                createdAt:
-                  type: string
-                  format: date-time
+                  nullable: true
+                  description: Opaque cursor — pass unchanged
+                hasMore:
+                  type: boolean
+        - properties:
+            data:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  chatId:
+                    type: string
+                    format: uuid
+                  senderId:
+                    type: string
+                    format: uuid
+                  content:
+                    type: string
+                  media:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        fileUrl:
+                          type: string
+                          format: uri
+                        fileType:
+                          type: string
+                          enum:
+                            - IMAGE
+                            - VIDEO
+                            - DOCUMENT
+                        createdAt:
+                          type: string
+                          format: date-time
+                  createdAt:
+                    type: string
+                    format: date-time
     Notification:
       type: object
       properties:
@@ -502,11 +601,11 @@ components:
         type:
           type: string
           enum:
-          - REACTION
-          - COMMENT
-          - FOLLOW
-          - MESSAGE
-          - SYSTEM
+            - REACTION
+            - COMMENT
+            - FOLLOW
+            - MESSAGE
+            - SYSTEM
         actorId:
           type: string
           format: uuid
@@ -517,11 +616,11 @@ components:
         referenceType:
           type: string
           enum:
-          - POST
-          - COMMENT
-          - USER
-          - MESSAGE
-          - COMMUNITY
+            - POST
+            - COMMENT
+            - USER
+            - MESSAGE
+            - COMMUNITY
           nullable: true
         isRead:
           type: boolean
@@ -530,58 +629,58 @@ components:
           format: date-time
     NotificationListResponse:
       allOf:
-      - type: object
-        properties:
-          data:
-            type: array
-            items: {}
-          meta:
-            type: object
-            properties:
-              nextCursor:
-                type: string
-                nullable: true
-                description: Opaque cursor — pass unchanged
-              hasMore:
-                type: boolean
-      - properties:
-          data:
-            type: array
-            items:
+        - type: object
+          properties:
+            data:
+              type: array
+              items: {}
+            meta:
               type: object
               properties:
-                id:
-                  type: string
-                  format: uuid
-                type:
-                  type: string
-                  enum:
-                  - REACTION
-                  - COMMENT
-                  - FOLLOW
-                  - MESSAGE
-                  - SYSTEM
-                actorId:
-                  type: string
-                  format: uuid
-                  nullable: true
-                referenceId:
+                nextCursor:
                   type: string
                   nullable: true
-                referenceType:
-                  type: string
-                  enum:
-                  - POST
-                  - COMMENT
-                  - USER
-                  - MESSAGE
-                  - COMMUNITY
-                  nullable: true
-                isRead:
+                  description: Opaque cursor — pass unchanged
+                hasMore:
                   type: boolean
-                createdAt:
-                  type: string
-                  format: date-time
+        - properties:
+            data:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  type:
+                    type: string
+                    enum:
+                      - REACTION
+                      - COMMENT
+                      - FOLLOW
+                      - MESSAGE
+                      - SYSTEM
+                  actorId:
+                    type: string
+                    format: uuid
+                    nullable: true
+                  referenceId:
+                    type: string
+                    nullable: true
+                  referenceType:
+                    type: string
+                    enum:
+                      - POST
+                      - COMMENT
+                      - USER
+                      - MESSAGE
+                      - COMMUNITY
+                    nullable: true
+                  isRead:
+                    type: boolean
+                  createdAt:
+                    type: string
+                    format: date-time
     ModerationReport:
       type: object
       properties:
@@ -594,11 +693,11 @@ components:
         entityType:
           type: string
           enum:
-          - POST
-          - COMMENT
-          - MESSAGE
-          - COMMUNITY
-          - USER
+            - POST
+            - COMMENT
+            - MESSAGE
+            - COMMUNITY
+            - USER
         entityId:
           type: string
           format: uuid
@@ -607,24 +706,24 @@ components:
         status:
           type: string
           enum:
-          - PENDING
-          - REVIEWED
-          - RESOLVED
+            - PENDING
+            - REVIEWED
+            - RESOLVED
         createdAt:
           type: string
           format: date-time
     ModerationActionRequest:
       type: object
       required:
-      - action
+        - action
       properties:
         action:
           type: string
           enum:
-          - APPROVE
-          - REJECT
-          - HIDE
-          - DELETE
+            - APPROVE
+            - REJECT
+            - HIDE
+            - DELETE
         reason:
           type: string
         moderatorNotes:
@@ -639,9 +738,9 @@ components:
         type:
           type: string
           enum:
-          - POST
-          - USER
-          - COMMUNITY
+            - POST
+            - USER
+            - COMMUNITY
         score:
           type: number
           format: float
@@ -653,44 +752,121 @@ components:
           additionalProperties: true
     RecommendationResponse:
       allOf:
-      - type: object
-        properties:
-          data:
-            type: array
-            items: {}
-          meta:
-            type: object
-            properties:
-              nextCursor:
-                type: string
-                nullable: true
-                description: Opaque cursor — pass unchanged
-              hasMore:
-                type: boolean
-      - properties:
-          data:
-            type: array
-            items:
+        - type: object
+          properties:
+            data:
+              type: array
+              items: {}
+            meta:
               type: object
               properties:
-                id:
-                  type: string
-                  format: uuid
-                type:
-                  type: string
-                  enum:
-                  - POST
-                  - USER
-                  - COMMUNITY
-                score:
-                  type: number
-                  format: float
-                reason:
+                nextCursor:
                   type: string
                   nullable: true
-                item:
-                  type: object
-                  additionalProperties: true
+                  description: Opaque cursor — pass unchanged
+                hasMore:
+                  type: boolean
+        - properties:
+            data:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  type:
+                    type: string
+                    enum:
+                      - POST
+                      - USER
+                      - COMMUNITY
+                  score:
+                    type: number
+                    format: float
+                  reason:
+                    type: string
+                    nullable: true
+                  item:
+                    type: object
+                    additionalProperties: true
+    ReactionWithUser:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [LIKE, LOVE, INSIGHTFUL, SUPPORT, CELEBRATE]
+        user:
+          $ref: "#/components/schemas/User"
+        createdAt:
+          type: string
+          format: date-time
+    FavoriteResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+    RepostResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        content:
+          type: string
+        originalPostId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+    TrendingTag:
+      type: object
+      properties:
+        tag:
+          type: string
+        count:
+          type: integer
+        trend:
+          type: number
+          format: float
+          description: Percentage change
+    PostAnalytics:
+      type: object
+      properties:
+        views:
+          type: integer
+        uniqueViewers:
+          type: integer
+        reactions:
+          type: object
+          properties:
+            LIKE:
+              type: integer
+            LOVE:
+              type: integer
+            INSIGHTFUL:
+              type: integer
+            SUPPORT:
+              type: integer
+            CELEBRATE:
+              type: integer
+        comments:
+          type: integer
+        shares:
+          type: integer
+        favorites:
+          type: integer
+        engagementRate:
+          type: number
+          format: float
   responses:
     Unauthorized:
       description: Authentication required or invalid token
@@ -699,8 +875,8 @@ components:
           schema:
             type: object
             required:
-            - error
-            - code
+              - error
+              - code
             properties:
               error:
                 type: string
@@ -720,8 +896,8 @@ components:
           schema:
             type: object
             required:
-            - error
-            - code
+              - error
+              - code
             properties:
               error:
                 type: string
@@ -732,8 +908,8 @@ components:
                 additionalProperties: true
                 nullable: true
             example:
-              error: Invalid credentials
-              code: ERR_INVALID_CREDENTIALS
+              error: Resource not found
+              code: ERR_NOT_FOUND
 paths:
   /auth/register:
     post:
@@ -762,7 +938,7 @@ paths:
                   type: string
                   minLength: 3
                   maxLength: 30
-                  pattern: '^[a-zA-Z0-9_]+$'
+                  pattern: "^[a-zA-Z0-9_]+$"
                 email:
                   type: string
                   format: email
@@ -788,7 +964,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 error: Validation failed
                 code: ERR_VALIDATION
@@ -799,7 +975,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 error: Username or email already in use
                 code: ERR_CONFLICT
@@ -808,7 +984,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 error: Rate limit exceeded
                 code: ERR_RATE_LIMIT
@@ -852,13 +1028,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: Invalid credentials or unverified account
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 error: Invalid email or password
                 code: ERR_INVALID_CREDENTIALS
@@ -867,7 +1043,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 error: Account is locked due to too many failed attempts
                 code: ERR_ACCOUNT_LOCKED
@@ -876,7 +1052,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /auth/refresh:
     post:
@@ -914,13 +1090,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: Invalid or expired refresh token
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 error: Invalid refresh token
                 code: ERR_INVALID_TOKEN
@@ -929,7 +1105,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /auth/verify-email:
     post:
@@ -956,13 +1132,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
         "410":
           description: Token expired or already used
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 error: Verification token expired
                 code: ERR_TOKEN_EXPIRED
@@ -988,16 +1164,16 @@ paths:
                   type: string
                   description: Optional — if you want to explicitly revoke a specific refresh token
       responses:
-        '204':
+        "204":
           description: Successfully logged out
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '400':
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "400":
           description: Malformed request
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /auth/resend-verification:
     post:
@@ -1018,20 +1194,20 @@ paths:
                   type: string
                   format: email
       responses:
-        '202':
+        "202":
           description: Verification email resent (if account exists and not yet verified) — same response even if email doesn't exist (anti-enumeration)
-        '400':
+        "400":
           description: Invalid email format or already verified
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '429':
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
           description: Too many requests (rate limit)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /auth/forgot-password:
     post:
@@ -1052,20 +1228,20 @@ paths:
                   type: string
                   format: email
       responses:
-        '202':
+        "202":
           description: If the email exists, a reset link has been sent — same response always (anti-enumeration)
-        '400':
+        "400":
           description: Invalid email format
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '429':
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
           description: Too many reset requests (rate limit)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /auth/reset-password:
     post:
@@ -1091,7 +1267,7 @@ paths:
                   minLength: 8
                   description: New password
       responses:
-        '200':
+        "200":
           description: Password successfully reset
           content:
             application/json:
@@ -1101,18 +1277,18 @@ paths:
                   message:
                     type: string
                     example: Password has been reset successfully
-        '400':
+        "400":
           description: Invalid request (missing fields, weak password)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
           description: Invalid, expired, or already used reset token
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 error: Invalid or expired reset token
                 code: ERR_INVALID_TOKEN
@@ -1143,14 +1319,14 @@ paths:
                 submittedNotes:
                   type: string
       responses:
-        '201':
+        "201":
           description: Verification request submitted
-        '400':
+        "400":
           description: Missing or invalid fields
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /auth/verification-status:
     get:
@@ -1160,7 +1336,7 @@ paths:
       security:
         - BearerAuth: []
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
@@ -1178,8 +1354,8 @@ paths:
                     format: date-time
                   adminComment:
                     type: string
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
   /media/upload:
     post:
@@ -1222,276 +1398,325 @@ paths:
                   createdAt:
                     type: string
                     format: date-time
+
+  # ========== POSTS ENDPOINTS ==========
   /posts:
     get:
       tags:
-      - Posts
+        - Posts
       summary: List posts (chronological or filtered)
       parameters:
-      - name: cursor
-        in: query
-        schema:
-          type: string
-          nullable: true
-      - name: limit
-        in: query
-        schema:
-          type: integer
-          default: 10
+        - name: cursor
+          in: query
+          schema:
+            type: string
+            nullable: true
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
       responses:
         "200":
           content:
             application/json:
               schema:
                 allOf:
-                - type: object
-                  properties:
-                    data:
-                      type: array
-                      items: {}
-                    meta:
-                      type: object
-                      properties:
-                        nextCursor:
-                          type: string
-                          nullable: true
-                          description: Opaque cursor — pass unchanged
-                        hasMore:
-                          type: boolean
-                - properties:
-                    data:
-                      type: array
-                      items:
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: {}
+                      meta:
                         type: object
                         properties:
-                          id:
+                          nextCursor:
                             type: string
-                            format: uuid
-                            readOnly: true
-                          authorId:
-                            type: string
-                            format: uuid
-                          content:
-                            type: string
-                          visibility:
-                            type: string
-                            enum:
-                            - PUBLIC
-                            - GROUP
-                            - PRIVATE
-                          tags:
-                            type: array
-                            items:
+                            nullable: true
+                            description: Opaque cursor — pass unchanged
+                          hasMore:
+                            type: boolean
+                  - properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
                               type: string
-                          media:
-                            type: array
-                            items:
-                              type: object
-                              properties:
-                                id:
-                                  type: string
-                                  format: uuid
-                                fileUrl:
-                                  type: string
-                                  format: uri
-                                fileType:
-                                  type: string
-                                  enum:
-                                  - IMAGE
-                                  - VIDEO
-                                  - DOCUMENT
-                                createdAt:
-                                  type: string
-                                  format: date-time
-                          reactionCount:
-                            type: integer
-                          commentCount:
-                            type: integer
-                          moderationStatus:
-                            type: string
-                            enum:
-                            - PENDING
-                            - APPROVED
-                            - REJECTED
-                          createdAt:
-                            type: string
-                            format: date-time
+                              format: uuid
+                              readOnly: true
+                            authorId:
+                              type: string
+                              format: uuid
+                            content:
+                              type: string
+                            visibility:
+                              type: string
+                              enum:
+                                - PUBLIC
+                                - PRIVATE
+                            tags:
+                              type: array
+                              items:
+                                type: string
+                            media:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  id:
+                                    type: string
+                                    format: uuid
+                                  fileUrl:
+                                    type: string
+                                    format: uri
+                                  fileType:
+                                    type: string
+                                    enum:
+                                      - IMAGE
+                                      - VIDEO
+                                      - DOCUMENT
+                                  createdAt:
+                                    type: string
+                                    format: date-time
+                            reactionCount:
+                              type: integer
+                            commentCount:
+                              type: integer
+                            moderationStatus:
+                              type: string
+                              enum:
+                                - PENDING
+                                - APPROVED
+                                - REJECTED
+                            createdAt:
+                              type: string
+                              format: date-time
     post:
       tags:
-      - Posts
+        - Posts
       summary: Create post
       security:
-      - BearerAuth: []
+        - BearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - content
-              properties:
-                content:
-                  type: string
-                visibility:
-                  type: string
-                  enum:
-                  - PUBLIC
-                  - GROUP
-                  - PRIVATE
-                tags:
-                  type: array
-                  items:
-                    type: string
-                mediaIds:
-                  type: array
-                  items:
-                    type: string
-                    format: uuid
+              $ref: "#/components/schemas/PostCreateRequest"
       responses:
         "201":
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-                    format: uuid
-                    readOnly: true
-                  authorId:
-                    type: string
-                    format: uuid
-                  content:
-                    type: string
-                  visibility:
-                    type: string
-                    enum:
-                    - PUBLIC
-                    - GROUP
-                    - PRIVATE
-                  tags:
-                    type: array
-                    items:
-                      type: string
-                  media:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        id:
-                          type: string
-                          format: uuid
-                        fileUrl:
-                          type: string
-                          format: uri
-                        fileType:
-                          type: string
-                          enum:
-                          - IMAGE
-                          - VIDEO
-                          - DOCUMENT
-                        createdAt:
-                          type: string
-                          format: date-time
-                  reactionCount:
-                    type: integer
-                  commentCount:
-                    type: integer
-                  moderationStatus:
-                    type: string
-                    enum:
-                    - PENDING
-                    - APPROVED
-                    - REJECTED
-                  createdAt:
-                    type: string
-                    format: date-time
+                $ref: "#/components/schemas/Post"
+        "400":
+          description: Invalid post data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "413":
+          description: Content too long or too many media attachments
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /posts/{postId}:
+    get:
+      tags:
+        - Posts
+      summary: Get post by ID with full details
+      description: Retrieve a single post by its ID including author details and engagement metrics
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID of the post to retrieve
+      responses:
+        "200":
+          description: Post retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostDetail"
+        "403":
+          description: Not authorized to view this post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      tags:
+        - Posts
+      summary: Update a post
+      description: Update an existing post. Only the post author can update.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostUpdateRequest"
+      responses:
+        "200":
+          description: Post updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+        "400":
+          description: Invalid update data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Not authorized to update this post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      tags:
+        - Posts
+      summary: Delete a post (soft delete)
+      description: Soft delete a post. Post is hidden but can be restored.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Post deleted successfully
+        "403":
+          description: Not authorized to delete this post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
   /posts/{postId}/comments:
     get:
       tags:
-      - Comments
+        - Comments
       summary: List comments (with replies support)
       parameters:
-      - name: postId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      - name: cursor
-        in: query
-        schema:
-          type: string
-          nullable: true
-      - name: limit
-        in: query
-        schema:
-          type: integer
-          default: 20
-      - name: parentCommentId
-        in: query
-        schema:
-          type: string
-          format: uuid
-          nullable: true
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: cursor
+          in: query
+          schema:
+            type: string
+            nullable: true
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: parentCommentId
+          in: query
+          schema:
+            type: string
+            format: uuid
+            nullable: true
       responses:
         "200":
           content:
             application/json:
               schema:
                 allOf:
-                - type: object
-                  properties:
-                    data:
-                      type: array
-                      items: {}
-                    meta:
-                      type: object
-                      properties:
-                        nextCursor:
-                          type: string
-                          nullable: true
-                          description: Opaque cursor — pass unchanged
-                        hasMore:
-                          type: boolean
-                - properties:
-                    data:
-                      type: array
-                      items:
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: {}
+                      meta:
                         type: object
                         properties:
-                          id:
+                          nextCursor:
                             type: string
-                            format: uuid
-                          postId:
-                            type: string
-                            format: uuid
-                          commenterId:
-                            type: string
-                            format: uuid
-                          content:
-                            type: string
-                          parentCommentId:
-                            type: string
-                            format: uuid
                             nullable: true
-                          createdAt:
-                            type: string
-                            format: date-time
+                            description: Opaque cursor — pass unchanged
+                          hasMore:
+                            type: boolean
+                  - properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            postId:
+                              type: string
+                              format: uuid
+                            commenterId:
+                              type: string
+                              format: uuid
+                            content:
+                              type: string
+                            parentCommentId:
+                              type: string
+                              format: uuid
+                              nullable: true
+                            createdAt:
+                              type: string
+                              format: date-time
     post:
       tags:
-      - Comments
+        - Comments
       summary: Add comment
       security:
-      - BearerAuth: []
+        - BearerAuth: []
       parameters:
-      - name: postId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       requestBody:
         required: true
         content:
@@ -1499,7 +1724,7 @@ paths:
             schema:
               type: object
               required:
-              - content
+                - content
               properties:
                 content:
                   type: string
@@ -1532,77 +1757,72 @@ paths:
                   createdAt:
                     type: string
                     format: date-time
-  /communities:
+
+  /posts/{postId}/reactions:
     get:
       tags:
-      - Communities
-      summary: List communities
+        - Reactions
+        - Posts
+      summary: Get reactions for a post
+      description: List all users who reacted to a post, optionally filtered by reaction type
+      security:
+        - BearerAuth: []
       parameters:
-      - name: cursor
-        in: query
-        schema:
-          type: string
-          nullable: true
-      - name: limit
-        in: query
-        schema:
-          type: integer
-          default: 20
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [LIKE, LOVE, INSIGHTFUL, SUPPORT, CELEBRATE]
+          description: Filter by reaction type
+        - name: cursor
+          in: query
+          schema:
+            type: string
+            nullable: true
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
       responses:
         "200":
+          description: Reactions retrieved successfully
           content:
             application/json:
               schema:
                 allOf:
-                - type: object
-                  properties:
-                    data:
-                      type: array
-                      items: {}
-                    meta:
-                      type: object
-                      properties:
-                        nextCursor:
-                          type: string
-                          nullable: true
-                          description: Opaque cursor — pass unchanged
-                        hasMore:
-                          type: boolean
-                - properties:
-                    data:
-                      type: array
-                      items:
-                        type: object
-                        properties:
-                          id:
-                            type: string
-                            format: uuid
-                            readOnly: true
-                          name:
-                            type: string
-                          description:
-                            type: string
-                            nullable: true
-                          type:
-                            type: string
-                            enum:
-                            - PUBLIC
-                            - PRIVATE
-                          createdById:
-                            type: string
-                            format: uuid
-                          memberCount:
-                            type: integer
-                            readOnly: true
-                          createdAt:
-                            type: string
-                            format: date-time
+                  - $ref: "#/components/schemas/PaginatedResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/ReactionWithUser"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
     post:
       tags:
-      - Communities
-      summary: Create community
+        - Reactions
+        - Posts
+      summary: Add reaction to post
+      description: Add or update a reaction on a post (one reaction per user per post)
       security:
-      - BearerAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       requestBody:
         required: true
         content:
@@ -1610,7 +1830,613 @@ paths:
             schema:
               type: object
               required:
-              - name
+                - type
+              properties:
+                type:
+                  type: string
+                  enum: [LIKE, LOVE, INSIGHTFUL, SUPPORT, CELEBRATE]
+      responses:
+        "200":
+          description: Reaction added/updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  type:
+                    type: string
+                    enum: [LIKE, LOVE, INSIGHTFUL, SUPPORT, CELEBRATE]
+                  createdAt:
+                    type: string
+                    format: date-time
+        "400":
+          description: Invalid reaction type
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      tags:
+        - Reactions
+        - Posts
+      summary: Remove reaction from post
+      description: Remove the authenticated user's reaction from a post
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Reaction removed successfully
+        "404":
+          description: Reaction not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /posts/{postId}/favorite:
+    post:
+      tags:
+        - Posts
+        - Favorites
+      summary: Add post to favorites
+      description: Bookmark a post to save it for later
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "201":
+          description: Added to favorites successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FavoriteResponse"
+        "409":
+          description: Already in favorites
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      tags:
+        - Posts
+        - Favorites
+      summary: Remove from favorites
+      description: Remove a post from user's favorites
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Removed from favorites successfully
+        "404":
+          description: Favorite not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /users/{userId}/favorites:
+    get:
+      tags:
+        - Users
+        - Favorites
+      summary: Get user's favorite posts
+      description: Retrieve paginated list of posts favorited by a user
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: cursor
+          in: query
+          schema:
+            type: string
+            nullable: true
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        "200":
+          description: Favorites retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostListResponse"
+        "403":
+          description: Not authorized to view these favorites
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /posts/{postId}/repost:
+    post:
+      tags:
+        - Posts
+      summary: Repost/share a post
+      description: Share an existing post with optional additional commentary
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+                  maxLength: 5000
+                  description: Optional commentary to add with repost
+                visibility:
+                  type: string
+                  enum: [PUBLIC, PRIVATE]
+                  default: PUBLIC
+      responses:
+        "201":
+          description: Post reposted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RepostResponse"
+        "400":
+          description: Cannot repost own post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /posts/{postId}/reposts:
+    get:
+      tags:
+        - Posts
+      summary: Get reposts of a post
+      description: List all reposts of a specific post
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: cursor
+          in: query
+          schema:
+            type: string
+            nullable: true
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        "200":
+          description: Reposts retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostListResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /posts/search:
+    get:
+      tags:
+        - Posts
+      summary: Search posts with advanced filters
+      description: Search and filter posts using multiple criteria
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+            minLength: 2
+          description: Search query in content
+        - name: tags
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: false
+          description: Filter by tags (comma-separated)
+        - name: authorId
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter by author
+        - name: category
+          in: query
+          schema:
+            type: string
+          description: Filter by category
+        - name: fromDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Posts after this date
+        - name: toDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Posts before this date
+        - name: hasMedia
+          in: query
+          schema:
+            type: boolean
+          description: Filter posts with/without media
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [createdAt, reactionCount, commentCount, shareCount]
+            default: createdAt
+        - name: sortOrder
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+        - name: cursor
+          in: query
+          schema:
+            type: string
+            nullable: true
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostListResponse"
+        "400":
+          description: Invalid search parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /posts/trending:
+    get:
+      tags:
+        - Posts
+        - Recommendations
+      summary: Get trending posts
+      description: Retrieve posts with high engagement in a time window
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: timeWindow
+          in: query
+          schema:
+            type: string
+            enum: [day, week, month]
+            default: day
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: cursor
+          in: query
+          schema:
+            type: string
+            nullable: true
+      responses:
+        "200":
+          description: Trending posts retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostListResponse"
+
+  /posts/trending/tags:
+    get:
+      tags:
+        - Posts
+        - Recommendations
+      summary: Get trending tags
+      description: Retrieve most used tags with usage counts and trends
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: timeWindow
+          in: query
+          schema:
+            type: string
+            enum: [day, week, month]
+            default: day
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 50
+      responses:
+        "200":
+          description: Trending tags retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TrendingTag"
+
+  /posts/{postId}/related:
+    get:
+      tags:
+        - Posts
+        - Recommendations
+      summary: Get related posts
+      description: Find posts similar to this one based on tags and content
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+            maximum: 50
+      responses:
+        "200":
+          description: Related posts retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Post"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /posts/batch:
+    get:
+      tags:
+        - Posts
+      summary: Get multiple posts by IDs
+      description: Retrieve multiple posts in a single request (up to 50)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: ids
+          in: query
+          required: true
+          schema:
+            type: array
+            items:
+              type: string
+              format: uuid
+            maxItems: 50
+          style: form
+          explode: false
+          description: Comma-separated list of post IDs
+      responses:
+        "200":
+          description: Posts retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Post"
+        "400":
+          description: Too many IDs requested
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /posts/{postId}/analytics:
+    get:
+      tags:
+        - Posts
+        - Analytics
+      summary: Get post analytics
+      description: Retrieve detailed analytics for a post (author only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Analytics retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostAnalytics"
+        "403":
+          description: Only post author can view analytics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /posts/{postId}/restore:
+    post:
+      tags:
+        - Posts
+        - Moderation
+      summary: Restore soft-deleted post
+      description: Restore a previously soft-deleted post (author or admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Post restored successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+        "403":
+          description: Not authorized to restore this post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /communities:
+    get:
+      tags:
+        - Communities
+      summary: List communities
+      parameters:
+        - name: cursor
+          in: query
+          schema:
+            type: string
+            nullable: true
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: {}
+                      meta:
+                        type: object
+                        properties:
+                          nextCursor:
+                            type: string
+                            nullable: true
+                            description: Opaque cursor — pass unchanged
+                          hasMore:
+                            type: boolean
+                  - properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                              readOnly: true
+                            name:
+                              type: string
+                            description:
+                              type: string
+                              nullable: true
+                            type:
+                              type: string
+                              enum:
+                                - PUBLIC
+                                - PRIVATE
+                            createdById:
+                              type: string
+                              format: uuid
+                            memberCount:
+                              type: integer
+                              readOnly: true
+                            createdAt:
+                              type: string
+                              format: date-time
+    post:
+      tags:
+        - Communities
+      summary: Create community
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
               properties:
                 name:
                   type: string
@@ -1619,8 +2445,8 @@ paths:
                 type:
                   type: string
                   enum:
-                  - PUBLIC
-                  - PRIVATE
+                    - PUBLIC
+                    - PRIVATE
       responses:
         "201":
           content:
@@ -1640,8 +2466,8 @@ paths:
                   type:
                     type: string
                     enum:
-                    - PUBLIC
-                    - PRIVATE
+                      - PUBLIC
+                      - PRIVATE
                   createdById:
                     type: string
                     format: uuid
@@ -1651,143 +2477,146 @@ paths:
                   createdAt:
                     type: string
                     format: date-time
+
   /communities/{communityId}/join:
     post:
       tags:
-      - Communities
+        - Communities
       summary: Request to join community
       security:
-      - BearerAuth: []
+        - BearerAuth: []
       parameters:
-      - name: communityId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
+        - name: communityId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
         "202":
           description: Join request sent
+
   /communities/{communityId}/members/{userId}/approve:
     post:
       tags:
-      - Communities
+        - Communities
       summary: Approve join request (admin)
       security:
-      - BearerAuth: []
+        - BearerAuth: []
       parameters:
-      - name: communityId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      - name: userId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
+        - name: communityId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
         "200":
           description: Approved
+
   /chats/{chatId}/messages:
     get:
       tags:
-      - Chats
+        - Chats
       summary: List messages in chat
       security:
-      - BearerAuth: []
+        - BearerAuth: []
       parameters:
-      - name: chatId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      - name: cursor
-        in: query
-        schema:
-          type: string
-          nullable: true
-      - name: limit
-        in: query
-        schema:
-          type: integer
-          default: 30
+        - name: chatId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: cursor
+          in: query
+          schema:
+            type: string
+            nullable: true
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 30
       responses:
         "200":
           content:
             application/json:
               schema:
                 allOf:
-                - type: object
-                  properties:
-                    data:
-                      type: array
-                      items: {}
-                    meta:
-                      type: object
-                      properties:
-                        nextCursor:
-                          type: string
-                          nullable: true
-                          description: Opaque cursor — pass unchanged
-                        hasMore:
-                          type: boolean
-                - properties:
-                    data:
-                      type: array
-                      items:
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: {}
+                      meta:
                         type: object
                         properties:
-                          id:
+                          nextCursor:
                             type: string
-                            format: uuid
-                          chatId:
-                            type: string
-                            format: uuid
-                          senderId:
-                            type: string
-                            format: uuid
-                          content:
-                            type: string
-                          media:
-                            type: array
-                            items:
-                              type: object
-                              properties:
-                                id:
-                                  type: string
-                                  format: uuid
-                                fileUrl:
-                                  type: string
-                                  format: uri
-                                fileType:
-                                  type: string
-                                  enum:
-                                  - IMAGE
-                                  - VIDEO
-                                  - DOCUMENT
-                                createdAt:
-                                  type: string
-                                  format: date-time
-                          createdAt:
-                            type: string
-                            format: date-time
+                            nullable: true
+                            description: Opaque cursor — pass unchanged
+                          hasMore:
+                            type: boolean
+                  - properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            chatId:
+                              type: string
+                              format: uuid
+                            senderId:
+                              type: string
+                              format: uuid
+                            content:
+                              type: string
+                            media:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  id:
+                                    type: string
+                                    format: uuid
+                                  fileUrl:
+                                    type: string
+                                    format: uri
+                                  fileType:
+                                    type: string
+                                    enum:
+                                      - IMAGE
+                                      - VIDEO
+                                      - DOCUMENT
+                                  createdAt:
+                                    type: string
+                                    format: date-time
+                            createdAt:
+                              type: string
+                              format: date-time
     post:
       tags:
-      - Chats
+        - Chats
       summary: Send message
       security:
-      - BearerAuth: []
+        - BearerAuth: []
       parameters:
-      - name: chatId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
+        - name: chatId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       requestBody:
         required: true
         content:
@@ -1795,7 +2624,7 @@ paths:
             schema:
               type: object
               required:
-              - content
+                - content
               properties:
                 content:
                   type: string
@@ -1836,141 +2665,145 @@ paths:
                         fileType:
                           type: string
                           enum:
-                          - IMAGE
-                          - VIDEO
-                          - DOCUMENT
+                            - IMAGE
+                            - VIDEO
+                            - DOCUMENT
                         createdAt:
                           type: string
                           format: date-time
                   createdAt:
                     type: string
                     format: date-time
+
   /notifications:
     get:
       tags:
-      - Notifications
+        - Notifications
       summary: List notifications
       security:
-      - BearerAuth: []
+        - BearerAuth: []
       parameters:
-      - name: cursor
-        in: query
-        schema:
-          type: string
-          nullable: true
-      - name: limit
-        in: query
-        schema:
-          type: integer
-          default: 20
+        - name: cursor
+          in: query
+          schema:
+            type: string
+            nullable: true
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
       responses:
         "200":
           content:
             application/json:
               schema:
                 allOf:
-                - type: object
-                  properties:
-                    data:
-                      type: array
-                      items: {}
-                    meta:
-                      type: object
-                      properties:
-                        nextCursor:
-                          type: string
-                          nullable: true
-                          description: Opaque cursor — pass unchanged
-                        hasMore:
-                          type: boolean
-                - properties:
-                    data:
-                      type: array
-                      items:
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: {}
+                      meta:
                         type: object
                         properties:
-                          id:
-                            type: string
-                            format: uuid
-                          type:
-                            type: string
-                            enum:
-                            - REACTION
-                            - COMMENT
-                            - FOLLOW
-                            - MESSAGE
-                            - SYSTEM
-                          actorId:
-                            type: string
-                            format: uuid
-                            nullable: true
-                          referenceId:
+                          nextCursor:
                             type: string
                             nullable: true
-                          referenceType:
-                            type: string
-                            enum:
-                            - POST
-                            - COMMENT
-                            - USER
-                            - MESSAGE
-                            - COMMUNITY
-                            nullable: true
-                          isRead:
+                            description: Opaque cursor — pass unchanged
+                          hasMore:
                             type: boolean
-                          createdAt:
-                            type: string
-                            format: date-time
+                  - properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            type:
+                              type: string
+                              enum:
+                                - REACTION
+                                - COMMENT
+                                - FOLLOW
+                                - MESSAGE
+                                - SYSTEM
+                            actorId:
+                              type: string
+                              format: uuid
+                              nullable: true
+                            referenceId:
+                              type: string
+                              nullable: true
+                            referenceType:
+                              type: string
+                              enum:
+                                - POST
+                                - COMMENT
+                                - USER
+                                - MESSAGE
+                                - COMMUNITY
+                              nullable: true
+                            isRead:
+                              type: boolean
+                            createdAt:
+                              type: string
+                              format: date-time
+
   /notifications/mark-read:
     post:
       tags:
-      - Notifications
+        - Notifications
       summary: Mark notifications as read
       security:
-      - BearerAuth: []
+        - BearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             oneOf:
-            - type: object
-              properties:
-                notificationIds:
-                  type: array
-                  items:
-                    type: string
-                    format: uuid
-            - type: object
-              properties:
-                all:
-                  const: true
+              - type: object
+                properties:
+                  notificationIds:
+                    type: array
+                    items:
+                      type: string
+                      format: uuid
+              - type: object
+                properties:
+                  all:
+                    const: true
       responses:
         "204":
           description: Marked as read
+
   /network/connect/{userId}:
     post:
       tags:
-      - Networking
+        - Networking
       summary: Send connection request
       security:
-      - BearerAuth: []
+        - BearerAuth: []
       parameters:
-      - name: userId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
         "201":
           description: Request sent
+
   /moderation/reports:
     post:
       tags:
-      - Moderation
+        - Moderation
       summary: Report content
       security:
-      - BearerAuth: []
+        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -1978,18 +2811,18 @@ paths:
             schema:
               type: object
               required:
-              - entityType
-              - entityId
-              - reason
+                - entityType
+                - entityId
+                - reason
               properties:
                 entityType:
                   type: string
                   enum:
-                  - POST
-                  - COMMENT
-                  - MESSAGE
-                  - COMMUNITY
-                  - USER
+                    - POST
+                    - COMMENT
+                    - MESSAGE
+                    - COMMUNITY
+                    - USER
                 entityId:
                   type: string
                   format: uuid
@@ -2011,11 +2844,11 @@ paths:
                   entityType:
                     type: string
                     enum:
-                    - POST
-                    - COMMENT
-                    - MESSAGE
-                    - COMMUNITY
-                    - USER
+                      - POST
+                      - COMMENT
+                      - MESSAGE
+                      - COMMUNITY
+                      - USER
                   entityId:
                     type: string
                     format: uuid
@@ -2024,277 +2857,212 @@ paths:
                   status:
                     type: string
                     enum:
-                    - PENDING
-                    - REVIEWED
-                    - RESOLVED
+                      - PENDING
+                      - REVIEWED
+                      - RESOLVED
                   createdAt:
                     type: string
                     format: date-time
+
   /moderation/queue:
     get:
       tags:
-      - Moderation
+        - Moderation
       summary: Get moderation queue
       security:
-      - BearerAuth: []
+        - BearerAuth: []
       parameters:
-      - name: cursor
-        in: query
-        schema:
-          type: string
-          nullable: true
-      - name: limit
-        in: query
-        schema:
-          type: integer
-          default: 20
+        - name: cursor
+          in: query
+          schema:
+            type: string
+            nullable: true
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
       responses:
         "200":
           content:
             application/json:
               schema:
                 allOf:
-                - type: object
-                  properties:
-                    data:
-                      type: array
-                      items: {}
-                    meta:
-                      type: object
-                      properties:
-                        nextCursor:
-                          type: string
-                          nullable: true
-                          description: Opaque cursor — pass unchanged
-                        hasMore:
-                          type: boolean
-                - properties:
-                    data:
-                      type: array
-                      items:
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: {}
+                      meta:
                         type: object
                         properties:
-                          id:
+                          nextCursor:
                             type: string
-                            format: uuid
-                            readOnly: true
-                          authorId:
-                            type: string
-                            format: uuid
-                          content:
-                            type: string
-                          visibility:
-                            type: string
-                            enum:
-                            - PUBLIC
-                            - GROUP
-                            - PRIVATE
-                          tags:
-                            type: array
-                            items:
+                            nullable: true
+                            description: Opaque cursor — pass unchanged
+                          hasMore:
+                            type: boolean
+                  - properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
                               type: string
-                          media:
-                            type: array
-                            items:
-                              type: object
-                              properties:
-                                id:
-                                  type: string
-                                  format: uuid
-                                fileUrl:
-                                  type: string
-                                  format: uri
-                                fileType:
-                                  type: string
-                                  enum:
-                                  - IMAGE
-                                  - VIDEO
-                                  - DOCUMENT
-                                createdAt:
-                                  type: string
-                                  format: date-time
-                          reactionCount:
-                            type: integer
-                          commentCount:
-                            type: integer
-                          moderationStatus:
-                            type: string
-                            enum:
-                            - PENDING
-                            - APPROVED
-                            - REJECTED
-                          createdAt:
-                            type: string
-                            format: date-time
+                              format: uuid
+                              readOnly: true
+                            authorId:
+                              type: string
+                              format: uuid
+                            content:
+                              type: string
+                            visibility:
+                              type: string
+                              enum:
+                                - PUBLIC
+                                - PRIVATE
+                            tags:
+                              type: array
+                              items:
+                                type: string
+                            media:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  id:
+                                    type: string
+                                    format: uuid
+                                  fileUrl:
+                                    type: string
+                                    format: uri
+                                  fileType:
+                                    type: string
+                                    enum:
+                                      - IMAGE
+                                      - VIDEO
+                                      - DOCUMENT
+                                  createdAt:
+                                    type: string
+                                    format: date-time
+                            reactionCount:
+                              type: integer
+                            commentCount:
+                              type: integer
+                            moderationStatus:
+                              type: string
+                              enum:
+                                - PENDING
+                                - APPROVED
+                                - REJECTED
+                            createdAt:
+                              type: string
+                              format: date-time
+
   /posts/{postId}/moderate:
     post:
       tags:
-      - Moderation
+        - Moderation
       summary: Moderate post
       security:
-      - BearerAuth: []
+        - BearerAuth: []
       parameters:
-      - name: postId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - action
-              properties:
-                action:
-                  type: string
-                  enum:
-                  - APPROVE
-                  - REJECT
-                  - HIDE
-                  - DELETE
-                reason:
-                  type: string
-                moderatorNotes:
-                  type: string
-                  nullable: true
+              $ref: "#/components/schemas/ModerationActionRequest"
       responses:
         "200":
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-                    format: uuid
-                    readOnly: true
-                  authorId:
-                    type: string
-                    format: uuid
-                  content:
-                    type: string
-                  visibility:
-                    type: string
-                    enum:
-                    - PUBLIC
-                    - GROUP
-                    - PRIVATE
-                  tags:
-                    type: array
-                    items:
-                      type: string
-                  media:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        id:
-                          type: string
-                          format: uuid
-                        fileUrl:
-                          type: string
-                          format: uri
-                        fileType:
-                          type: string
-                          enum:
-                          - IMAGE
-                          - VIDEO
-                          - DOCUMENT
-                        createdAt:
-                          type: string
-                          format: date-time
-                  reactionCount:
-                    type: integer
-                  commentCount:
-                    type: integer
-                  moderationStatus:
-                    type: string
-                    enum:
-                    - PENDING
-                    - APPROVED
-                    - REJECTED
-                  createdAt:
-                    type: string
-                    format: date-time
+                $ref: "#/components/schemas/Post"
+
   /recommendations/feed:
     get:
       tags:
-      - Recommendations
+        - Recommendations
       summary: Personalized AI feed
       security:
-      - BearerAuth: []
+        - BearerAuth: []
       parameters:
-      - name: cursor
-        in: query
-        schema:
-          type: string
-          nullable: true
-      - name: limit
-        in: query
-        schema:
-          type: integer
-          default: 10
+        - name: cursor
+          in: query
+          schema:
+            type: string
+            nullable: true
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
       responses:
         "200":
           content:
             application/json:
               schema:
                 allOf:
-                - type: object
-                  properties:
-                    data:
-                      type: array
-                      items: {}
-                    meta:
-                      type: object
-                      properties:
-                        nextCursor:
-                          type: string
-                          nullable: true
-                          description: Opaque cursor — pass unchanged
-                        hasMore:
-                          type: boolean
-                - properties:
-                    data:
-                      type: array
-                      items:
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: {}
+                      meta:
                         type: object
                         properties:
-                          id:
-                            type: string
-                            format: uuid
-                          type:
-                            type: string
-                            enum:
-                            - POST
-                            - USER
-                            - COMMUNITY
-                          score:
-                            type: number
-                            format: float
-                          reason:
+                          nextCursor:
                             type: string
                             nullable: true
-                          item:
-                            type: object
-                            additionalProperties: true
+                            description: Opaque cursor — pass unchanged
+                          hasMore:
+                            type: boolean
+                  - properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            type:
+                              type: string
+                              enum:
+                                - POST
+                                - USER
+                                - COMMUNITY
+                            score:
+                              type: number
+                              format: float
+                            reason:
+                              type: string
+                              nullable: true
+                            item:
+                              type: object
+                              additionalProperties: true
+
   /recommendations/users:
     get:
       tags:
-      - Recommendations
+        - Recommendations
       summary: Suggested users
       security:
-      - BearerAuth: []
+        - BearerAuth: []
       parameters:
-      - name: limit
-        in: query
-        schema:
-          type: integer
-          default: 5
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 5
       responses:
         "200":
           content:
@@ -2316,10 +3084,10 @@ paths:
                         role:
                           type: string
                           enum:
-                          - STUDENT
-                          - ADMIN
-                          - EXPERT
-                          - INSTITUTION
+                            - STUDENT
+                            - ADMIN
+                            - EXPERT
+                            - INSTITUTION
                         isVerified:
                           type: boolean
                         profile:
@@ -2345,28 +3113,29 @@ paths:
                             level:
                               type: string
                               enum:
-                              - UNDERGRADUATE
-                              - POSTGRADUATE
-                              - GRADUATED
+                                - UNDERGRADUATE
+                                - POSTGRADUATE
+                                - GRADUATED
                               nullable: true
                         createdAt:
                           type: string
                           format: date-time
                     reason:
                       type: string
+
   /recommendations/communities:
     get:
       tags:
-      - Recommendations
+        - Recommendations
       summary: Suggested communities
       security:
-      - BearerAuth: []
+        - BearerAuth: []
       parameters:
-      - name: limit
-        in: query
-        schema:
-          type: integer
-          default: 5
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 5
       responses:
         "200":
           content:
@@ -2388,8 +3157,8 @@ paths:
                     type:
                       type: string
                       enum:
-                      - PUBLIC
-                      - PRIVATE
+                        - PUBLIC
+                        - PRIVATE
                     createdById:
                       type: string
                       format: uuid
