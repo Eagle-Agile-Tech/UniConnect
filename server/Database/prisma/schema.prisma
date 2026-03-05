@@ -31,16 +31,15 @@ enum VerificationMethod {
 }
 enum Visibility { 
   PUBLIC 
-  GROUP 
   PRIVATE 
   }
 enum ReactionType { 
-  LIKE 
-  LOVE 
-  INSIGHTFUL 
-  SUPPORT 
-  CELEBRATE 
-  }
+  LIKE,        // 👍 Thumbs up
+  LOVE,        // ❤️ Heart
+  INSIGHTFUL,  // 💡 Light bulb
+  SUPPORT,     // 🤝 Helping hands / support gesture
+  CELEBRATE    // 🎉 Party popper / celebration
+}
 enum GroupType { 
   PUBLIC 
   PRIVATE 
