@@ -1,4 +1,4 @@
-abstract final class Assets{
+abstract final class Assets {
   // Logos
   static const logo = 'assets/logos/logo.png';
   static const googleLogo = 'assets/logos/google_logo.png';
@@ -11,6 +11,8 @@ abstract final class Assets{
   static const post5 = 'assets/images/image5.jpg';
 
   // Avatars
+  static const defaultAvatar = 'assets/images/default_avatar.png';
+  static const defaultAvatarWithBg = 'assets/images/no_avatar.png';
   static const avatar1 = 'assets/images/avatar1.jpg';
   static const avatar2 = 'assets/images/avatar2.jpg';
   static const avatar3 = 'assets/images/avatar3.jpg';
@@ -23,5 +25,4 @@ abstract final class Assets{
   static const event = 'assets/images/events.jpg';
   static const jobBoard = 'assets/images/joboard.jpeg';
   static const tips = 'assets/images/tips.jpg';
-
 }

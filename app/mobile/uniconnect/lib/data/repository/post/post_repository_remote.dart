@@ -53,4 +53,16 @@ class PostRepositoryRemote implements PostRepository {
       (error, stackTrace) => Result.error(error),
     );
   }
+
+  @override
+  Future<Result<List<Post>>> getFeed(String userId) async {
+    final result = await _apiClient.fetchFeed(userId);
+    return result.fold((data) {
+      List<dynamic> jsonList = jsonDecode(data);
+      final posts = jsonList
+          .map((post) => Post.fromJson(post as Map<String, dynamic>))
+          .toList();
+      return Result.ok(posts);
+    }, (error, stackTrace) => Result.error(error));
+  }
 }

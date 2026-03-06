@@ -12,4 +12,6 @@ abstract class PostRepository {
     required DateTime createdAt,
     List<String>? hashtags,
   });
+
+  Future<Result<List<Post>>> getFeed(String userId);
 }

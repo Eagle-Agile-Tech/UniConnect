@@ -59,7 +59,7 @@ class _UCPostCardState extends State<UCPostCard> {
             leading: CircleAvatar(
               backgroundImage: widget.author.profilePicture != null
                   ? NetworkImage(widget.author.profilePicture!)
-                  : AssetImage(Assets.defaultAvatar),
+                  : AssetImage(Assets.defaultAvatarWithBg),
             ),
             title: Text(
               widget.author.fullName,

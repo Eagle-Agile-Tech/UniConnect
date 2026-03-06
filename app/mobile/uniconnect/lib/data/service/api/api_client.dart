@@ -55,4 +55,17 @@ class ApiClient {
       return Result.error(e);
     }
   }
+
+  Future<Result<dynamic>> fetchFeed(String userId) async {
+    try {
+      final response = await _client.get(Uri.parse('/feed/$userId'));
+      if(response.statusCode == 200){
+        return Result.ok(response.body);
+      } else {
+        return Result.error(Exception('Couldn\'t fetch feed!'));
+      }
+    }catch(e){
+      return Result.error(e);
+    }
+  }
 }
