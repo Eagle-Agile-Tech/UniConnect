@@ -2,7 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:uniconnect/ui/auth/onboarding/view_models/onboarding_viewmodel.dart';
+import 'package:uniconnect/ui/auth/onboarding/view_models/onboarding_viewmodel_provider.dart';
 import 'package:uniconnect/ui/core/common/styles/spacing_style.dart';
 import 'package:uniconnect/ui/core/common/widgets/signin_with_button.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';

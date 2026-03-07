@@ -10,7 +10,7 @@ import 'package:multi_select_flutter/util/multi_select_item.dart';
 import 'package:multi_select_flutter/util/multi_select_list_type.dart';
 import 'package:uniconnect/config/dummy_data.dart';
 import 'package:uniconnect/routing/routes.dart';
-import 'package:uniconnect/ui/auth/onboarding/view_models/onboarding_viewmodel.dart';
+import 'package:uniconnect/ui/auth/onboarding/view_models/onboarding_viewmodel_provider.dart';
 import 'package:uniconnect/ui/core/common/styles/spacing_style.dart';
 import 'package:uniconnect/ui/core/common/widgets/app_bar.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';

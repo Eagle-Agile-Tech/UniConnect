@@ -14,7 +14,7 @@ class CreatePostViewModel extends AsyncNotifier<void> {
 
   @override
   FutureOr<void> build() {
-    _postRepo = ref.watch(postProvider);
+    _postRepo = ref.watch(postRemoteProvider);
     return null;
   }
 

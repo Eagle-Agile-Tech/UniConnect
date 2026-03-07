@@ -7,7 +7,7 @@ import 'package:uniconnect/ui/core/common/styles/spacing_style.dart';
 import 'package:uniconnect/ui/core/common/widgets/app_bar.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
 
-import '../view_models/onboarding_viewmodel.dart';
+import '../view_models/onboarding_viewmodel_provider.dart';
 
 class VerifyEmailScreen extends ConsumerWidget {
   const VerifyEmailScreen({super.key});

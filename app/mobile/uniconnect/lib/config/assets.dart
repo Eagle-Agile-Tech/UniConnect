@@ -11,8 +11,7 @@ abstract final class Assets {
   static const post5 = 'assets/images/image5.jpg';
 
   // Avatars
-  static const defaultAvatar = 'assets/images/default_avatar.png';
-  static const defaultAvatarWithBg = 'assets/images/no_avatar.png';
+  static const defaultAvatar = 'assets/images/no_avatar.jpg';
   static const avatar1 = 'assets/images/avatar1.jpg';
   static const avatar2 = 'assets/images/avatar2.jpg';
   static const avatar3 = 'assets/images/avatar3.jpg';

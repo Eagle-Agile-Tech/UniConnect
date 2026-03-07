@@ -14,7 +14,7 @@ class ProfileViewModel extends AsyncNotifier<List<Post>>{
   FutureOr<List<Post>> build() async{
     final userId = ref.watch(userProvider)?.id;
     if(userId == null) return [];
-    final result = await ref.read(postProvider).getUserPost(userId);
+    final result = await ref.read(postRemoteProvider).getUserPost(userId);
     return result.fold(
       (posts) => posts,
       (error, stackTrace) => throw error);

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../config/assets.dart';
 import '../../core/theme/dimens.dart';
 import '../view_models/user_provider.dart';
 
@@ -26,7 +27,9 @@ class ProfileHeader extends ConsumerWidget{
                     children: [
                       CircleAvatar(
                         radius: Dimens.avatarLg,
-                        backgroundImage: NetworkImage(user!.profilePicture!),
+                        backgroundImage: user.profilePicture != null
+                            ? NetworkImage(user.profilePicture!)
+                            : AssetImage(Assets.defaultAvatar),
                         backgroundColor: Theme.of(
                           context,
                         ).primaryColor.withAlpha(30),
@@ -82,7 +85,7 @@ class ProfileHeader extends ConsumerWidget{
                                   vertical: Dimens.sm,
                                 ),
                               ),
-                              child: const Text('Follow'),
+                              child: const Text('Network'),
                             ),
                             const SizedBox(width: Dimens.sm),
                             ElevatedButton(
@@ -96,7 +99,7 @@ class ProfileHeader extends ConsumerWidget{
                                   vertical: Dimens.sm,
                                 ),
                               ),
-                              child: const Text('Message'),
+                              child: const Text('Chat'),
                             ),
                           ],
                         ),

@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uniconnect/config/assets.dart';
-import 'package:uniconnect/config/dummy_data.dart';
-import 'package:uniconnect/ui/core/common/widgets/post_card.dart';
+import 'package:uniconnect/ui/core/common/widgets/post_card/post_card.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
 import 'package:uniconnect/ui/home/view_models/home_viewmodel_provider.dart';
 import 'package:uniconnect/ui/home/widgets/drawer_content.dart';
@@ -48,9 +46,15 @@ class HomeScreen extends ConsumerWidget {
       body: RefreshIndicator(
         onRefresh: () => ref.read(homeViewModelProvider.future),
         child: postAsync.when(
-          data: (posts) => ListView.builder(itemCount: posts.length, itemBuilder: (context, index) {
-            return UCPostCard(author: ref.read(userProvider)!, post: posts[index]);
-          }),
+          data: (posts) => ListView.builder(
+            itemCount: posts.length,
+            itemBuilder: (context, index) {
+              return UCPostCard(
+                author: ref.read(userProvider)!,
+                post: posts[index],
+              );
+            },
+          ),
           // Todo: make the error widget better
           error: (error, stackTrace) => Center(child: Text('Oops: $error')),
           loading: () => const Center(child: CircularProgressIndicator()),
