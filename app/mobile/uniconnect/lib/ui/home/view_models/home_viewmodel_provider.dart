@@ -6,6 +6,7 @@ import 'package:uniconnect/domain/models/post/post.dart';
 import 'package:uniconnect/ui/profile/view_models/user_provider.dart';
 
 import '../../../data/repository/post/post_repository_remote.dart';
+import '../../../domain/models/comment/comment.dart';
 
 final homeViewModelProvider =
     AsyncNotifierProvider<HomeViewmodelProvider, List<Post>>(
@@ -17,7 +18,7 @@ class HomeViewmodelProvider extends AsyncNotifier<List<Post>> {
 
   @override
   FutureOr<List<Post>> build() {
-    _postRepo = ref.watch(postProvider);
+    _postRepo = ref.watch(postRemoteProvider);
     return _fetchPosts();
   }
 
@@ -29,5 +30,30 @@ class HomeViewmodelProvider extends AsyncNotifier<List<Post>> {
       (error, stackTrace) =>
           Error.throwWithStackTrace(error, stackTrace ?? StackTrace.current),
     );
+  }
+
+  Future<void> toggleLike({required String postId}) async {
+    final previous = state.value;
+    if (previous == null) return;
+    final updatedPost = previous.map((post) {
+      if (post.id == postId) {
+        final isLiked = post.isLikedByMe;
+        return post.copyWith(
+          isLikedByMe: !isLiked,
+          likeCount: isLiked ? post.likeCount - 1 : post.likeCount + 1,
+        );
+      }
+      return post;
+    }).toList();
+
+    state = AsyncValue.data(updatedPost);
+    final result = await _postRepo.likePost(
+      postId: postId,
+      userId: ref.read(userProvider)!.id,
+    );
+    result.fold((success) => null, (error, _) {
+      // todo: notify user of the error
+      state = AsyncValue.data(previous);
+    });
   }
 }

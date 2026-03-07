@@ -14,6 +14,7 @@ abstract class Post with _$Post {
     final List<String>? hashtags,
     required final int likeCount,
     required final int commentCount,
+    @Default(false) bool isLikedByMe,
   }) = _Post;
 
   factory Post.fromJson(Map<String, dynamic> json) => _$PostFromJson(json);
