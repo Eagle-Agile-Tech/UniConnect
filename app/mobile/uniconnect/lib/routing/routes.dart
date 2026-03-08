@@ -9,4 +9,6 @@ abstract final class Routes {
   static const String messaging = '/messaging';
   static const String signin = '/signin';
   static const String signup = '/signup';
+  static const String setting = '/setting';
+  static const String saved = '/saved';
 }

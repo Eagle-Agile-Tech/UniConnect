@@ -15,6 +15,7 @@ abstract class Post with _$Post {
     required final int likeCount,
     required final int commentCount,
     @Default(false) bool isLikedByMe,
+    @Default(false) bool isBookmarkedByMe,
   }) = _Post;
 
   factory Post.fromJson(Map<String, dynamic> json) => _$PostFromJson(json);

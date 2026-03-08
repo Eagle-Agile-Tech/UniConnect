@@ -6,12 +6,14 @@ import 'package:uniconnect/ui/auth/onboarding/personalization/create_profile.dar
 import 'package:uniconnect/ui/auth/onboarding/verify_email/verify_email_screen.dart';
 import 'package:uniconnect/ui/message/message_screen.dart';
 import 'package:uniconnect/ui/post/create_post.dart';
+import 'package:uniconnect/ui/setting/saved_screen.dart';
 import 'package:uniconnect/utils/navigation_wrapper.dart';
 
 import '../ui/search/search_screen.dart';
+import '../ui/setting/setting_screen.dart';
 
 final router = GoRouter(
-  initialLocation: Routes.loginOrSignup,
+  initialLocation: Routes.home,
   debugLogDiagnostics: true,
 
   routes: [
@@ -59,5 +61,13 @@ final router = GoRouter(
       path: Routes.messaging,
       builder: (context, state) => const MessageScreen(),
     ),
+    GoRoute(
+      path: Routes.setting,
+      builder: (context,state) => const SettingScreen(),
+    ),
+    GoRoute(
+      path: Routes.saved,
+      builder: (context,state) => const SavedScreen(),
+    )
   ],
 );

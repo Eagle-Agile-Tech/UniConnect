@@ -24,7 +24,7 @@ class ProfileScreen extends ConsumerWidget {
           slivers: [
             SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.only(top: Dimens.appBarHeight),
+                padding: EdgeInsets.only(top: Dimens.sm),
                 child: ProfileHeader(),
               ),
             ),
@@ -33,7 +33,7 @@ class ProfileScreen extends ConsumerWidget {
                 delegate: SliverChildBuilderDelegate(
                   (context, index) =>
                       UCPostCard(author: user, post: posts[index]),
-                  childCount: posts.length
+                  childCount: posts.length,
                 ),
               ),
               error: (err, stack) =>
@@ -48,5 +48,3 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 }
-
-

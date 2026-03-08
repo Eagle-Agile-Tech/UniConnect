@@ -132,7 +132,41 @@ class ApiClient {
       } else {
         return Result.error(Exception('Couldn\'t fetch comments!'));
       }
-    }catch(e){
+    } catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result> bookmarkPost({
+    required String postId,
+    required String userId,
+  }) async {
+    try {
+      final response = await _client.post(
+        Uri.parse('/bookmarkPost/$postId'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'userId': userId}),
+      );
+      await Future.delayed(Duration(seconds: 5)); // Simulate network delay
+      if (response.statusCode == 200) {
+        return Result.ok(null);
+      } else {
+        return Result.error(Exception('Failed to bookmark post'));
+      }
+    } catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<dynamic>> fetchBookmarks(String userId) async {
+    try {
+      final response = await _client.get(Uri.parse('/bookmarks/$userId'));
+      if (response.statusCode == 200) {
+        return Result.ok(response.body);
+      } else {
+        return Result.error(Exception('Couldn\'t fetch bookmarks!'));
+      }
+    } catch (e) {
       return Result.error(e);
     }
   }

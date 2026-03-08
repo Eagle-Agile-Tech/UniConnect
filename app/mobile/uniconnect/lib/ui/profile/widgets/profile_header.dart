@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../config/assets.dart';
+import '../../../routing/routes.dart';
 import '../../core/theme/dimens.dart';
 import '../view_models/user_provider.dart';
 
@@ -16,6 +18,13 @@ class ProfileHeader extends ConsumerWidget{
     }
     return Column(
       children: [
+        Align(
+          alignment: AlignmentGeometry.topEnd,
+          child: IconButton(
+            onPressed: () => context.push(Routes.setting),
+            icon: const Icon(Icons.settings),
+          ),
+        ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: Dimens.defaultSpace),
           child: Column(

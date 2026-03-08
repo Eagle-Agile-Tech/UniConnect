@@ -6,12 +6,11 @@ import 'package:uniconnect/domain/models/post/post.dart';
 import 'package:uniconnect/ui/profile/view_models/user_provider.dart';
 
 import '../../../data/repository/post/post_repository_remote.dart';
-import '../../../domain/models/comment/comment.dart';
 
 final homeViewModelProvider =
-    AsyncNotifierProvider<HomeViewmodelProvider, List<Post>>(
-      HomeViewmodelProvider.new,
-    );
+AsyncNotifierProvider<HomeViewmodelProvider, List<Post>>(
+  HomeViewmodelProvider.new,
+);
 
 class HomeViewmodelProvider extends AsyncNotifier<List<Post>> {
   late PostRepository _postRepo;
@@ -26,8 +25,8 @@ class HomeViewmodelProvider extends AsyncNotifier<List<Post>> {
     state = const AsyncValue.loading();
     final result = await _postRepo.getFeed(ref.read(userProvider)!.id);
     return result.fold(
-      (data) => data,
-      (error, stackTrace) =>
+          (data) => data,
+          (error, stackTrace) =>
           Error.throwWithStackTrace(error, stackTrace ?? StackTrace.current),
     );
   }
@@ -54,6 +53,28 @@ class HomeViewmodelProvider extends AsyncNotifier<List<Post>> {
     result.fold((success) => null, (error, _) {
       // todo: notify user of the error
       state = AsyncValue.data(previous);
+    });
+  }
+
+  Future<void> bookmarkPost({required String postId}) async {
+    final previous = state.value;
+    if (previous == null) return;
+    final bookmarkedPost = previous.map((post) {
+      if (post.id == postId) {
+        final isBookmarked = post.isBookmarkedByMe;
+        return post.copyWith(
+          isBookmarkedByMe: !isBookmarked,
+        );
+      }
+      return post;
+    }).toList();
+    state = AsyncValue.data(bookmarkedPost);
+    final result = await _postRepo.bookmarkPost(
+        postId: postId, userId: ref.read(userProvider)!.id);
+
+    return result.fold((data) => null, (error, _) {
+      state = AsyncValue.data(previous);
+      AsyncValue.error(error, StackTrace.current);
     });
   }
 }

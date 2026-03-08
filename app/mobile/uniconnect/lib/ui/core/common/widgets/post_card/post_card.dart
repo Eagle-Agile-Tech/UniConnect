@@ -53,6 +53,7 @@ class _UCPostCardState extends ConsumerState<UCPostCard> {
 
   @override
   Widget build(BuildContext context) {
+    final viewModel = ref.read(homeViewModelProvider.notifier);
     return Card(
       borderOnForeground: true,
       color: UCColors.background,
@@ -112,11 +113,8 @@ class _UCPostCardState extends ConsumerState<UCPostCard> {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     IconButton(
-                      onPressed: () {
-                        ref
-                            .read(homeViewModelProvider.notifier)
-                            .toggleLike(postId: widget.post.id);
-                      },
+                      onPressed: () =>
+                          viewModel.toggleLike(postId: widget.post.id),
                       icon: Icon(
                         widget.post.isLikedByMe == true
                             ? Icons.thumb_up
@@ -174,9 +172,7 @@ class _UCPostCardState extends ConsumerState<UCPostCard> {
                                                           ),
                                                 ),
                                             error: (error, _) => Center(
-                                              child: Text(
-                                                error.toString(),
-                                              ),
+                                              child: Text(error.toString()),
                                             ),
                                             loading: () => const Center(
                                               child:
@@ -194,14 +190,16 @@ class _UCPostCardState extends ConsumerState<UCPostCard> {
                       ),
                     ),
                     Text(widget.post.commentCount.toString()),
+                    // todo: implement share functionality within the app only
                     IconButton(
                       onPressed: () {},
                       icon: const Icon(Icons.share_outlined),
                     ),
                     Spacer(),
                     IconButton(
-                      onPressed: () {},
-                      icon: const Icon(Icons.bookmark_border_outlined),
+                      onPressed: () =>
+                          viewModel.bookmarkPost(postId: widget.post.id),
+                      icon: widget.post.isBookmarkedByMe ? Icon(Icons.bookmark) : Icon(Icons.bookmark_border_outlined),
                     ),
                   ],
                 ),

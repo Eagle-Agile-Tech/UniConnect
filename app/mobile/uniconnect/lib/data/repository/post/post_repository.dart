@@ -26,4 +26,10 @@ abstract class PostRepository {
     required String authorId
   });
   Future<Result<List<Comment>>> getComments(String postId);
+  Future<Result> bookmarkPost({
+    required String postId,
+    required String userId,
+  });
+
+  Future<Result<List<Post>>> getBookmarks(String userId);
 }

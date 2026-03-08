@@ -109,4 +109,22 @@ class PostRepositoryRemote implements PostRepository {
       return Result.ok(comments);
     }, (error, _) => Result.error(error));
   }
+
+  @override
+  Future<Result<dynamic>> bookmarkPost({
+    required String postId,
+    required String userId,
+  }) async {
+    return await _apiClient.bookmarkPost(postId: postId, userId: userId);
+  }
+
+  @override
+  Future<Result<List<Post>>> getBookmarks(String userId) async {
+    final result = await _apiClient.fetchBookmarks(userId);
+    return result.fold((data) {
+      List<dynamic> postList = jsonDecode(data);
+      final posts = postList.map((post) => Post.fromJson(post)).toList();
+      return Result.ok(posts);
+    }, (error, stackTrace) => Result.error(error, stackTrace));
+  }
 }
