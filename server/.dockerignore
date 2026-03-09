@@ -1,0 +1,9 @@
+src/node_modules
+Database/node_modules
+Database/generated
+.env
+.env.docker
+.env.docker.example
+.git
+.gitignore
+npm-debug.log
