@@ -1,2 +1,6 @@
 .env
 Config/.env
+
+# local docker runtime data
+docker_data/
+.env
