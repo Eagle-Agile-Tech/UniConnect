@@ -1,6 +1,5 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider        = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"]
 }
 
@@ -125,7 +124,8 @@ model User {
   firstName          String
   lastName           String
   email              String              @unique
-  passwordHash       String
+  passwordHash       String?
+  googleId           String?             @unique
 
   role               Role                @default(STUDENT)
 
@@ -587,4 +587,3 @@ model AuditLog {
   @@index([isArchived])
   @@map("audit_logs")
 }
-
