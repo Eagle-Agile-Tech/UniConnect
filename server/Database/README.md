@@ -1,7 +1,8 @@
 # UniConnect Database
 
 ## Overview
-UniConnect is a platform for students, experts, and institutions to share content, join communities, and communicate.  
+UniConnect is a platform for students, experts, and institutions to share content, join communities, and communicate.
+
 This database is managed with **PostgreSQL** and **Prisma ORM**, supporting:
 
 - Users, Experts, Institutions  
@@ -16,6 +17,7 @@ This database is managed with **PostgreSQL** and **Prisma ORM**, supporting:
 ---
 
 ## Tech Stack
+
 - **Database:** PostgreSQL  
 - **ORM:** Prisma  
 - **Prisma Client:** `@prisma/client`  
@@ -24,95 +26,194 @@ This database is managed with **PostgreSQL** and **Prisma ORM**, supporting:
 
 ## Setup
 
-1. **Install Dependencies**
+### 1. Install Dependencies
+
 ```bash
 npm install prisma @prisma/client --save-dev
+```
 
-Environment Variables (.env)
+---
 
+### 2. Environment Variables (.env)
+
+Create a `.env` file in your root directory:
+
+```env
 DATABASE_URL="postgresql://user:password@localhost:5432/uniconnect"
+```
 
-Prisma Schema
-Ensure prisma/schema.prisma points to your datasource and generator.
+---
 
-Prisma Commands
-Command	Use
-npx prisma migrate dev --name <migration_name>	Create & apply migration (dev)
-npx prisma migrate deploy	Apply pending migrations (production)
-npx prisma generate	Generate Prisma client
-npx prisma studio	GUI to explore DB
-npx prisma db pull	Pull DB schema into Prisma
-npx prisma db push	Push schema changes directly
+### 3. Prisma Schema
 
-Tip: Use migrations for production; avoid db push.
+Ensure `prisma/schema.prisma` points to your datasource and generator.
 
-Key Models
-User
+Example:
 
-Core user data including profile info, interests, role, and status.
-Relations: posts, comments, reactions, communities, messages, education, expert profile.
+```prisma
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
 
-Education
+generator client {
+  provider = "prisma-client-js"
+}
+```
 
-User educational info (university, department, level, year).
+---
 
-Post & PostComment
+## Prisma Commands
 
-Posts support content, media, visibility, embeddings (for AI recommendations), moderation, and soft delete.
-Comments support nested replies and moderation.
+| Command | Purpose |
+|----------|----------|
+| `npx prisma migrate dev --name <migration_name>` | Create & apply migration (development) |
+| `npx prisma migrate deploy` | Apply pending migrations (production) |
+| `npx prisma generate` | Generate Prisma client |
+| `npx prisma studio` | GUI to explore database |
+| `npx prisma db pull` | Pull database schema into Prisma |
+| `npx prisma db push` | Push schema changes directly |
 
-Reaction
+> Tip: Use migrations for production. Avoid `db push` in production environments.
 
-Polymorphic reactions for posts, comments, messages, or users.
+---
 
-Community & CommunityMember
+## Key Models
 
-Communities with members, roles, and media.
+### User
+Core user data including:
+- Profile info  
+- Interests  
+- Role & status  
 
-Chat & Message
+Relations:
+- Posts  
+- Comments  
+- Reactions  
+- Communities  
+- Messages  
+- Education  
+- Expert profile  
 
-Direct or group chats with optional media attachments.
+---
 
-Notification
+### Education
+Stores user educational information:
+- University  
+- Department  
+- Level  
+- Year  
 
-Polymorphic notifications with optional actor and reference.
+---
 
-Media
+### Post & PostComment
 
-Supports posts, messages, communities, or generic references (hybrid approach).
+Posts support:
+- Content  
+- Media  
+- Visibility  
+- AI embeddings  
+- Moderation flags  
+- Soft delete support  
 
-Best Practices for Production
+Comments support:
+- Nested replies  
+- Moderation  
 
-Always use migrations for schema changes.
+---
 
-Index frequently queried fields (e.g., userId, authorId).
+### Reaction
+Polymorphic reactions for:
+- Posts  
+- Comments  
+- Messages  
+- Users  
 
-Use soft deletes (isDeleted) for content moderation.
+---
 
-Keep embeddings optimized for AI features (PostgreSQL vector or JSON arrays).
+### Community & CommunityMember
+- Community profiles  
+- Member roles  
+- Media support  
 
-Encrypt sensitive data (passwords, tokens).
+---
 
-Backup your database regularly before applying migrations.
+### Chat & Message
+- Direct chats  
+- Group chats  
+- Optional media attachments  
 
-Migration & Deployment
+---
 
-Initial Migration (Dev)
+### Notification
+Polymorphic notifications with:
+- Optional actor  
+- Optional reference entity  
 
+---
+
+### Media
+Supports:
+- Posts  
+- Messages  
+- Communities  
+- Generic references (hybrid approach)  
+
+---
+
+## Best Practices for Production
+
+- Always use migrations for schema changes  
+- Index frequently queried fields (`userId`, `authorId`)  
+- Use soft deletes (`isDeleted`) for moderation  
+- Optimize embeddings (PostgreSQL vector or JSON arrays)  
+- Encrypt sensitive data (passwords, tokens)  
+- Backup your database before applying migrations  
+
+---
+
+## Migration & Deployment
+
+### Initial Migration (Development)
+
+```bash
 npx prisma migrate dev --name init
+```
 
-Add Changes
+---
 
+### Add Changes
+
+```bash
 npx prisma migrate dev --name add_user_profile
+```
 
-Deploy to Production
+---
 
+### Deploy to Production
+
+```bash
 npx prisma migrate deploy
+```
 
-Generate Prisma Client
+---
 
+### Generate Prisma Client
+
+```bash
 npx prisma generate
+```
 
-Open Prisma Studio
+---
 
+### Open Prisma Studio
+
+```bash
 npx prisma studio
+```
+
+---
+
+## License
+
+Internal project – UniConnect

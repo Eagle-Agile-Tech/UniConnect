@@ -34,25 +34,4 @@ abstract final class UCColors {
   static const Color success = Color(0xFF2E7D32);
   static const Color warning = Color(0xFFF9A825);
 
-
-  // static ColorScheme get scheme => const ColorScheme(
-  //   brightness: Brightness.light,
-  //   primary: primary,
-  //   onPrimary: onPrimary,
-  //   primaryContainer: primaryContainer,
-  //   onPrimaryContainer: onPrimaryContainer,
-  //   secondary: secondary,
-  //   onSecondary: onSecondary,
-  //   tertiary: tertiary,
-  //   onTertiary: onTertiary,
-  //   error: error,
-  //   onError: onError,
-  //   background: background,
-  //   onBackground: onBackground,
-  //   surface: surface,
-  //   onSurface: onSurface,
-  //   surfaceVariant: surfaceVariant,
-  //   onSurfaceVariant: onSurfaceVariant,
-  //   outline: outline,
-  // );
 }
