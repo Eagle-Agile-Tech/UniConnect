@@ -9,7 +9,6 @@ abstract class PostRepository {
   Future<Result> createPost({
     required String content,
     required List<File>? mediaUrls,
-    required String userId,
     required DateTime createdAt,
     List<String>? hashtags,
   });
@@ -17,7 +16,6 @@ abstract class PostRepository {
   Future<Result<List<Post>>> getFeed(String userId);
   Future<Result> likePost({
     required String postId,
-    required String userId,
   });
   Future<Result> commentOnPost({
     required String postId,
@@ -28,7 +26,6 @@ abstract class PostRepository {
   Future<Result<List<Comment>>> getComments(String postId);
   Future<Result> bookmarkPost({
     required String postId,
-    required String userId,
   });
 
   Future<Result<List<Post>>> getBookmarks(String userId);

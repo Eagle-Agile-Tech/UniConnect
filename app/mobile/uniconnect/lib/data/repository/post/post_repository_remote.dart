@@ -1,12 +1,11 @@
-import 'dart:convert';
 import 'dart:io';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uniconnect/data/repository/post/post_repository.dart';
-import 'package:uniconnect/data/service/api/api_client.dart';
 import 'package:uniconnect/domain/models/comment/comment.dart';
 import 'package:uniconnect/domain/models/post/post.dart';
 import 'package:uniconnect/utils/result.dart';
+
+import '../../service/api/api_client.dart';
 
 final postRemoteProvider = Provider<PostRepositoryRemote>(
   (ref) => PostRepositoryRemote(apiClient: ref.watch(apiClientProvider)),
@@ -15,37 +14,28 @@ final postRemoteProvider = Provider<PostRepositoryRemote>(
 class PostRepositoryRemote implements PostRepository {
   const PostRepositoryRemote({required ApiClient apiClient})
     : _apiClient = apiClient;
+
   final ApiClient _apiClient;
 
   @override
   Future<Result<List<Post>>> getUserPost(String id) async {
-    final result = await _apiClient.fetchUserPost(id);
-    return result.fold(
-      (data) {
-        List<dynamic> jsonList = jsonDecode(data);
-        final posts = jsonList
-            .map((post) => Post.fromJson(post as Map<String, dynamic>))
-            .toList();
-        return Result.ok(posts);
-      },
-      (error, stackTrace) {
-        return Result.error(error);
-      },
-    );
+    final result = await _apiClient.fetchUserPost();
+    return result.fold((data) {
+      final posts = (data as List).map((post) => Post.fromJson(post)).toList();
+      return Result.ok(posts);
+    }, (error, stackTrace) => Result.error(error));
   }
 
   @override
   Future<Result> createPost({
     required String content,
     required List<File>? mediaUrls,
-    required String userId,
     required DateTime createdAt,
     List<String>? hashtags,
   }) async {
     final result = await _apiClient.createPost(
       content: content,
-      mediaUrls: mediaUrls,
-      userId: userId,
+      media: mediaUrls,
       createdAt: createdAt,
       hashtags: hashtags,
     );
@@ -57,10 +47,9 @@ class PostRepositoryRemote implements PostRepository {
 
   @override
   Future<Result<List<Post>>> getFeed(String userId) async {
-    final result = await _apiClient.fetchFeed(userId);
+    final result = await _apiClient.fetchFeed();
     return result.fold((data) {
-      List<dynamic> jsonList = jsonDecode(data);
-      final posts = jsonList
+      final posts = (data as List)
           .map((post) => Post.fromJson(post as Map<String, dynamic>))
           .toList();
       return Result.ok(posts);
@@ -78,7 +67,6 @@ class PostRepositoryRemote implements PostRepository {
       postId: postId,
       comment: comment,
       createdAt: createdAt,
-      authorId: authorId,
     );
     return result.fold(
       (data) => Result.ok(null),
@@ -87,11 +75,8 @@ class PostRepositoryRemote implements PostRepository {
   }
 
   @override
-  Future<Result> likePost({
-    required String postId,
-    required String userId,
-  }) async {
-    final result = await _apiClient.likePost(postId: postId, userId: userId);
+  Future<Result> likePost({required String postId}) async {
+    final result = await _apiClient.likePost(postId);
     return result.fold(
       (data) => Result.ok(null),
       (error, stackTrace) => Result.error(error),
@@ -102,8 +87,7 @@ class PostRepositoryRemote implements PostRepository {
   Future<Result<List<Comment>>> getComments(String postId) async {
     final result = await _apiClient.fetchComments(postId);
     return result.fold((data) {
-      final List<dynamic> commentsList = jsonDecode(data);
-      final comments = commentsList
+      final comments = (data as List)
           .map((comment) => Comment.fromJson(comment))
           .toList();
       return Result.ok(comments);
@@ -111,19 +95,19 @@ class PostRepositoryRemote implements PostRepository {
   }
 
   @override
-  Future<Result<dynamic>> bookmarkPost({
-    required String postId,
-    required String userId,
-  }) async {
-    return await _apiClient.bookmarkPost(postId: postId, userId: userId);
+  Future<Result> bookmarkPost({required String postId}) async {
+    final result = await _apiClient.bookmarkPost(postId);
+    return result.fold(
+      (data) => Result.ok(null),
+      (error, stackTrace) => Result.error(error),
+    );
   }
 
   @override
   Future<Result<List<Post>>> getBookmarks(String userId) async {
-    final result = await _apiClient.fetchBookmarks(userId);
+    final result = await _apiClient.fetchBookmarks();
     return result.fold((data) {
-      List<dynamic> postList = jsonDecode(data);
-      final posts = postList.map((post) => Post.fromJson(post)).toList();
+      final posts = (data as List).map((post) => Post.fromJson(post)).toList();
       return Result.ok(posts);
     }, (error, stackTrace) => Result.error(error, stackTrace));
   }

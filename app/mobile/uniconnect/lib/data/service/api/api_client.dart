@@ -1,97 +1,91 @@
-import 'dart:convert';
 import 'dart:io';
-
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart' as http;
-import 'package:uniconnect/utils/result.dart';
 
-final apiClientProvider = Provider<ApiClient>((ref) => ApiClient());
+import '../../../ui/profile/view_models/user_provider.dart';
+import '../../../utils/result.dart';
+import 'routes/api_routes.dart';
+import 'token_refresher.dart';
+
+final apiClientProvider = Provider<ApiClient>((ref) {
+  final user = ref.watch(userProvider);
+
+  if (user == null) {
+    throw Exception('User not logged in');
+  }
+
+  return ApiClient(client: ref.watch(dioProvider), userId: user.id);
+});
 
 class ApiClient {
-  ApiClient({http.Client? client}) : _client = client ?? http.Client();
-  final http.Client _client;
+  final Dio _client;
+  final String _userId;
 
-  Future<Result<dynamic>> fetchUserPost(String id) async {
+  ApiClient({Dio? client, required String userId})
+      : _userId = userId,
+        _client = client ?? Dio();
+
+
+  Future<Result<List<Map<String,dynamic>>>> fetchUserPost() async {
     try {
-      final response = await _client.get(Uri.parse('/posts/$id'));
-      if (response.statusCode == 200) {
-        return Result.ok(response.body);
-      } else {
-        return Result.error(Exception('Couldn\'t fetch post'));
-      }
-    } catch (e) {
+      //todo: pagination
+      final response = await _client.get('${ApiRoutes.posts}/$_userId');
+      return Result.ok(response.data);
+    } on DioException catch (e) {
       return Result.error(e);
     }
   }
 
   Future<Result> createPost({
     required String content,
-    required List<File>? mediaUrls,
-    required String userId,
+    List<File>? media,
     required DateTime createdAt,
     List<String>? hashtags,
   }) async {
     try {
-      final request = http.MultipartRequest(
-        'POST',
-        Uri.http('localhost:8080', '/createPost/$userId'),
-      );
-      request.fields['content'] = content;
-      request.fields['createdAt'] = createdAt.toIso8601String();
-      if (hashtags != null) {
-        request.fields['hashtags'] = jsonEncode(hashtags);
-      }
-      if (mediaUrls != null) {
-        for (var file in mediaUrls) {
-          final multipartFile = await http.MultipartFile.fromPath(
-            'media',
+      final Map<String, dynamic> postData = {
+        'content': content,
+        'createdAt': createdAt.toIso8601String(),
+        'hashtags': ?hashtags,
+      };
+
+      if (media != null && media.isNotEmpty) {
+        postData['media'] = await Future.wait(
+          media.map((file) => MultipartFile.fromFile(
             file.path,
-          );
-          request.files.add(multipartFile);
-        }
+            filename: file.path.split('/').last,
+          )),
+        );
       }
-      final streamedResponse = await _client.send(request);
-      final response = await http.Response.fromStream(streamedResponse);
-      if (response.statusCode == 200) {
-        return Result.ok(null);
-      } else {
-        return Result.error(Exception('Failed to create post'));
-      }
-    } catch (e) {
-      return Result.error(e);
-    }
-  }
 
-  Future<Result<dynamic>> fetchFeed(String userId) async {
-    try {
-      final response = await _client.get(Uri.parse('/feed/$userId'));
-      if (response.statusCode == 200) {
-        return Result.ok(response.body);
-      } else {
-        return Result.error(Exception('Couldn\'t fetch feed!'));
-      }
-    } catch (e) {
-      return Result.error(e);
-    }
-  }
-
-  Future<Result> likePost({
-    required String postId,
-    required String userId,
-  }) async {
-    try {
+      final formData = FormData.fromMap(postData);
       final response = await _client.post(
-        Uri.parse('/likePost/$postId'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'userId': userId}),
+        '${ApiRoutes.posts}/$_userId',
+        data: formData,
       );
-      await Future.delayed(Duration(seconds: 5)); // Simulate network delay
-      if (response.statusCode == 200) {
-        return Result.ok(null);
-      } else {
-        return Result.error(Exception('Failed to like post'));
-      }
-    } catch (e) {
+
+      return Result.ok(response.data);
+    } on DioException catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<dynamic>> fetchFeed() async {
+    try {
+      //todo: pagination
+      final response = await _client.get('/feed/$_userId');
+      return Result.ok(response.data);
+    } on DioException catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result> likePost(String postId) async {
+    //todo: reaction type
+    try {
+      await _client.post('/likePost/$postId', data: {'userId': _userId});
+      return Result.ok(null);
+    } on DioException catch (e) {
       return Result.error(e);
     }
   }
@@ -100,73 +94,43 @@ class ApiClient {
     required String postId,
     required String comment,
     required DateTime createdAt,
-    required String authorId,
   }) async {
     try {
-      final response = await _client.post(
-        Uri.parse('/commentPost/$postId'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'postId': postId,
-          'comment': comment,
-          'createdAt': createdAt.toIso8601String(),
-          'authorId': authorId,
-        }),
-      );
-      await Future.delayed(Duration(seconds: 5));
-      if (response.statusCode == 200) {
-        return Result.ok(null);
-      } else {
-        return Result.error(Exception('Failed to comment on post'));
-      }
-    } catch (e) {
+      await _client.post('/commentPost/$postId', data: {
+        'postId': postId,
+        'comment': comment,
+        'createdAt': createdAt.toIso8601String(),
+        'authorId': _userId,
+      });
+      return Result.ok(null);
+    } on DioException catch (e) {
       return Result.error(e);
     }
   }
 
   Future<Result<dynamic>> fetchComments(String postId) async {
     try {
-      final response = await _client.get(Uri.parse('/comments/$postId'));
-      if (response.statusCode == 200) {
-        return Result.ok(response.body);
-      } else {
-        return Result.error(Exception('Couldn\'t fetch comments!'));
-      }
-    } catch (e) {
+      final response = await _client.get('/comments/$postId');
+      return Result.ok(response.data);
+    } on DioException catch (e) {
       return Result.error(e);
     }
   }
 
-  Future<Result> bookmarkPost({
-    required String postId,
-    required String userId,
-  }) async {
+  Future<Result> bookmarkPost(String postId) async {
     try {
-      final response = await _client.post(
-        Uri.parse('/bookmarkPost/$postId'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'userId': userId}),
-      );
-      await Future.delayed(Duration(seconds: 5)); // Simulate network delay
-      if (response.statusCode == 200) {
-        return Result.ok(null);
-      } else {
-        return Result.error(Exception('Failed to bookmark post'));
-      }
-    } catch (e) {
+      await _client.post('/bookmarkPost/$postId', data: {'userId': _userId});
+      return Result.ok(null);
+    } on DioException catch (e) {
       return Result.error(e);
     }
   }
 
-  Future<Result<dynamic>> fetchBookmarks(String userId) async {
+  Future<Result<dynamic>> fetchBookmarks() async {
     try {
-      final response = await _client.get(Uri.parse('/bookmarks/$userId'));
-      if (response.statusCode == 200) {
-        return Result.ok(response.body);
-      } else {
-        return Result.error(Exception('Couldn\'t fetch bookmarks!'));
-      }
-    } catch (e) {
+      final response = await _client.get('/bookmarks/$_userId');
+      return Result.ok(response.data);
+    } on DioException catch (e) {
       return Result.error(e);
     }
   }

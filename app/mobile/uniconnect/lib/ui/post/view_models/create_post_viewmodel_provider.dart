@@ -29,7 +29,6 @@ class CreatePostViewModel extends AsyncNotifier<void> {
     final result = await _postRepo.createPost(
       content: content,
       mediaUrls: mediaUrls,
-      userId: userId,
       createdAt: createdAt,
       hashtags: hashtags,
     );

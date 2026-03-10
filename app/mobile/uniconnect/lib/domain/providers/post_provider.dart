@@ -17,7 +17,7 @@ class PostProvider extends Notifier<void> {
     required String postId,
     required String userId,
   }) async {
-    final result = await _postRepo.likePost(postId: postId, userId: userId);
+    final result = await _postRepo.likePost(postId: postId);
     result.fold(
       (data) => null,
       (error, stackTrace) => Exception('Failed to like post'),
