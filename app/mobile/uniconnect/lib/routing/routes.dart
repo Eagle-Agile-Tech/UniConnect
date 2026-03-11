@@ -11,4 +11,7 @@ abstract final class Routes {
   static const String signup = '/signup';
   static const String setting = '/setting';
   static const String saved = '/saved';
+  static const String post = '/createPost';
+  static const String createCommunity = '/createCommunity';
+  static const String communities = '/communityCenter';
 }

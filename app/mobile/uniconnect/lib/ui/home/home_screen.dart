@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:uniconnect/ui/core/common/widgets/post_card/post_card.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
 import 'package:uniconnect/ui/home/view_models/home_viewmodel_provider.dart';
 import 'package:uniconnect/ui/home/widgets/drawer_content.dart';
 import 'package:uniconnect/ui/post/create_post.dart';
 import 'package:uniconnect/ui/profile/view_models/user_provider.dart';
+
+import '../../routing/routes.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -25,10 +28,7 @@ class HomeScreen extends ConsumerWidget {
         actions: [
           IconButton(
             // Todo: make the navigator router
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const CreatePostScreen()),
-            ),
+            onPressed: () => context.push(Routes.post),
             icon: const Icon(
               Icons.add_circle_outline_outlined,
               size: Dimens.iconLg,

@@ -9,6 +9,8 @@ import 'package:uniconnect/ui/post/create_post.dart';
 import 'package:uniconnect/ui/setting/saved_screen.dart';
 import 'package:uniconnect/utils/navigation_wrapper.dart';
 
+import '../ui/community/community_form.dart';
+import '../ui/community/explore_community.dart';
 import '../ui/search/search_screen.dart';
 import '../ui/setting/setting_screen.dart';
 
@@ -68,6 +70,18 @@ final router = GoRouter(
     GoRoute(
       path: Routes.saved,
       builder: (context,state) => const SavedScreen(),
-    )
+    ),
+    GoRoute(
+      path: Routes.post,
+      builder: (context,state) => const CreatePostScreen()
+    ),
+    GoRoute(
+      path: Routes.createCommunity,
+      builder: (context,state) => const CreateCommunityScreen()
+    ),
+    GoRoute(
+      path: Routes.communities,
+      builder: (context,state) => const ExploreCommunityScreen()
+    ),
   ],
 );
