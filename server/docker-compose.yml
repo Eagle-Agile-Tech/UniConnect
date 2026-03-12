@@ -44,14 +44,15 @@ services:
         condition: service_healthy
     env_file:
       - .env.docker
+    environment:
+      PRISMA_ENV: docker
     ports:
       - "${API_HOST_PORT:-3000}:3000"
     command: >
-      sh -c "cd /app/Database &&
-             npx prisma generate --schema prisma/schema.prisma &&
-             npx prisma migrate deploy --schema prisma/schema.prisma &&
-             cd /app/src &&
-             npm run start"
+      sh -c "cd /app/src &&
+             npm run db:generate &&
+             npm run db:migrate &&
+             npm run dev"
 
 volumes:
   db_data:

@@ -7,7 +7,10 @@
     "dev": "nodemon app.js",
     "start": "node app.js",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev"
+    "prisma:migrate": "prisma migrate dev",
+    "db:generate": "prisma generate --schema ../Database/prisma/schema.prisma --config ../Database/prisma.config.cjs",
+    "db:migrate": "prisma migrate deploy --schema ../Database/prisma/schema.prisma --config ../Database/prisma.config.cjs",
+    "db:migrate:dev": "prisma migrate dev --schema ../Database/prisma/schema.prisma --config ../Database/prisma.config.cjs"
   },
   "keywords": [],
   "author": "",
