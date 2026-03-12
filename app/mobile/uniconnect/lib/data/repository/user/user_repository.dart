@@ -1,8 +1,6 @@
-import 'dart:io';
-
-import 'package:uniconnect/data/service/api/models/create_account/create_account_response.dart';
-
+import '../../../domain/models/user/user.dart';
 import '../../../utils/result.dart';
 
 abstract class UserRepository {
+  Future<Result<List<User>>> searchUsers(String keyWord);
 }

@@ -111,4 +111,13 @@ class PostRepositoryRemote implements PostRepository {
       return Result.ok(posts);
     }, (error, stackTrace) => Result.error(error, stackTrace));
   }
+
+  @override
+  Future<Result<List<Post>>> searchPosts(String keyWord) async {
+    final result = await _apiClient.searchPosts(keyWord);
+    return result.fold((data) {
+      final posts = data.map((user) => Post.fromJson(user)).toList();
+      return Result.ok(posts);
+    }, (error, _) => Result.error(error));
+  }
 }

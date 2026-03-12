@@ -22,11 +22,10 @@ class ApiClient {
   final String _userId;
 
   ApiClient({Dio? client, required String userId})
-      : _userId = userId,
-        _client = client ?? Dio();
+    : _userId = userId,
+      _client = client ?? Dio();
 
-
-  Future<Result<List<Map<String,dynamic>>>> fetchUserPost() async {
+  Future<Result<List<Map<String, dynamic>>>> fetchUserPost() async {
     try {
       //todo: pagination
       final response = await _client.get('${ApiRoutes.posts}/$_userId');
@@ -51,10 +50,12 @@ class ApiClient {
 
       if (media != null && media.isNotEmpty) {
         postData['media'] = await Future.wait(
-          media.map((file) => MultipartFile.fromFile(
-            file.path,
-            filename: file.path.split('/').last,
-          )),
+          media.map(
+            (file) => MultipartFile.fromFile(
+              file.path,
+              filename: file.path.split('/').last,
+            ),
+          ),
         );
       }
 
@@ -96,12 +97,15 @@ class ApiClient {
     required DateTime createdAt,
   }) async {
     try {
-      await _client.post('/commentPost/$postId', data: {
-        'postId': postId,
-        'comment': comment,
-        'createdAt': createdAt.toIso8601String(),
-        'authorId': _userId,
-      });
+      await _client.post(
+        '/commentPost/$postId',
+        data: {
+          'postId': postId,
+          'comment': comment,
+          'createdAt': createdAt.toIso8601String(),
+          'authorId': _userId,
+        },
+      );
       return Result.ok(null);
     } on DioException catch (e) {
       return Result.error(e);
@@ -130,6 +134,25 @@ class ApiClient {
     try {
       final response = await _client.get('/bookmarks/$_userId');
       return Result.ok(response.data);
+    } on DioException catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<List<Map<String, dynamic>>>> searchUsers(String keyWord) async {
+    try {
+      final response = await _client.get('/searchUsers/$keyWord');
+      List data = response.data;
+      return Result.ok(data.cast<Map<String, dynamic>>());
+    } on DioException catch (e) {
+      return Result.error(e);
+    }
+  }
+  Future<Result<List<Map<String, dynamic>>>> searchPosts(String keyWord) async {
+    try {
+      final response = await _client.get('/searchPosts/$keyWord');
+      List data = response.data;
+      return Result.ok(data.cast<Map<String, dynamic>>());
     } on DioException catch (e) {
       return Result.error(e);
     }
