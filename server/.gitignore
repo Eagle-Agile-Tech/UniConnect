@@ -5,3 +5,6 @@ src/node_modules
 .env.docker.example
 
 
+# local docker runtime data
+docker_data/
+.env
