@@ -33,10 +33,10 @@ enum Visibility {
   PRIVATE 
   }
 enum ReactionType { 
-  LIKE,        // 👍 Thumbs up
-  LOVE,        // ❤️ Heart
-  INSIGHTFUL,  // 💡 Light bulb
-  SUPPORT,     // 🤝 Helping hands / support gesture
+  LIKE         // 👍 Thumbs up
+  LOVE         // ❤️ Heart
+  INSIGHTFUL   // 💡 Light bulb
+  SUPPORT      // 🤝 Helping hands / support gesture
   CELEBRATE    // 🎉 Party popper / celebration
 }
 enum GroupType { 
@@ -193,6 +193,8 @@ model University {
 model UserProfile {
   id             String         @id @default(uuid())
   userId         String         @unique
+  username       String         @unique
+  fullName       String?
 
   bio            String?
   profileImage   String?
