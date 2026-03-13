@@ -7,6 +7,7 @@ const morgan = require('morgan');
 const { isProduction } = require('./config/env');
 const redisClient = require('./config/redis');
 const authRoutes = require('./modules/auth/auth.routes');
+const userRoutes = require('./modules/userManagement/user.route');
 const errorHandler = require('./middlewares/errorhHandler');
 
 const app = express();
@@ -30,6 +31,7 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 app.use(errorHandler);
 
 redisClient.on('connect', () => {
