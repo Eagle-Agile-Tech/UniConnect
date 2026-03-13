@@ -9,6 +9,8 @@ abstract class Post with _$Post {
     required String id,
     required String content,
     required String authorId,
+    String? authorProfilePicture,
+    required String authorName,
     final List<String>? mediaUrls,
     required DateTime createdAt,
     final List<String>? hashtags,

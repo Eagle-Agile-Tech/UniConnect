@@ -8,7 +8,7 @@ import 'routes/api_routes.dart';
 import 'token_refresher.dart';
 
 final apiClientProvider = Provider<ApiClient>((ref) {
-  final user = ref.watch(userProvider);
+  final user = ref.watch(currentUserProvider);
 
   if (user == null) {
     throw Exception('User not logged in');
@@ -25,12 +25,29 @@ class ApiClient {
     : _userId = userId,
       _client = client ?? Dio();
 
-  Future<Result<List<Map<String, dynamic>>>> fetchUserPost() async {
+  Future<Result<List<Map<String, dynamic>>>> fetchUserPost(
+    String userId,
+  ) async {
     try {
       //todo: pagination
-      final response = await _client.get('${ApiRoutes.posts}/$_userId');
-      return Result.ok(response.data);
+      final response = await _client.get('/${ApiRoutes.posts}/$userId');
+      final List data = response.data;
+      return Result.ok(data.cast<Map<String, dynamic>>());
     } on DioException catch (e) {
+      return Result.error(e);
+    } catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<Map<String, dynamic>>> fetchUser(String userId) async {
+    try {
+      final response = await _client.get('/getUser/$userId');
+      final Map<String, dynamic> data = response.data;
+      return Result.ok(data);
+    } on DioException catch (e) {
+      return Result.error(e);
+    } catch (e) {
       return Result.error(e);
     }
   }
@@ -148,6 +165,7 @@ class ApiClient {
       return Result.error(e);
     }
   }
+
   Future<Result<List<Map<String, dynamic>>>> searchPosts(String keyWord) async {
     try {
       final response = await _client.get('/searchPosts/$keyWord');

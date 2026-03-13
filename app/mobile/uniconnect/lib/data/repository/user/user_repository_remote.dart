@@ -22,4 +22,13 @@ class UserRepositoryRemote implements UserRepository {
       return Result.ok(users);
     }, (error, _) => Result.error(error));
   }
+
+  @override
+  Future<Result<User>> getUser(String id) async {
+    final result = await _client.fetchUser(id);
+    return result.fold((data) {
+      final user = User.fromJson(data);
+      return Result.ok(user);
+    }, (error, _) => Result.error(error));
+  }
 }

@@ -19,9 +19,9 @@ class PostRepositoryRemote implements PostRepository {
 
   @override
   Future<Result<List<Post>>> getUserPost(String id) async {
-    final result = await _apiClient.fetchUserPost();
+    final result = await _apiClient.fetchUserPost(id);
     return result.fold((data) {
-      final posts = (data as List).map((post) => Post.fromJson(post)).toList();
+      final posts = data.map((post) => Post.fromJson(post)).toList();
       return Result.ok(posts);
     }, (error, stackTrace) => Result.error(error));
   }

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../../../config/assets.dart';
+import '../../../../../../routing/routes.dart';
 import '../post_card.dart';
 
 class PostAuthor extends StatelessWidget {
@@ -12,13 +14,16 @@ class PostAuthor extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: CircleAvatar(
-        backgroundImage: widget.author.profilePicture != null
-            ? NetworkImage(widget.author.profilePicture!)
-            : AssetImage(Assets.defaultAvatar),
+      leading: GestureDetector(
+        onTap: () => context.push(Routes.userProfile(widget.post.authorId)),
+        child: CircleAvatar(
+          backgroundImage: widget.post.authorProfilePicture != null
+              ? NetworkImage(widget.post.authorProfilePicture!)
+              : AssetImage(Assets.defaultAvatar),
+        ),
       ),
       title: Text(
-        widget.author.fullName,
+        widget.post.authorName,
         style: Theme.of(
           context,
         ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),

@@ -11,6 +11,7 @@ import 'package:uniconnect/utils/navigation_wrapper.dart';
 
 import '../ui/community/community_form.dart';
 import '../ui/community/explore_community.dart';
+import '../ui/profile/profile_screen.dart';
 import '../ui/search/search_screen.dart';
 import '../ui/setting/setting_screen.dart';
 
@@ -83,5 +84,13 @@ final router = GoRouter(
       path: Routes.communities,
       builder: (context,state) => const ExploreCommunityScreen()
     ),
+
+    GoRoute(
+      path: Routes.userProfilePath,
+        builder: (context,state) {
+          final userId = state.pathParameters['userId']!;
+          return ProfileScreen(userId: userId);
+        }
+    )
   ],
 );

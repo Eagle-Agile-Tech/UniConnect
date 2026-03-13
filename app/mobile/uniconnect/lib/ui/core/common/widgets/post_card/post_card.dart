@@ -13,9 +13,8 @@ import '../../../../../domain/models/user/user.dart';
 import '../../../theme/colors.dart';
 
 class UCPostCard extends ConsumerStatefulWidget {
-  const UCPostCard({required this.author, required this.post, super.key});
+  const UCPostCard({required this.post, super.key});
 
-  final User author;
   final Post post;
 
   @override

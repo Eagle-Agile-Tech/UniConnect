@@ -3,21 +3,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../config/assets.dart';
+import '../../../domain/models/user/user.dart';
 import '../../../routing/routes.dart';
 import '../../core/theme/dimens.dart';
 import '../view_models/user_provider.dart';
 
 class ProfileHeader extends ConsumerWidget{
-  const ProfileHeader({super.key});
+  const ProfileHeader({super.key, required this.user, required this.isMe});
+  final User user;
+  final bool isMe;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(userProvider);
-    if (user == null) {
-      return Column(children: [Center(child: const Text('No User'))]);
-    }
     return Column(
       children: [
+        if(isMe)
         Align(
           alignment: AlignmentGeometry.topEnd,
           child: IconButton(
@@ -25,6 +25,14 @@ class ProfileHeader extends ConsumerWidget{
             icon: const Icon(Icons.settings),
           ),
         ),
+        if(!isMe)
+          Align(
+            alignment: Alignment.topLeft,
+            child: IconButton(
+              onPressed: () => context.pop(),
+              icon: const Icon(Icons.arrow_back),
+            ),
+          ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: Dimens.defaultSpace),
           child: Column(

@@ -14,4 +14,6 @@ abstract final class Routes {
   static const String post = '/createPost';
   static const String createCommunity = '/createCommunity';
   static const String communities = '/communityCenter';
+  static String userProfile(String userId) => '/userProfile/$userId';
+  static const String userProfilePath = '/userProfile/:userId';
 }
