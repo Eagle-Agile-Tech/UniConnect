@@ -57,7 +57,6 @@ class CommunityScreen extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 10),
                 itemCount: 10,
                 itemBuilder: (context, index) => UCPostCard(
-                  author: UCDummyData.user,
                   post: UCDummyData.post,
                 ),
               ),

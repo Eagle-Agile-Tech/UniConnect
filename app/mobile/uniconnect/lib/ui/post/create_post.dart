@@ -79,7 +79,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                               .createPost(
                                 content: _contentController.text.trim(),
                                 mediaUrls: mediaUrls,
-                                userId: ref.read(userProvider)!.id,
+                                userId: ref.read(currentUserProvider)!.id,
                                 createdAt: DateTime.now(),
                                 hashtags: UCHelperFunctions.extractHashtags(
                                   _contentController.text.trim(),

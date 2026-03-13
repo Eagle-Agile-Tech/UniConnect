@@ -163,7 +163,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   searchedPost.when(
                     data: (data) => Column(
                       children: data.map((post) {
-                        return UCPostCard(author: UCDummyData.user, post: post);
+                        return UCPostCard( post: post);
                       }).toList(),
                     ),
                     loading: () =>

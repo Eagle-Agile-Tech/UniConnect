@@ -50,7 +50,6 @@ class HomeScreen extends ConsumerWidget {
             itemCount: posts.length,
             itemBuilder: (context, index) {
               return UCPostCard(
-                author: ref.read(userProvider)!,
                 post: posts[index],
               );
             },

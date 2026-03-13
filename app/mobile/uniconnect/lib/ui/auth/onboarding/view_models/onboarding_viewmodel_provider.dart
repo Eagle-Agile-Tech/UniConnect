@@ -135,7 +135,7 @@ class OnboardingViewmodel extends Notifier<OnboardingState> {
             currentStep: OnboardingStep.completed,
             isLoading: false,
           );
-          ref.read(userProvider.notifier).state = User(
+          ref.read(currentUserProvider.notifier).state = User(
             id: state.id,
             firstName: state.firstName,
             lastName: state.lastName,

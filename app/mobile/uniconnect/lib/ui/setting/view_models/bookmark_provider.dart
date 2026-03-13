@@ -17,7 +17,7 @@ class BookmarkProvider extends AsyncNotifier<List<Post>> {
   @override
   FutureOr<List<Post>> build() async {
     _postRepo = ref.watch(postRemoteProvider);
-    final userId = ref.watch(userProvider)?.id;
+    final userId = ref.watch(currentUserProvider)?.id;
     if (userId == null) return [];
     final result = await _postRepo.getBookmarks(userId);
     return result.fold((posts) {

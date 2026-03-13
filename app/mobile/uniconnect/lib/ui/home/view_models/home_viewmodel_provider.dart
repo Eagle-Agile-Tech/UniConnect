@@ -23,7 +23,7 @@ class HomeViewmodelProvider extends AsyncNotifier<List<Post>> {
 
   Future<List<Post>> _fetchPosts() async {
     state = const AsyncValue.loading();
-    final result = await _postRepo.getFeed(ref.read(userProvider)!.id);
+    final result = await _postRepo.getFeed(ref.read(currentUserProvider)!.id);
     return result.fold(
           (data) => data,
           (error, stackTrace) =>

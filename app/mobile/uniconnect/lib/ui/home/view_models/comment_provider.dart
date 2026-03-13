@@ -44,9 +44,9 @@ class CommentNotifier extends AsyncNotifier<List<Comment>> {
       id: DateTime.now().toString(),
       content: content,
       postId: postId,
-      authorId: ref.read(userProvider)!.id,
-      authorName: ref.read(userProvider)!.fullName,
-      authorProfilePicUrl: ref.read(userProvider)!.profilePicture ?? '',
+      authorId: ref.read(currentUserProvider)!.id,
+      authorName: ref.read(currentUserProvider)!.fullName,
+      authorProfilePicUrl: ref.read(currentUserProvider)!.profilePicture ?? '',
       createdAt: DateTime.now(),
       likeCount: 0,
     );
@@ -55,7 +55,7 @@ class CommentNotifier extends AsyncNotifier<List<Comment>> {
       postId: postId,
       comment: content,
       createdAt: DateTime.now(),
-      authorId: ref.read(userProvider)!.id,
+      authorId: ref.read(currentUserProvider)!.id,
     );
     result.fold(
       (data) => null,

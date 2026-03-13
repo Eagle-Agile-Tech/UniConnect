@@ -32,7 +32,6 @@ class SavedScreen extends ConsumerWidget {
               itemCount: data.length,
               itemBuilder: (context, index) {
                 return UCPostCard(
-                  author: ref.read(userProvider)!,
                   post: data[index],
                 );
               },
