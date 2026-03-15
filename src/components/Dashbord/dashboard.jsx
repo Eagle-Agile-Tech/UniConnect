@@ -1,12 +1,11 @@
 import React from 'react'
-import statusGrid from './statusGrid'
-export default function dashboard() {
+import StatusGrid from './statusGrid'  
+export default function Dashboard() {
   return (
-
-    <div classname="space-y-6">
+    <div className="space-y-6">  
       {/* status grid */}
-      
-      <statusGrid/>
+      <StatusGrid />  
     </div>
   )
 }
+
