@@ -8,6 +8,7 @@ const { AppError } = require('../../errors');
 const mailer = require('../../config/mailer');
 const verificationTemplate = require('../../templates/verificationEmail');
 const passwordResetTemplate = require('../../templates/passwordResetEmail');
+const idVerificationSubmittedTemplate = require('../../templates/idVerificationSubmitted');
 const universityDomains = require('../../lib/data/universities.json');
 const verifyGoogleToken = require('../../lib/googleAuth');
 
@@ -62,6 +63,36 @@ class AuthService {
 
   sessionKey(sessionId) {
     return `session:${sessionId}`;
+  }
+
+  sanitizeUsername(value) {
+    return (value || '')
+      .toLowerCase()
+      .replace(/\s+/g, '')
+      .replace(/[^a-z0-9._-]/g, '')
+      .slice(0, 30) || 'user';
+  }
+
+  async resolveUniqueUsername(baseValue, db = prisma) {
+    const baseUsername = this.sanitizeUsername(baseValue);
+    for (let i = 0; i < 5; i += 1) {
+      const candidate = i === 0
+        ? baseUsername
+        : `${baseUsername}-${Math.floor(1000 + Math.random() * 9000)}`;
+      const existing = await db.userProfile.findUnique({
+        where: { username: candidate },
+        select: { id: true },
+      });
+      if (!existing) return candidate;
+    }
+    return `${baseUsername}-${crypto.randomUUID().slice(0, 8)}`;
+  }
+
+  getUsernameSeed({ email, firstName, lastName }) {
+    const localPart = email?.split('@')[0]?.replace(/[^a-z0-9._-]/gi, '') || '';
+    if (localPart) return localPart;
+    const fallback = `${firstName || ''}${lastName || ''}`.trim();
+    return fallback || 'user';
   }
 
   async cacheSessionIndex({ sessionId, userId, expiresAt }) {
@@ -200,6 +231,13 @@ class AuthService {
         verificationStatus: 'PENDING',
         verificationMethod: 'UNIVERSITY_EMAIL',
       },
+    });
+
+    const username = await this.resolveUniqueUsername(
+      this.getUsernameSeed({ email, firstName: data.firstName, lastName: data.lastName })
+    );
+    await prisma.userProfile.create({
+      data: { userId: user.id, universityId: universityRecord?.id, username },
     });
 
     await this.issueEmailOtp(email);
@@ -382,6 +420,16 @@ return {
     });
   }
 
+  async sendIdVerificationSubmittedEmail(email, name) {
+    const template = idVerificationSubmittedTemplate(name);
+    await mailer.sendEmail({
+      to: email,
+      subject: template.subject,
+      text: template.text,
+      html: template.html,
+    });
+  }
+
   // ==========================
   // LOGIN FLOW
   // ==========================
@@ -396,7 +444,16 @@ return {
 
     const valid = await bcrypt.compare(data.password, user.passwordHash);
     if (!valid) throw new AuthError('Invalid email or password');
-    if (user.verificationStatus === 'PENDING') throw new AuthError('Email not verified', 403);
+    if (user.verificationMethod === 'ID_DOCUMENT_ADMIN') {
+      if (user.verificationStatus === 'PENDING') {
+        throw new AuthError('ID verification pending', 403);
+      }
+      if (user.verificationStatus === 'REJECTED') {
+        throw new AuthError('ID verification rejected', 403);
+      }
+    } else if (user.verificationStatus === 'PENDING') {
+      throw new AuthError('Email not verified', 403);
+    }
 
     const sessionId = crypto.randomUUID();
     const accessToken = this.signAccessToken(user);
@@ -404,7 +461,7 @@ return {
 
     await this.createSession({ userId: user.id, refreshToken, deviceInfo, sessionId });
 
-    return { accessToken, refreshToken };
+    return { accessToken, refreshToken , sessionId };
   }
 
   async refreshToken(token) {
@@ -470,8 +527,17 @@ return {
           },
         });
 
+        const username = await this.resolveUniqueUsername(
+          this.getUsernameSeed({ email, firstName: googleUser.firstName, lastName: googleUser.lastName }),
+          tx
+        );
         await tx.userProfile.create({
-          data: { userId: newUser.id, universityId: universityRecord?.id, profileImage: googleUser.picture },
+          data: {
+            userId: newUser.id,
+            universityId: universityRecord?.id,
+            profileImage: googleUser.picture,
+            username,
+          },
         });
 
         return newUser;
@@ -559,8 +625,12 @@ return {
             },
           });
 
+          const username = await this.resolveUniqueUsername(
+            this.getUsernameSeed({ email, firstName, lastName }),
+            tx
+          );
           await tx.userProfile.create({
-            data: { userId: newUser.id },
+            data: { userId: newUser.id, username },
           });
 
           return newUser;
@@ -595,6 +665,15 @@ return {
       where: { id: userId },
       data: { verificationMethod: 'ID_DOCUMENT_ADMIN', verificationStatus: 'PENDING' },
     });
+
+    const userForEmail = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true, firstName: true, lastName: true },
+    });
+    if (userForEmail?.email) {
+      const name = `${userForEmail.firstName || ''} ${userForEmail.lastName || ''}`.trim() || undefined;
+      await this.sendIdVerificationSubmittedEmail(userForEmail.email, name);
+    }
 
     return { message: 'ID verification submitted successfully', request };
   }

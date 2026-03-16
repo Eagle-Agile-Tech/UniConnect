@@ -4,3 +4,6 @@ Config/.env
 # local docker runtime data
 docker_data/
 .env
+.env.docker
+.env.docker.example
+src/node_modules/

@@ -62,6 +62,7 @@ function errorHandler(err, req, res, next) { // eslint-disable-line no-unused-va
     message: error.message,
     path: req.originalUrl,
     method: req.method,
+    ...(error.details && { details: error.details }),
     stack: error.stack,
     isOperational: error.isOperational,
   };
@@ -77,11 +78,22 @@ function errorHandler(err, req, res, next) { // eslint-disable-line no-unused-va
     : error.message;
   const errorCode = deriveErrorCode(error);
 
+  const isValidationError = error instanceof ValidationError;
+  const validationPayload = isValidationError
+    ? {
+        validation: {
+          source: error.source || 'body',
+          ...(isDevelopment && error.details && { errors: error.details }),
+        },
+      }
+    : {};
+
   res.status(error.statusCode).json({
     status: error.statusCode < 500 ? 'fail' : 'error',
     errorCode,
     message,
     ...(isDevelopment && error.details && { errors: error.details }),
+    ...validationPayload,
     ...(isDevelopment && { stack: error.stack }),
   });
 }
