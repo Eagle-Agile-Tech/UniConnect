@@ -6,8 +6,11 @@ const morgan = require('morgan');
 
 const { isProduction } = require('./config/env');
 const redisClient = require('./config/redis');
+const userRoutes = require('./modules/userManagement/user.route');
 const authRoutes = require('./modules/auth/auth.routes');
+const adminRoutes = require('./modules/admin/admin.route');
 const errorHandler = require('./middlewares/errorhHandler');
+const initAdmin = require('./config/initAdmin');
 
 const app = express();
 
@@ -30,22 +33,29 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/users', userRoutes);
+
 app.use(errorHandler);
-
-redisClient.on('connect', () => {
-  console.log('Redis connected');
-});
-
-redisClient.on('error', (err) => {
-  console.error('Redis error:', err.message);
-});
-
-redisClient.connect().catch((err) => {
-  console.error('Redis connection failed:', err.message);
-});
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+async function startServer() {
+  try {
+
+    await redisClient.connect();
+    console.log('Redis connected');
+
+    await initAdmin();
+
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+
+  } catch (err) {
+    console.error('Startup failed:', err.message);
+    process.exit(1);
+  }
+}
+
+startServer();

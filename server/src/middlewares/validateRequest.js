@@ -7,6 +7,7 @@ function validateRequest(schema, source = 'body') {
 
     if (!result.success) {
       const validationError = new ValidationError('Request validation failed');
+      validationError.source = source;
       validationError.details = result.error.issues.map((issue) => ({
         path: issue.path.join('.'),
         message: issue.message,

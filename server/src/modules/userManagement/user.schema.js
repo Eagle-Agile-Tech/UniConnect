@@ -27,16 +27,12 @@ const checkUsernameSchema = zod.object({
     .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores'),
 });
 
-const listUserProfilesSchema = zod.object({
-  search: zod.string().max(100, 'Search must be at most 100 characters').optional(),
-  limit: zod.coerce.number().int().min(1).max(100).optional(),
-  offset: zod.coerce.number().int().min(0).optional(),
-});
+
 
 module.exports = {
   createUserSchema,
   updateUserSchema,
   upsertUserSchema,
   checkUsernameSchema,
-  listUserProfilesSchema,
+  
 };

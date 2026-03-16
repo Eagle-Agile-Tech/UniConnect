@@ -72,18 +72,7 @@ class UserController {
     }
   }
 
-  async listUserProfiles(req, res, next) {
-    try {
-      const userId = req.user?.id;
-      const result = await userService.listUserProfiles({
-        ...req.query,
-        currentUserId: userId,
-      });
-      res.status(200).json(result);
-    } catch (err) {
-      next(err);
-    }
-  }
+  
 }
 
 module.exports = new UserController();
