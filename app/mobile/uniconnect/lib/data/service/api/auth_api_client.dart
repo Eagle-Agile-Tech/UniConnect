@@ -1,50 +1,50 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart' as http;
-import 'package:uniconnect/data/service/api/models/create_account/create_account_response.dart';
-import 'package:uniconnect/utils/result.dart';
+import '../../../utils/result.dart';
+import 'models/create_account/create_account_response.dart';
 
-final authApiClientProvider = Provider((ref) => AuthApiClient());
+final authApiProvider = Provider((ref) => AuthApiClient());
+
+final String baseUrl = 'http://localhost:3000/api';
 
 class AuthApiClient {
-  final http.Client client;
+  final Dio _client;
 
-  AuthApiClient({http.Client? client}) : client = client ?? http.Client();
+  AuthApiClient({Dio? client}) : _client = client ?? Dio(BaseOptions(baseUrl: baseUrl));
 
   Future<Result<CreateAccountResponse>> createUserAccount({
     required String firstName,
     required String lastName,
-    required String username,
     required String email,
     required String password,
   }) async {
     try {
-      var response = await client.post(
-        Uri.http('localhost:8080', '/createAccount'),
-        body: {
+      final response = await _client.post(
+        'auth/register',
+        data: {
           'firstName': firstName,
           'lastName': lastName,
-          'username': username,
           'email': email,
           'password': password,
         },
       );
-      if (response.statusCode == 200) {
-        return Result.ok(
-          CreateAccountResponse.fromJson(jsonDecode(response.body)),
-        );
-      } else {
-        return Result.error(Exception('Failed to create account'));
-      }
-    } catch (e) {
+    //todo: otp under discussion
+      return Result.ok(CreateAccountResponse.fromJson(response.data));
+    } on DioException catch (e) {
       return Result.error(e);
+    } catch (e) {
+      return Result.error(Exception(e.toString()));
     }
   }
 
-  Future<Result<String>> createUserProfile({
+  //todo: create username checker
+
+  Future<Result<Map<String,dynamic>>> createUserProfile({
     required String id,
+    required String username,
     required String university,
     required String degree,
     required String currentYear,
@@ -55,41 +55,30 @@ class AuthApiClient {
     File? profilePicture,
   }) async {
     try {
-      var request = http.MultipartRequest(
-        'POST',
-        Uri.http('localhost:8080', '/createProfile'),
-      );
-      request.fields['id'] = id;
-      request.fields['university'] = university;
-      request.fields['degree'] = degree;
-      request.fields['currentYear'] = currentYear;
-      request.fields['expectedGraduationYear'] = expectedGraduationYear
-          .toIso8601String();
-      request.fields['createdAt'] = createdAt.toIso8601String();
-      if (bio != null) request.fields['bio'] = bio;
-      if (interests != null) {
-        request.fields['interests'] = jsonEncode(interests);
-      }
+      final Map<String, dynamic> userData = {
+        'id': id,
+        'university': university,
+        'degree': degree,
+        'username': username,
+        'currentYear': currentYear,
+        'expectedGraduationYear': expectedGraduationYear.toIso8601String(),
+        'createdAt': createdAt.toIso8601String(),
+        'bio': ?bio,
+        if (interests != null) 'interests': jsonEncode(interests),
+      };
+
       if (profilePicture != null) {
-        final stream = http.ByteStream(profilePicture.openRead());
-        final length = await profilePicture.length();
-        final image = http.MultipartFile(
-          'profilePicture',
-          stream,
-          length,
-          filename: profilePicture.path,
+        userData['profilePicture'] = await MultipartFile.fromFile(
+          profilePicture.path,
+          filename: profilePicture.path.split('/').last,
         );
-        request.files.add(image);
       }
-      var streamResponse = await client.send(request);
-      final response = await http.Response.fromStream(streamResponse);
-      // The API is expected to return the URL of the uploaded profile picture on success
-      if (response.statusCode == 200) {
-        final responseBody = jsonDecode(response.body);
-        return Result.ok(responseBody['profilePicture'] as String);
-      } else {
-        return Result.error(Exception('Failed to create profile'));
-      }
+      final formData = FormData.fromMap(userData);
+      final response = await _client.post('/createProfile/$id', data: formData);
+      // Response contains tokens plus profile picture url
+      return Result.ok(response.data);
+    } on DioException catch (e) {
+      return Result.error(e);
     } catch (e) {
       return Result.error(e);
     }

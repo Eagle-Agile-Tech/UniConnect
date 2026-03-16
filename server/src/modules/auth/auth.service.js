@@ -28,6 +28,7 @@ class AuthService {
     return email.trim().toLowerCase();
   }
 
+
   hashToken(token) {
     return crypto.createHash('sha256').update(token).digest('hex');
   }
@@ -219,9 +220,8 @@ class AuthService {
     if (existingUser) throw new AuthError('Email already registered', 409);
 
     const hashedPassword = await bcrypt.hash(data.password, 12);
-    const universityRecord = await this.getOrCreateUniversity(university);
 
-    const user = await prisma.user.create({
+    await prisma.user.create({
       data: {
         firstName: data.firstName,
         lastName: data.lastName,
@@ -245,6 +245,7 @@ class AuthService {
     return {
       message: 'Registration successful. Please verify email with the OTP sent.',
       universityDetected: university.name,
+    
     };
   }
 
@@ -272,9 +273,47 @@ class AuthService {
     }
 
     await prisma.user.update({ where: { id: user.id }, data: { verificationStatus: 'EMAIL_VERIFIED' } });
+    user.verificationStatus = 'EMAIL_VERIFIED';
     await redisClient.del(this.otpKey(email), this.otpAttemptsKey(email), this.otpResendKey(email));
 
-    return { message: 'Email verified successfully' };
+    if (user.verificationMethod === 'UNIVERSITY_EMAIL') {
+      const detectedUniversity = this.detectUniversity(email);
+      const universityRecord = await this.getOrCreateUniversity(detectedUniversity);
+      if (universityRecord?.id) {
+        await prisma.userProfile.updateMany({
+          where: {
+            userId: user.id,
+            universityId: null,
+          },
+          data: {
+            universityId: universityRecord.id,
+          },
+        });
+      }
+    }
+
+   const sessionId = crypto.randomUUID();
+
+   const refreshToken = this.signRefreshToken(user, sessionId);
+
+await this.createSession({
+  userId: user.id,
+  refreshToken,
+  sessionId
+});
+
+const accessToken = this.signAccessToken(user);
+
+return {
+  message: 'Email verified successfully',
+  user: {
+    id: user.id,
+    email: user.email,
+    verificationStatus: user.verificationStatus
+  },
+  accessToken,
+  refreshToken
+};
   }
 
   async resendOtp(emailInput) {

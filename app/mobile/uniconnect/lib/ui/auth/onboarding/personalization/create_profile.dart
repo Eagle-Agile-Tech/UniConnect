@@ -29,6 +29,7 @@ class _CreateProfileState extends ConsumerState<CreateProfile> {
   XFile? _profileImage;
 
   final TextEditingController _bioController = TextEditingController();
+  final TextEditingController _usernameController = TextEditingController();
 
   List<InterestRecord> _selectedInterests = [];
 
@@ -43,6 +44,13 @@ class _CreateProfileState extends ConsumerState<CreateProfile> {
     } catch (e) {
       return e;
     }
+  }
+
+  @override
+  void dispose() {
+    _bioController.dispose();
+    _usernameController.dispose();
+    super.dispose();
   }
 
   @override
@@ -108,6 +116,15 @@ class _CreateProfileState extends ConsumerState<CreateProfile> {
                     'Pick Image',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
+                ),
+                const SizedBox(height: Dimens.defaultSpace),
+                TextFormField(
+                  controller: _usernameController,
+                  validator: (value) => UCValidator.validateConfirmPassword(
+                    value,
+                    _usernameController.text.trim(),
+                  ),
+                  decoration: const InputDecoration(labelText: 'Username'),
                 ),
                 const SizedBox(height: Dimens.defaultSpace),
                 TextFormField(
@@ -179,13 +196,14 @@ class _CreateProfileState extends ConsumerState<CreateProfile> {
                     //Todo: what if the profile image is not selected?
                     onboarding.updateProfile(
                       _bioController.text.trim(),
+                      _usernameController.text.trim(),
                       _selectedInterests.toSet() as List<InterestRecord>?,
                       File(_profileImage!.path),
                     );
                     final result = await onboarding.completeOnboarding();
-                    if(result == null){
+                    if (result == null) {
                       context.go(Routes.home);
-                    }else{
+                    } else {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text(result.error.toString())),
                       );

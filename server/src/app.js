@@ -9,6 +9,7 @@ const redisClient = require('./config/redis');
 const userRoutes = require('./modules/userManagement/user.route');
 const authRoutes = require('./modules/auth/auth.routes');
 const adminRoutes = require('./modules/admin/admin.route');
+const userRoutes = require('./modules/userManagement/user.route');
 const errorHandler = require('./middlewares/errorhHandler');
 const initAdmin = require('./config/initAdmin');
 

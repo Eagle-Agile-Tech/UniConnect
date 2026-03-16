@@ -9,6 +9,7 @@ import 'package:uniconnect/domain/models/user/user.dart';
 import 'package:uniconnect/ui/profile/view_models/user_provider.dart';
 import 'package:uniconnect/utils/result.dart';
 
+import '../../../../data/repository/auth/auth_repository_remote.dart';
 import '../../../../utils/enums.dart';
 
 final onboardingProvider =
@@ -17,7 +18,7 @@ final onboardingProvider =
     );
 
 class OnboardingViewmodel extends Notifier<OnboardingState> {
-  late final UserRepositoryRemote _userRepo;
+  late final AuthRepositoryRemote _authRepo;
 
   @override
   OnboardingState build() => OnboardingState();
@@ -26,26 +27,23 @@ class OnboardingViewmodel extends Notifier<OnboardingState> {
   void updateAccount(
     String firstName,
     String lastName,
-    String username,
     String email,
     String password,
   ) {
     state = state.copyWith(
       firstName: firstName,
       lastName: lastName,
-      username: username,
       email: email,
       password: password,
     );
   }
 
   Future<Err?> submitAccount() async {
-    _userRepo = ref.read(userRepositoryProvider);
+    _authRepo = ref.read(authProvider);
     state = state.copyWith(isLoading: true, errorMessage: null);
-    final result = await _userRepo.createUserAccount(
+    final result = await _authRepo.createUserAccount(
       firstName: state.firstName,
       lastName: state.lastName,
-      username: state.username,
       email: state.email,
       password: state.password,
     );
@@ -100,11 +98,13 @@ class OnboardingViewmodel extends Notifier<OnboardingState> {
 
   // Profile
   void updateProfile(
+    String username,
     String? bio,
     List<InterestRecord>? interests,
     File? profilePicture,
   ) {
     state = state.copyWith(
+      username: username,
       bio: bio ?? state.bio,
       interests: interests,
       profilePicture: profilePicture,
@@ -115,8 +115,9 @@ class OnboardingViewmodel extends Notifier<OnboardingState> {
     state = state.copyWith(isLoading: true);
     try {
       //TODO: call to api to submit profile details and complete onboarding
-      final result = await _userRepo.createUserProfile(
+      final result = await _authRepo.createUserProfile(
         id: state.id,
+        username: state.username,
         bio: state.bio,
         interests: state.interests
             ?.map((interest) => interest.interest)
