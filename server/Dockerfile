@@ -18,4 +18,4 @@ RUN cd /app/Database && npx prisma generate --schema prisma/schema.prisma
 EXPOSE 3000
 
 WORKDIR /app/src
-CMD ["npm", "run", "start"]
+CMD ["sh", "-c", "npm run db:migrate && npm run start"]

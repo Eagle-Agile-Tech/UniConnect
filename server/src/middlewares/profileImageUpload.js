@@ -64,7 +64,7 @@ async function attachUploadedProfileImage(req, _res, next) {
   try {
     if (!req.file) return next();
 
-    const userId = req.user?.id;
+    const userId = req.user?.id || req.user?.sub;
     const publicUrl = await uploadProfileImageForUser({ userId, file: req.file });
     req.body.profileImage = publicUrl;
 

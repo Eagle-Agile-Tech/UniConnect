@@ -173,6 +173,9 @@ class userService {
         const userProfile = await prisma.userProfile.findUnique({
             where: { userId },
             include: {
+                user: {
+                    select: { role: true },
+                },
                 university: {
                     select: { name: true },
                 },
@@ -184,10 +187,12 @@ class userService {
         }
 
         const universityName = userProfile.university?.name || null;
-        const { university, ...rest } = userProfile;
+        const userRole = userProfile.user?.role || null;
+        const { university, user, ...rest } = userProfile;
         return {
             ...rest,
             universityName,
+            role: userRole,
         };
     }
 

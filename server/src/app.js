@@ -9,6 +9,8 @@ const redisClient = require('./config/redis');
 const userRoutes = require('./modules/userManagement/user.route');
 const authRoutes = require('./modules/auth/auth.routes');
 const adminRoutes = require('./modules/admin/admin.route');
+const institutionRoutes = require('./modules/institution/institution.route');
+const expertRoutes = require('./modules/expert/expert.route');
 const errorHandler = require('./middlewares/errorhHandler');
 const initAdmin = require('./config/initAdmin');
 
@@ -35,6 +37,8 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/institutions', institutionRoutes);
+app.use('/api/experts', expertRoutes);
 
 app.use(errorHandler);
 

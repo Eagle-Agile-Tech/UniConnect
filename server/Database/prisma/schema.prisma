@@ -23,7 +23,22 @@ enum VerificationStatus {
   REJECTED
   EMAIL_VERIFIED
 }
+enum InstitutionVerificationStatus {
+  PENDING
+  UNVERIFIED
+  VERIFIED
+  REJECTED
+}
 
+enum InstitutionType {
+  UNIVERSITY
+  COMPANY
+  NGO
+  RESEARCH_CENTER
+  TRAINING_CENTER
+  GOVERNMENT
+  OTHER
+}
 enum VerificationMethod {
   UNIVERSITY_EMAIL
   ID_DOCUMENT_ADMIN
@@ -142,14 +157,18 @@ model User {
   profile              UserProfile?
   idVerificationRequest IdVerificationRequest? @relation("UserVerificationRequest")
   reviewedRequests IdVerificationRequest[] @relation("AdminReviewedRequests")
+  reviewedInstitutionRequests InstitutionVerificationRequest[] @relation("AdminReviewedInstitutionRequests")
   moderatedPosts       Post[]           @relation("PostModeratedBy")
   moderatedComments    PostComment[]    @relation("CommentModeratedBy")
+institution         Institution []    @relation("ManagedBy")
+verifiedInstitutions Institution[]    @relation("VerifiedBy")
 
-  posts                Post[]
+posts                Post[]
   comments             PostComment[]
   messages             Message[]
   communities          CommunityMember[]
   expertProfile        ExpertProfile?
+  institutionProfile   Institution?     @relation("InstitutionProfile")
   notificationsReceived Notification[]     @relation("NotificationRecipient")
   notificationsSent     Notification[]     @relation("NotificationActor")
   postReactions        PostReaction[]
@@ -174,15 +193,47 @@ model User {
 model Institution {
   id          String @id @default(uuid())
   name        String
+  type        InstitutionType
   description String?
   website     String?
   logoUri     String?
-  isVerified  Boolean @default(false)
+  verificationStatus  InstitutionVerificationStatus    @default(UNVERIFIED)
   verificationDocument String?
+  userId      String? @unique
+  secretCode  String?  @unique
+  secretCodeExpiresAt DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  verifiedAt DateTime?
+  verifiedById String?
+  profileUserId String? @unique
 
-  affiliatedExperts ExpertProfile[]
+  managedBy            User?           @relation("ManagedBy", fields: [userId], references: [id])
+  verifiedBy           User?           @relation("VerifiedBy", fields: [verifiedById], references: [id])
+  profileUser          User?           @relation("InstitutionProfile", fields: [profileUserId], references: [id])
+  affiliatedExperts    ExpertProfile[]
+  invitations          ExpertInvitation[]
+  verificationRequests InstitutionVerificationRequest[]
+
+  @@index([verifiedById])
+}
+
+model InstitutionVerificationRequest {
+  id String @id @default(uuid())
+  institutionId String
+  documentUrl String
+  status ModerationStatus @default(PENDING)
+  reviewedById String?
+  reviewedAt DateTime?
+
+  institution Institution @relation(fields: [institutionId], references: [id])
+  reviewedBy   User?       @relation("AdminReviewedInstitutionRequests", fields: [reviewedById], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([institutionId])
+  @@index([status])
+  @@index([reviewedById])
 }
 model University {
   id       String   @id @default(uuid())
@@ -270,6 +321,10 @@ model ExpertInvitation {
   token         String @unique
   createdAt     DateTime @default(now())
   expiresAt     DateTime
+
+  institution   Institution @relation(fields: [institutionId], references: [id])
+
+  @@index([institutionId])
 }
 
 // =========================
