@@ -18,6 +18,8 @@ abstract final class Assets {
   static const avatar4 = 'assets/images/avatar4.jpg';
   static const avatar5 = 'assets/images/avatar5.jpg';
   static const avatar6 = 'assets/images/avatar6.jpg';
+  static const defaultCommunityAvatar = 'assets/images/community.png';
+  static const defaultCommunityHeader = 'assets/images/defaultCommunityHeader.jpg';
 
   // Explore
   static const community = 'assets/images/communities.jpeg';

@@ -52,6 +52,19 @@ class ApiClient {
     }
   }
 
+  Future<Result<List<Map<String, dynamic>>>> fetchFriends() async {
+    try {
+      final response = await _client.get('/getFriends/$_userId');
+      await Future.delayed(Duration(seconds: 3));
+      final List data = response.data;
+      return Result.ok(data.cast<Map<String, dynamic>>());
+    } on DioException catch (e) {
+      return Result.error(e);
+    } catch (e) {
+      return Result.error(e);
+    }
+  }
+
   Future<Result> createPost({
     required String content,
     List<File>? media,
@@ -172,6 +185,75 @@ class ApiClient {
       List data = response.data;
       return Result.ok(data.cast<Map<String, dynamic>>());
     } on DioException catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  // Community
+  Future<Result<Map<String, dynamic>>> createCommunity({
+    required String name,
+    required String description,
+    required List<String> members,
+    File? profileImage,
+  }) async {
+    try {
+      final mapData = {
+        'name': name,
+        'description': description,
+        'members': members,
+        'ownerId': _userId,
+      };
+      if (profileImage != null) {
+        mapData['profileImage'] = await MultipartFile.fromFile(
+          profileImage.path,
+          filename: profileImage.path.split('/').last,
+        );
+      }
+      final formData = FormData.fromMap(mapData);
+      final response = await _client.post(
+        '/createCommunity/$_userId',
+        data: formData,
+      );
+      // The response is expected to include id.
+      return Result.ok(response.data);
+    } on DioException catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<Map<String, dynamic>>> fetchCommunity(String id) async {
+    try {
+      final response = await _client.get('/getCommunity/$id');
+      return Result.ok(response.data.cast<String,dynamic>());
+    } on DioException catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<List<Map<String, dynamic>>>> fetchCommunityPosts(
+      String communityId,
+      ) async {
+    try {
+      final response = await _client.get('/communityPosts/$communityId');
+      final List data = response.data;
+      return Result.ok(data.cast<Map<String, dynamic>>());
+    } on DioException catch (e) {
+      return Result.error(e);
+    } catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<List<Map<String,dynamic>>>> fetchCommunityMembers(
+      String communityId,
+      ) async {
+    try {
+      final response = await _client.get('/communityMembers/$communityId');
+      final List data = response.data;
+      return Result.ok(data.cast<Map<String, dynamic>>());
+    } on DioException catch (e) {
+      return Result.error(e);
+    } catch (e) {
       return Result.error(e);
     }
   }

@@ -10,6 +10,7 @@ import 'package:uniconnect/ui/setting/saved_screen.dart';
 import 'package:uniconnect/utils/navigation_wrapper.dart';
 
 import '../ui/community/community_form.dart';
+import '../ui/community/community_screen.dart';
 import '../ui/community/explore_community.dart';
 import '../ui/profile/profile_screen.dart';
 import '../ui/search/search_screen.dart';
@@ -66,31 +67,38 @@ final router = GoRouter(
     ),
     GoRoute(
       path: Routes.setting,
-      builder: (context,state) => const SettingScreen(),
+      builder: (context, state) => const SettingScreen(),
     ),
     GoRoute(
       path: Routes.saved,
-      builder: (context,state) => const SavedScreen(),
+      builder: (context, state) => const SavedScreen(),
     ),
     GoRoute(
       path: Routes.post,
-      builder: (context,state) => const CreatePostScreen()
+      builder: (context, state) => const CreatePostScreen(),
     ),
     GoRoute(
       path: Routes.createCommunity,
-      builder: (context,state) => const CreateCommunityScreen()
+      builder: (context, state) => const CreateCommunityScreen(),
     ),
     GoRoute(
       path: Routes.communities,
-      builder: (context,state) => const ExploreCommunityScreen()
+      builder: (context, state) => const ExploreCommunityScreen(),
     ),
 
     GoRoute(
       path: Routes.userProfilePath,
-        builder: (context,state) {
-          final userId = state.pathParameters['userId']!;
-          return ProfileScreen(userId: userId);
-        }
-    )
+      builder: (context, state) {
+        final userId = state.pathParameters['userId']!;
+        return ProfileScreen(userId: userId);
+      },
+    ),
+    GoRoute(
+      path: Routes.communityScreen,
+      builder: (context, state) {
+        final id = state.pathParameters['id']!;
+        return CommunityScreen(communityId: id);
+      },
+    ),
   ],
 );
