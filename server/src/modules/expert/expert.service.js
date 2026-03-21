@@ -19,9 +19,14 @@ const {
 } = require('../../errors');
 
 const INVITE_TTL_DAYS = 7;
+const SECRET_CODE_TTL_DAYS = 30;
 
 function normalizeEmail(email) {
   return (email || '').trim().toLowerCase();
+}
+
+function generateSecretCode() {
+  return crypto.randomBytes(4).toString('hex').toUpperCase();
 }
 
 class ExpertService {
@@ -145,61 +150,85 @@ class ExpertService {
 
   async joinInstitution(data) {
     const parsed = joinInstitutionSchema.parse(data);
-
-    const institution = await prisma.institution.findFirst({
-      where: {
-        name: { equals: parsed.institutionName.trim(), mode: 'insensitive' },
-        verificationStatus: 'VERIFIED',
-        secretCode: parsed.secretCode,
-        secretCodeExpiresAt: { gt: new Date() },
-      },
-      select: { id: true },
-    });
-
-    if (!institution) {
-      throw new BadRequestError('Invalid institution name or secret code');
-    }
-
     const email = normalizeEmail(parsed.email);
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-      select: { id: true },
-    });
-    if (existingUser) {
-      throw new ConflictError('Email already registered');
-    }
 
-    const passwordHash = await bcrypt.hash(parsed.password, 12);
-    const user = await prisma.user.create({
-      data: {
-        firstName: parsed.firstName,
-        lastName: parsed.lastName,
-        email,
-        passwordHash,
-        role: 'EXPERT',
-        verificationStatus: 'EMAIL_VERIFIED',
-      },
-      select: { id: true },
-    });
+    return prisma.$transaction(async (tx) => {
+      const institution = await tx.institution.findFirst({
+        where: {
+          name: { equals: parsed.institutionName.trim(), mode: 'insensitive' },
+          verificationStatus: 'VERIFIED',
+          secretCode: parsed.secretCode,
+          secretCodeExpiresAt: { gt: new Date() },
+        },
+        select: { id: true },
+      });
 
-    const username = await authService.resolveUniqueUsername(
-      authService.getUsernameSeed({
-        email,
-        firstName: parsed.firstName,
-        lastName: parsed.lastName,
-      })
-    );
+      if (!institution) {
+        throw new BadRequestError('Invalid institution name or secret code');
+      }
 
-    await prisma.userProfile.create({
-      data: { userId: user.id, username },
-    });
+      const existingUser = await tx.user.findUnique({
+        where: { email },
+        select: { id: true },
+      });
+      if (existingUser) {
+        throw new ConflictError('Email already registered');
+      }
 
-    return prisma.expertProfile.create({
-      data: {
-        expertId: user.id,
-        expertise: 'General',
-        invitedByInstitutionId: institution.id,
-      },
+      const newSecretCode = generateSecretCode();
+      const newSecretCodeExpiresAt = new Date(
+        Date.now() + SECRET_CODE_TTL_DAYS * 24 * 60 * 60 * 1000
+      );
+
+      const rotated = await tx.institution.updateMany({
+        where: {
+          id: institution.id,
+          secretCode: parsed.secretCode,
+          secretCodeExpiresAt: { gt: new Date() },
+        },
+        data: {
+          secretCode: newSecretCode,
+          secretCodeExpiresAt: newSecretCodeExpiresAt,
+        },
+      });
+
+      if (rotated.count === 0) {
+        throw new BadRequestError('Invalid institution name or secret code');
+      }
+
+      const passwordHash = await bcrypt.hash(parsed.password, 12);
+      const user = await tx.user.create({
+        data: {
+          firstName: parsed.firstName,
+          lastName: parsed.lastName,
+          email,
+          passwordHash,
+          role: 'EXPERT',
+          verificationStatus: 'EMAIL_VERIFIED',
+        },
+        select: { id: true },
+      });
+
+      const username = await authService.resolveUniqueUsername(
+        authService.getUsernameSeed({
+          email,
+          firstName: parsed.firstName,
+          lastName: parsed.lastName,
+        }),
+        tx
+      );
+
+      await tx.userProfile.create({
+        data: { userId: user.id, username },
+      });
+
+      return tx.expertProfile.create({
+        data: {
+          expertId: user.id,
+          expertise: 'General',
+          invitedByInstitutionId: institution.id,
+        },
+      });
     });
   }
 
