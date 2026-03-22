@@ -32,7 +32,7 @@ class CreatePostViewModel extends AsyncNotifier<void> {
       createdAt: createdAt,
       hashtags: hashtags,
     );
-    result.fold(
+    state = result.fold(
       (data) => state = const AsyncValue.data(null),
       (error, stackTrace) => AsyncError(error, stackTrace!),
     );

@@ -43,8 +43,8 @@ class VerifyEmailScreen extends ConsumerWidget {
               },),
               SizedBox(height: Dimens.spaceBtwSections),
               ElevatedButton(
-                onPressed: () {
-                  final status = ref.read(onboardingProvider.notifier).verifyOtp(otp);
+                onPressed: () async{
+                  final status = await ref.read(onboardingProvider.notifier).verifyOtp(otp);
                   if (status != null){
                     ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text(status.toString()))

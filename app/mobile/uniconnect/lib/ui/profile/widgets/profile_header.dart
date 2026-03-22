@@ -17,15 +17,15 @@ class ProfileHeader extends ConsumerWidget{
   Widget build(BuildContext context, WidgetRef ref) {
     return Column(
       children: [
-        if(isMe)
-        Align(
-          alignment: AlignmentGeometry.topEnd,
-          child: IconButton(
-            onPressed: () => context.push(Routes.setting),
-            icon: const Icon(Icons.settings),
+        if (isMe)
+          Align(
+            alignment: AlignmentGeometry.topEnd,
+            child: IconButton(
+              onPressed: () => context.push(Routes.setting),
+              icon: const Icon(Icons.settings),
+            ),
           ),
-        ),
-        if(!isMe)
+        if (!isMe)
           Align(
             alignment: Alignment.topLeft,
             child: IconButton(
@@ -106,7 +106,13 @@ class ProfileHeader extends ConsumerWidget{
                             ),
                             const SizedBox(width: Dimens.sm),
                             ElevatedButton(
-                              onPressed: () {},
+                              onPressed: () {
+                                ref
+                                        .read(selectedChatUserProvider.notifier)
+                                        .state =
+                                    user;
+                                context.push(Routes.messaging);
+                              },
                               style: ElevatedButton.styleFrom(
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(0),
