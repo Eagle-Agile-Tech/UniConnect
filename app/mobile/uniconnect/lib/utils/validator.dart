@@ -1,6 +1,8 @@
 import 'package:uniconnect/config/dummy_data.dart';
 import 'package:uniconnect/utils/enums.dart';
 
+import '../domain/models/user/user.dart';
+
 abstract final class UCValidator {
   static String? validateEmptyText(String fieldName, String? value) {
     if (value == null || value.isEmpty) {
@@ -41,7 +43,7 @@ abstract final class UCValidator {
     if (value == null || value.isEmpty) {
       return 'Password is required.';
     }
-    if (value.length < 6) {
+    if (value.length < 8) {
       return 'Password must be at least 6 characters long.';
     }
     if (!value.contains(RegExp(r'[A-Z]'))) {
@@ -65,12 +67,36 @@ abstract final class UCValidator {
     return null;
   }
 
+  static String? validateUsername(String? username){
+    if(username == null || username.isEmpty){
+      return 'Username is required';
+    }
+    if (username.length < 4){
+      return 'Above 3 characters are allowed';
+    }
+    final regex = RegExp(r'^[a-zA-Z][a-zA-Z0-9_]*$');
+    if(regex.hasMatch(username)){
+      return 'Only letters, numbers, and underscores allowed';
+    }
+    return null;
+  }
+
   static String? validateInterest(List<InterestRecord>? interest) {
     if (interest == null || interest.isEmpty) {
       return 'Please select an interest.';
     }
     if (interest.toSet().length > 5) {
-      return 'You can select up to 5 interests.';
+      return 'You can not select up to 5 interests.';
+    }
+    return null;
+  }
+
+  static String? validateMembers(List<User>? members){
+    if (members == null || members.isEmpty) {
+      return 'Please select members.';
+    }
+    if (members.toSet().length < 5) {
+      return 'You need at least 5 members to create a community.';
     }
     return null;
   }

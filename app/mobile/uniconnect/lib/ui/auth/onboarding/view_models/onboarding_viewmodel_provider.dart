@@ -52,9 +52,7 @@ class OnboardingViewmodel extends Notifier<OnboardingState> {
         state = state.copyWith(
           currentStep: OnboardingStep.verifyEmail,
           isLoading: false,
-          otp: data.otpCode,
           id: data.userId,
-          createdAt: data.createdAt,
         );
         return null;
       },
@@ -68,15 +66,22 @@ class OnboardingViewmodel extends Notifier<OnboardingState> {
     );
   }
 
-  Err? verifyOtp(String otp) {
-    if (otp != state.otp) {
-      return Result.error('Invalid OTP') as Err;
+  Future<Err?> verifyOtp(String otp) async {
+    state = state.copyWith(isLoading: true, errorMessage: null);
+
+    final result = await _authRepo.verifyOtp(state.id, otp);
+
+    if (!result) {
+      state = state.copyWith(isLoading: false);
+      return Result.error('Invalid otp') as Err;
     }
+
     state = state.copyWith(
       isEmailVerified: true,
       currentStep: OnboardingStep.academic,
       isLoading: false,
     );
+
     return null;
   }
 
@@ -94,6 +99,11 @@ class OnboardingViewmodel extends Notifier<OnboardingState> {
       expectedGraduationYear: expectedGraduationYear,
       currentStep: OnboardingStep.profile,
     );
+  }
+
+  Future<bool> isUsernameAvailable(String username) async {
+    await Future.delayed(Duration(seconds: 5));
+    return await _authRepo.isUsernameAvailable(username);
   }
 
   // Profile
@@ -127,7 +137,6 @@ class OnboardingViewmodel extends Notifier<OnboardingState> {
         degree: state.degree,
         currentYear: state.currentYear,
         expectedGraduationYear: state.expectedGraduationYear!,
-        createdAt: state.createdAt!,
       );
       return result.fold(
         (data) {
@@ -135,24 +144,24 @@ class OnboardingViewmodel extends Notifier<OnboardingState> {
             currentStep: OnboardingStep.completed,
             isLoading: false,
           );
-          ref.read(currentUserProvider.notifier).state = User(
-            id: state.id,
-            firstName: state.firstName,
-            lastName: state.lastName,
-            username: state.username,
-            email: state.email,
-            university: state.university,
-            degree: state.degree,
-            currentYear: state.currentYear,
-            expectedGraduationYear: state.expectedGraduationYear!,
-            bio: state.bio,
-            interests: state.interests
-                ?.map((interest) => interest.interest)
-                .toList(),
-            profilePicture: data,
-            createdAt: state.createdAt!,
-            updatedAt: state.createdAt!,
-          );
+          // ref.read(currentUserProvider.notifier).state = User(
+          //   id: state.id,
+          //   firstName: state.firstName,
+          //   lastName: state.lastName,
+          //   username: state.username,
+          //   email: state.email,
+          //   university: state.university,
+          //   degree: state.degree,
+          //   currentYear: state.currentYear,
+          //   expectedGraduationYear: state.expectedGraduationYear!,
+          //   bio: state.bio,
+          //   interests: state.interests
+          //       ?.map((interest) => interest.interest)
+          //       .toList(),
+          //   profilePicture: data,
+          //   createdAt: DateTime.now(),
+          //   updatedAt: DateTime.now(),
+          // );
           return null;
         },
         (error, stackTrace) {

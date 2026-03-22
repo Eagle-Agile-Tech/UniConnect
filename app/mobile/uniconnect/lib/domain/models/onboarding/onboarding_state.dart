@@ -21,10 +21,8 @@ abstract class OnboardingState with _$OnboardingState {
     @Default('') String username,
     @Default('') String email,
     @Default('') String password,
-    DateTime? createdAt,
 
     // Verification
-    @Default('') String otp,
     @Default(false) bool isEmailVerified,
 
     // Academic

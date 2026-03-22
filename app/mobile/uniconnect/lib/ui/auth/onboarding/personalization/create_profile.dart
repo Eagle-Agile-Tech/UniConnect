@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -32,6 +33,10 @@ class _CreateProfileState extends ConsumerState<CreateProfile> {
   final TextEditingController _usernameController = TextEditingController();
 
   List<InterestRecord> _selectedInterests = [];
+
+  Timer? debounce;
+
+  bool? isUsernameAvailable;
 
   Future _pickImage(String source) async {
     try {
@@ -120,10 +125,30 @@ class _CreateProfileState extends ConsumerState<CreateProfile> {
                 const SizedBox(height: Dimens.defaultSpace),
                 TextFormField(
                   controller: _usernameController,
-                  validator: (value) => UCValidator.validateConfirmPassword(
+                  validator: (value) {
+                    final validate = UCValidator.validateUsername(
                     value,
-                    _usernameController.text.trim(),
-                  ),
+                    );
+                    if(validate != null) return validate;
+                    if (isUsernameAvailable == null) {
+                      return 'Checking username...';
+                    }
+
+                    if (isUsernameAvailable == false) {
+                      return 'Username is already taken!';
+                    }
+                    return null;
+                  },
+                  onChanged: (value){
+                    if(debounce?.isActive ?? false){
+                      debounce!.cancel();
+                    }
+                    setState(() => isUsernameAvailable = null);
+                    debounce = Timer(Duration(milliseconds: 300), () async {
+                      final isIt = await onboarding.isUsernameAvailable(value);
+                      setState(() => isUsernameAvailable = isIt);
+                    });
+                  },
                   decoration: const InputDecoration(labelText: 'Username'),
                 ),
                 const SizedBox(height: Dimens.defaultSpace),
@@ -197,7 +222,7 @@ class _CreateProfileState extends ConsumerState<CreateProfile> {
                     onboarding.updateProfile(
                       _bioController.text.trim(),
                       _usernameController.text.trim(),
-                      _selectedInterests.toSet() as List<InterestRecord>?,
+                      _selectedInterests.toSet().toList(),
                       File(_profileImage!.path),
                     );
                     final result = await onboarding.completeOnboarding();

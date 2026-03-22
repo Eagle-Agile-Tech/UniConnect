@@ -3,11 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uniconnect/routing/router.dart';
 import 'package:uniconnect/ui/core/theme/theme.dart';
 
-class UniConnect extends StatelessWidget {
+class UniConnect extends ConsumerWidget {
   const UniConnect({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(routerProvider);
     return ProviderScope(
       child: MaterialApp.router(
         routerConfig: router,

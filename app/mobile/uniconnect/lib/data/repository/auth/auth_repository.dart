@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import '../../../domain/models/user/user.dart';
 import '../../../utils/result.dart';
 import '../../service/api/models/create_account/create_account_response.dart';
 
@@ -12,6 +13,9 @@ abstract class AuthRepository {
     required String password,
   });
 
+  Future<bool> verifyOtp(String userId, String otp);
+  Future<bool> isUsernameAvailable(String username);
+
   Future<Result<String>> createUserProfile({
     required String id,
     required String username,
@@ -19,9 +23,10 @@ abstract class AuthRepository {
     required String degree,
     required String currentYear,
     required DateTime expectedGraduationYear,
-    required DateTime createdAt,
     String? bio,
     List<String>? interests,
     File? profilePicture,
   });
+
+  Future<Result<User>> login(String username, String password);
 }
