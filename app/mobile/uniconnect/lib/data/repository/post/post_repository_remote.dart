@@ -120,4 +120,13 @@ class PostRepositoryRemote implements PostRepository {
       return Result.ok(posts);
     }, (error, _) => Result.error(error));
   }
+
+  @override
+  Future<Result<List<Post>>> getCommunityPost(String id) async {
+    final result = await _apiClient.fetchCommunityPosts(id);
+    return result.fold((data) {
+      final posts = data.map((post) => Post.fromJson(post)).toList();
+      return Result.ok(posts);
+    }, (error, stackTrace) => Result.error(error));
+  }
 }

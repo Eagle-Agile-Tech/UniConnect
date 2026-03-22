@@ -30,4 +30,6 @@ abstract class PostRepository {
 
   Future<Result<List<Post>>> getBookmarks(String userId);
   Future<Result<List<Post>>> searchPosts(String keyWord);
+
+  Future<Result<List<Post>>> getCommunityPost(String id);
 }
