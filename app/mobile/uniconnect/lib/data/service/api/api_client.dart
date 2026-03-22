@@ -1,20 +1,20 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uniconnect/ui/auth/auth_state_provider.dart';
 
-import '../../../ui/profile/view_models/user_provider.dart';
 import '../../../utils/result.dart';
 import 'routes/api_routes.dart';
 import 'token_refresher.dart';
 
 final apiClientProvider = Provider<ApiClient>((ref) {
-  final user = ref.watch(currentUserProvider);
+  final user = ref.watch(authNotifierProvider);
 
-  if (user == null) {
+  if (user.value == null) {
     throw Exception('User not logged in');
   }
 
-  return ApiClient(client: ref.watch(dioProvider), userId: user.id);
+  return ApiClient(client: ref.watch(dioProvider), userId: user.value!.user!.id);
 });
 
 class ApiClient {
@@ -33,6 +33,18 @@ class ApiClient {
       final response = await _client.get('/${ApiRoutes.posts}/$userId');
       final List data = response.data;
       return Result.ok(data.cast<Map<String, dynamic>>());
+    } on DioException catch (e) {
+      return Result.error(e);
+    } catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<Map<String, dynamic>>> fetchCurrentUser() async {
+    try {
+      final response = await _client.get('/me/');
+      final Map<String, dynamic> data = response.data;
+      return Result.ok(data);
     } on DioException catch (e) {
       return Result.error(e);
     } catch (e) {

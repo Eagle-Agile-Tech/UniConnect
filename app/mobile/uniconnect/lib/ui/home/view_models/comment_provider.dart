@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uniconnect/data/repository/post/post_repository.dart';
+import 'package:uniconnect/ui/auth/auth_state_provider.dart';
 
 import '../../../data/repository/post/post_repository_remote.dart';
 import '../../../domain/models/comment/comment.dart';
@@ -44,9 +45,9 @@ class CommentNotifier extends AsyncNotifier<List<Comment>> {
       id: DateTime.now().toString(),
       content: content,
       postId: postId,
-      authorId: ref.read(currentUserProvider)!.id,
-      authorName: ref.read(currentUserProvider)!.fullName,
-      authorProfilePicUrl: ref.read(currentUserProvider)!.profilePicture ?? '',
+      authorId: ref.read(authNotifierProvider).value!.user!.id,
+      authorName: ref.read(authNotifierProvider).value!.user!.fullName,
+      authorProfilePicUrl: ref.read(authNotifierProvider).value!.user!.profilePicture ?? '',
       createdAt: DateTime.now(),
       likeCount: 0,
     );
@@ -55,7 +56,7 @@ class CommentNotifier extends AsyncNotifier<List<Comment>> {
       postId: postId,
       comment: content,
       createdAt: DateTime.now(),
-      authorId: ref.read(currentUserProvider)!.id,
+      authorId: ref.read(authNotifierProvider).value!.user!.id,
     );
     result.fold(
       (data) => null,

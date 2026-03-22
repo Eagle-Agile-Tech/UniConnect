@@ -9,6 +9,8 @@ import 'package:uniconnect/ui/post/view_models/create_post_viewmodel_provider.da
 import 'package:uniconnect/ui/profile/view_models/user_provider.dart';
 import 'package:uniconnect/utils/helper_functions.dart';
 
+import '../auth/auth_state_provider.dart';
+
 class CreatePostScreen extends ConsumerStatefulWidget {
   const CreatePostScreen({super.key});
 
@@ -79,7 +81,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                               .createPost(
                                 content: _contentController.text.trim(),
                                 mediaUrls: mediaUrls,
-                                userId: ref.read(currentUserProvider)!.id,
+                                userId: ref.read(authNotifierProvider).value!.user!.id,
                                 createdAt: DateTime.now(),
                                 hashtags: UCHelperFunctions.extractHashtags(
                                   _contentController.text.trim(),

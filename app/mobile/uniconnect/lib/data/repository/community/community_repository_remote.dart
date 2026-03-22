@@ -4,14 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uniconnect/utils/result.dart';
 
 import '../../../domain/models/community/community.dart';
+import '../../../ui/auth/auth_state_provider.dart';
 import '../../../ui/profile/view_models/user_provider.dart';
 import '../../service/api/api_client.dart';
 import 'community_repository.dart';
 
 final communityRepoProvider = Provider<CommunityRepositoryRemote>((ref) {
-  final user = ref.watch(currentUserProvider);
+  final user = ref.watch(authNotifierProvider);
   final apiClient = ref.watch(apiClientProvider);
-  return CommunityRepositoryRemote(userId: user!.id, apiClient);
+  return CommunityRepositoryRemote(userId: user.value!.user!.id, apiClient);
 });
 
 class CommunityRepositoryRemote implements CommunityRepository {

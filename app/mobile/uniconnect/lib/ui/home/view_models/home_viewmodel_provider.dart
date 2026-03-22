@@ -6,11 +6,12 @@ import 'package:uniconnect/domain/models/post/post.dart';
 import 'package:uniconnect/ui/profile/view_models/user_provider.dart';
 
 import '../../../data/repository/post/post_repository_remote.dart';
+import '../../auth/auth_state_provider.dart';
 
 final homeViewModelProvider =
-AsyncNotifierProvider<HomeViewmodelProvider, List<Post>>(
-  HomeViewmodelProvider.new,
-);
+    AsyncNotifierProvider<HomeViewmodelProvider, List<Post>>(
+      HomeViewmodelProvider.new,
+    );
 
 class HomeViewmodelProvider extends AsyncNotifier<List<Post>> {
   late PostRepository _postRepo;
@@ -22,12 +23,28 @@ class HomeViewmodelProvider extends AsyncNotifier<List<Post>> {
   }
 
   Future<List<Post>> _fetchPosts() async {
-    state = const AsyncValue.loading();
-    final result = await _postRepo.getFeed(ref.read(currentUserProvider)!.id);
-    return result.fold(
-          (data) => data,
-          (error, stackTrace) =>
-          Error.throwWithStackTrace(error, stackTrace ?? StackTrace.current),
+    final authAsync = ref.read(authNotifierProvider);
+
+    return authAsync.when(
+      data: (auth) async {
+        final currentUser = auth.user;
+
+        if (currentUser == null) {
+          throw Exception('User is not authenticated');
+        }
+
+        final result = await _postRepo.getFeed(currentUser.id);
+
+        return result.fold(
+              (posts) => posts,
+              (error, stackTrace) => Error.throwWithStackTrace(
+            error,
+            stackTrace ?? StackTrace.current,
+          ),
+        );
+      },
+      loading: () => throw Exception('Auth state still loading'),
+      error: (err, stack) => Error.throwWithStackTrace(err, stack),
     );
   }
 
@@ -46,9 +63,7 @@ class HomeViewmodelProvider extends AsyncNotifier<List<Post>> {
     }).toList();
 
     state = AsyncValue.data(updatedPost);
-    final result = await _postRepo.likePost(
-      postId: postId,
-    );
+    final result = await _postRepo.likePost(postId: postId);
     result.fold((success) => null, (error, _) {
       // todo: notify user of the error
       state = AsyncValue.data(previous);
@@ -61,15 +76,12 @@ class HomeViewmodelProvider extends AsyncNotifier<List<Post>> {
     final bookmarkedPost = previous.map((post) {
       if (post.id == postId) {
         final isBookmarked = post.isBookmarkedByMe;
-        return post.copyWith(
-          isBookmarkedByMe: !isBookmarked,
-        );
+        return post.copyWith(isBookmarkedByMe: !isBookmarked);
       }
       return post;
     }).toList();
     state = AsyncValue.data(bookmarkedPost);
-    final result = await _postRepo.bookmarkPost(
-        postId: postId,);
+    final result = await _postRepo.bookmarkPost(postId: postId);
 
     return result.fold((data) => null, (error, _) {
       state = AsyncValue.data(previous);
