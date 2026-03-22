@@ -21,43 +21,37 @@ const menuItems = [
     id: "dashboard",
     icon: LayoutDashboard,
     label: "Dashboard",
-    active: true,
+   
     badge: "Live"
   },
-  {
-    id: "analytics",
-    icon: BarChart3,
-    label: "Analytics",
-    submenu: [
-      { id: "overview",      label: "Overview" },
-      { id: "engagement",    label: "Engagement" },
-      { id: "audience",      label: "Audience Insights" },
-      { id: "content",       label: "Content Performance" },
-      { id: "growth",        label: "Growth & Trends" },
-      { id: "reports",       label: "Custom Reports" }
-    ]
-  },
+  // {
+  //   id: "analytics",
+  //   icon: BarChart3,
+  //   label: "Analytics",
+  //   submenu: [
+  //     { id: "ovekjrview",      label: "Overview" },
+  //     { id: "engagement",    label: "Engagement" },
+  //     { id: "audience",      label: "Audience Insights" },
+  //     { id: "content",       label: "Content Performance" },
+  //     { id: "growth",        label: "Growth & Trends" },
+  //     { id: "reports",       label: "Custom Reports" }
+  //   ]
+  // },
   {
     id: "Students",
     icon: Users,
     label: "Students",
     count: "2.4M",
     submenu: [
-      { id: "overview",          label: "Overview" },
-      { id: "all-users",          label: "All Users" },
+      { id: "overview",          label: "Overview", badge:"new" },
+      { id: "all-users",          label: "All Users", badge:"1.2M" },
       { id: "active-users",       label: "Active / Online" },
       { id: "verified",           label: "Verified Accounts" },  // ← Link to list of already verified users
       { id: "reported",           label: "Reported Users" },
       { id: "banned",             label: "Banned / Suspended" },
-      {
-        id: "roles",
-        label: "Roles & Permissions",
-        submenu: [
-          { id: "admin-roles",    label: "Admin Roles" },
-          { id: "moderators",     label: "Moderators" },
-          { id: "activity-logs",  label: "Admin Activity Logs" }
-        ]
-      }
+      
+       
+       
     ]
   },
   {
@@ -142,7 +136,7 @@ const menuItems = [
   }
 ];
 function Sidebar({ collapsed, onToggle, CurrentPage, onPageChange }) {
-  const [expandedItem, setExpandedItem] = useState(new Set(["analytics"]));
+  const [expandedItem, setExpandedItem] = useState(new Set());
   const toggleExpand = (itemid) => {
     const newExpanded = new Set(expandedItem);
     if(newExpanded.has(itemid)){
@@ -179,24 +173,29 @@ function Sidebar({ collapsed, onToggle, CurrentPage, onPageChange }) {
     {/* navigation */}
    <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
   {menuItems.map((item) => {
+    const itemActive =
+      CurrentPage === item.id ||
+      (item.submenu && item.submenu.some((sub) => sub.id === CurrentPage));
+
     return (
       <div key={item.id}>
         <button
           className={`w-full flex items-center justify-between p-2 rounded-xl transition-all duration-200 ${
-            CurrentPage === item.id || item.active
+            itemActive
               ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg shadow-blue-500/25"
               : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50"
           }`}
           onClick={() => {
-            if (item.submenu){
+            if (item.submenu) {
               toggleExpand(item.id);
-             }else {
+            } else {
               onPageChange(item.id);
-             }
+            }
           }}
         >
           <div className="flex items-center space-x-3">
-  <item.icon className="w-5 h-5" />
+ {React.createElement(item.icon, { className: "w-5 h-5" })}
+
 
   {!collapsed && (
     <>
@@ -225,19 +224,33 @@ function Sidebar({ collapsed, onToggle, CurrentPage, onPageChange }) {
         </button>
 
         {/* submenu */}
-        {!collapsed && item.submenu && expandedItem.has(item.id) && (
-
+      {!collapsed &&
+        item.submenu &&
+        (expandedItem.has(item.id) ||
+          item.submenu.some((sub) => sub.id === CurrentPage)) && (
           <div className="ml-8 mt-2 space-y-1">
-            {item.submenu.map((subitem) => {
-              return (
-                <button className="w-full text-left p-2 text-sm text-slate-800 dark:hover:text-slate-200
-                hover:bg-slate-100/50 rounded-lg transition-all" key={subitem.id}>
-                  {subitem.label}
-                </button>
-              );
-            })}
-          </div>
-        )}
+            {item.submenu.map((subitem) => (
+              <button 
+                key={subitem.id}
+    className={`w-full text-left p-2 text-sm rounded-lg transition-all flex items-center space-x-3 ${
+      CurrentPage === subitem.id
+        ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg shadow-blue-500/25 font-bold"  // 👈 ACTIVE
+        : "text-slate-800 dark:text-slate-300 hover:bg-slate-100/50 dark:hover:bg-slate-700/50"  // 👈 INACTIVE
+    }`}
+    onClick={() => onPageChange(subitem.id)}
+  >
+    <span>{subitem.label}</span>
+    {subitem.badge && (
+      <span className="px-2 py-1 text-xs bg-white/20 dark:bg-white/20 text-white rounded-full">
+        {subitem.badge}
+      </span>
+    )}
+  </button>
+))}
+
+  </div>
+)}
+
       </div>
     );
   })}
