@@ -11,7 +11,6 @@ const authRoutes = require('./modules/auth/auth.routes');
 const adminRoutes = require('./modules/admin/admin.route');
 const institutionRoutes = require('./modules/institution/institution.route');
 const expertRoutes = require('./modules/expert/expert.route');
-const userRoutes = require('./modules/userManagement/user.route');
 const errorHandler = require('./middlewares/errorhHandler');
 const initAdmin = require('./config/initAdmin');
 

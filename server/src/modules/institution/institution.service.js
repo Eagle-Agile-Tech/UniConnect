@@ -7,7 +7,7 @@ const mailer = require('../../config/mailer');
 const { getAppUrl } = require('../../lib/appUrl');
 const expertInvitationTemplate = require('../../templates/expertInvitationEmail');
 const {
-  createInstitutionSchema,
+  registerInstitutionSchema,
   updateInstitutionSchema,
   listInstitutionsSchema,
   submitInstitutionVerificationSchema,
@@ -24,9 +24,23 @@ const {
 const MAX_LIMIT = 50;
 const INVITE_TTL_DAYS = 7;
 const SECRET_CODE_TTL_DAYS = 30;
+const PERSONAL_EMAIL_DOMAINS = new Set([
+  'gmail.com',
+  'yahoo.com',
+  'yahoo.co.uk',
+  'outlook.com',
+  'hotmail.com',
+]);
 
 function normalizeEmail(email) {
   return (email || '').trim().toLowerCase();
+}
+
+function isPersonalEmail(email) {
+  const domain = email?.split('@')[1]?.toLowerCase();
+  if (!domain) return false;
+  if (PERSONAL_EMAIL_DOMAINS.has(domain)) return true;
+  return false;
 }
 
 function generateSecretCode() {
@@ -34,57 +48,126 @@ function generateSecretCode() {
 }
 
 class InstitutionService {
-  async createInstitution(data, managerId) {
-    const parsed = createInstitutionSchema.parse(data);
-    const name = parsed.name.trim();
+  async verifyInstitutionOtp(data) {
+    const email = normalizeEmail(data.email);
+    if (!email) throw new BadRequestError('Email is required');
 
-    if (!managerId) {
-      throw new AppError('Unauthorized: Institution account required', 403, true, 'FORBIDDEN');
-    }
-
-    const manager = await prisma.user.findUnique({
-      where: { id: managerId },
+    const user = await prisma.user.findUnique({
+      where: { email },
       select: { id: true, role: true },
     });
-
-    if (!manager || (manager.role !== 'INSTITUTION' && manager.role !== 'STUDENT')) {
-      throw new AppError('Unauthorized: Institution account required', 403, true, 'FORBIDDEN');
+    if (!user) throw new NotFoundError('Institution account not found');
+    if (user.role !== 'INSTITUTION') {
+      throw new BadRequestError('This account is not an institution');
     }
 
-    const existing = await prisma.institution.findFirst({
+    const result = await authService.verifyOtp(email, data.otp);
+
+    const institution = await prisma.institution.findUnique({
+      where: { userId: user.id },
+    });
+
+    return {
+      message: result.message,
+      user: result.user,
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+      institution: institution || null,
+    };
+  }
+
+  async resendInstitutionOtp(data) {
+    const email = normalizeEmail(data.email);
+    if (!email) throw new BadRequestError('Email is required');
+
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true, role: true },
+    });
+    if (!user) throw new NotFoundError('Institution account not found');
+    if (user.role !== 'INSTITUTION') {
+      throw new BadRequestError('This account is not an institution');
+    }
+
+    return authService.resendOtp(email);
+  }
+
+  async registerInstitution(data, deviceInfo) {
+    const parsed = registerInstitutionSchema.parse(data);
+    const email = normalizeEmail(parsed.email);
+    const name = parsed.name.trim();
+
+    if (isPersonalEmail(email)) {
+      throw new BadRequestError('Please use your institution email address');
+    }
+
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+    if (existingUser) {
+      throw new ConflictError('Email already registered. Please log in or reset your password.');
+    }
+
+    const existingInstitution = await prisma.institution.findFirst({
       where: { name: { equals: name, mode: 'insensitive' } },
       select: { id: true },
     });
-
-    if (existing) {
-      throw new ConflictError('Institution with this name already exists');
+    if (existingInstitution) {
+      throw new ConflictError('Institution name already exists. Please use a different name.');
     }
 
-    const existingForManager = await prisma.institution.findUnique({
-      where: { userId: managerId },
-      select: { id: true },
-    });
+    const hashedPassword = await bcrypt.hash(parsed.password, 12);
 
-    if (existingForManager) {
-      throw new ConflictError('Institution account already has an institution');
-    }
-
-    return prisma.$transaction(async (tx) => {
-      if (manager.role === 'STUDENT') {
-        await tx.user.update({
-          where: { id: managerId },
-          data: { role: 'INSTITUTION' },
-        });
-      }
-
-      return tx.institution.create({
+    const { user, institution } = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
         data: {
-          ...parsed,
-          name,
-          userId: managerId,
+          firstName: name,
+          lastName: 'Institution',
+          email,
+          passwordHash: hashedPassword,
+          role: 'INSTITUTION',
+          verificationStatus: 'PENDING',
+        },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          role: true,
+          verificationStatus: true,
         },
       });
+
+      const institution = await tx.institution.create({
+        data: {
+          name,
+          type: parsed.type,
+          description: parsed.description,
+          website: parsed.website,
+          logoUri: parsed.logoUri,
+          userId: user.id,
+        },
+      });
+
+      return { user, institution };
     });
+
+    await authService.issueEmailOtp(email);
+
+    const sessionId = crypto.randomUUID();
+    const refreshToken = authService.signRefreshToken(user, sessionId);
+    const accessToken = authService.signAccessToken(user);
+    await authService.createSession({ userId: user.id, refreshToken, deviceInfo, sessionId });
+
+    return {
+      message: 'Registration successful. Please verify email with the OTP sent.',
+      user,
+      institution,
+      accessToken,
+      refreshToken,
+      sessionId,
+    };
   }
 
   async listInstitutions(query) {
@@ -165,7 +248,7 @@ class InstitutionService {
       where: { email },
       select: { id: true, role: true },
     });
-    if (!user) {
+    if (!user || user.role !== 'INSTITUTION') {
       throw new AppError('Institution account not found', 404, true, 'NOT_FOUND');
     }
 

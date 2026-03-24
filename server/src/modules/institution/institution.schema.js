@@ -1,7 +1,17 @@
 const zod = require('zod');
 
-const createInstitutionSchema = zod.object({
-    name: zod.string().min(2, 'name is required').max(150),
+const registerInstitutionSchema = zod.object({
+    email: zod.string().email('Invalid email address').trim().toLowerCase(),
+    password: zod
+        .string()
+        .min(8, 'Password must be at least 8 characters long')
+        .max(32, 'Password must be less than 32 characters long')
+        .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+        .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+        .regex(/[0-9]/, 'Password must contain at least one number')
+        .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character'),
+    passwordConfirm: zod.string(),
+    name: zod.string().trim().min(2, 'name is required').max(150),
     type: zod.enum([
         'UNIVERSITY',
         'COMPANY',
@@ -11,9 +21,21 @@ const createInstitutionSchema = zod.object({
         'GOVERNMENT',
         'OTHER',
     ]),
-    description: zod.string().max(1000).optional(),
-    website: zod.string().url().optional(),
-    logoUri: zod.string().url().optional(),
+    description: zod.string().trim().max(1000).optional(),
+    website: zod.string().trim().url().optional(),
+    logoUri: zod.string().trim().url().optional(),
+}).strict().refine((data) => data.password === data.passwordConfirm, {
+    message: 'Passwords do not match',
+    path: ['passwordConfirm'],
+});
+
+const verifyInstitutionOtpSchema = zod.object({
+    email: zod.string().email('Invalid email address').trim().toLowerCase(),
+    otp: zod.string().regex(/^\d{4}$/, 'OTP must be a 4-digit code'),
+}).strict();
+
+const resendInstitutionOtpSchema = zod.object({
+    email: zod.string().email('Invalid email address').trim().toLowerCase(),
 }).strict();
 
 const updateInstitutionSchema = zod.object({
@@ -117,7 +139,9 @@ const listInstitutionsSchema = zod.object({
 }).strict();
 
 module.exports = {
-    createInstitutionSchema,
+    registerInstitutionSchema,
+    verifyInstitutionOtpSchema,
+    resendInstitutionOtpSchema,
     updateInstitutionSchema,
     institutionIdParamSchema,
     loginInstitutionSchema,
