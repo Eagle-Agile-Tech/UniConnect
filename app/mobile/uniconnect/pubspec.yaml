@@ -23,6 +23,7 @@ dependencies:
   dio: ^5.9.2
   fresh_dio: ^0.6.0
   http_mock_adapter: ^0.6.1
+  chat_plugin: ^1.0.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -21,7 +21,6 @@ class ProfileScreen extends ConsumerWidget {
       data: (auth) {
         final currentUser = auth.user;
 
-        // Handle the edge case where user might still be null
         if (currentUser == null) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
@@ -31,7 +30,6 @@ class ProfileScreen extends ConsumerWidget {
         final String activeId = userId ?? currentUser.id;
         final bool isMe = userId == null;
 
-        // ... rest of your existing logic using currentUser safely ...
         final AsyncValue<User> user = userId == null
             ? AsyncValue.data(currentUser)
             : ref.watch(userProvider(userId!));

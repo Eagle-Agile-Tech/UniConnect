@@ -11,6 +11,7 @@ import 'package:multi_select_flutter/util/multi_select_item.dart';
 import 'package:multi_select_flutter/util/multi_select_list_type.dart';
 import 'package:uniconnect/config/dummy_data.dart';
 import 'package:uniconnect/routing/routes.dart';
+import 'package:uniconnect/ui/auth/auth_state_provider.dart';
 import 'package:uniconnect/ui/auth/onboarding/view_models/onboarding_viewmodel_provider.dart';
 import 'package:uniconnect/ui/core/common/styles/spacing_style.dart';
 import 'package:uniconnect/ui/core/common/widgets/app_bar.dart';
@@ -61,6 +62,7 @@ class _CreateProfileState extends ConsumerState<CreateProfile> {
   @override
   Widget build(BuildContext context) {
     final onboarding = ref.watch(onboardingProvider.notifier);
+    final authState = ref.watch(authNotifierProvider.notifier);
     return Scaffold(
       appBar: UCAppBar('Create Profile'),
       body: SingleChildScrollView(
@@ -126,10 +128,8 @@ class _CreateProfileState extends ConsumerState<CreateProfile> {
                 TextFormField(
                   controller: _usernameController,
                   validator: (value) {
-                    final validate = UCValidator.validateUsername(
-                    value,
-                    );
-                    if(validate != null) return validate;
+                    final validate = UCValidator.validateUsername(value);
+                    if (validate != null) return validate;
                     if (isUsernameAvailable == null) {
                       return 'Checking username...';
                     }
@@ -139,8 +139,8 @@ class _CreateProfileState extends ConsumerState<CreateProfile> {
                     }
                     return null;
                   },
-                  onChanged: (value){
-                    if(debounce?.isActive ?? false){
+                  onChanged: (value) {
+                    if (debounce?.isActive ?? false) {
                       debounce!.cancel();
                     }
                     setState(() => isUsernameAvailable = null);
@@ -225,7 +225,7 @@ class _CreateProfileState extends ConsumerState<CreateProfile> {
                       _selectedInterests.toSet().toList(),
                       File(_profileImage!.path),
                     );
-                    final result = await onboarding.completeOnboarding();
+                    final result = await authState.registerUser();
                     if (result == null) {
                       context.go(Routes.home);
                     } else {

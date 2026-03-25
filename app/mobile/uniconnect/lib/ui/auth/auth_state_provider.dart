@@ -2,7 +2,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uniconnect/data/repository/user/user_repository_remote.dart';
 
 import '../../data/repository/auth/auth_repository_remote.dart';
+import '../../data/service/socket/chat_service.dart';
 import '../../domain/models/user/user.dart';
+import '../../utils/result.dart';
+import 'onboarding/view_models/onboarding_viewmodel_provider.dart';
 
 // class AuthState {
 //   final bool isLoading;
@@ -72,18 +75,23 @@ final authNotifierProvider = AsyncNotifierProvider<AuthNotifier, AuthState>(
 class AuthNotifier extends AsyncNotifier<AuthState> {
   late final AuthRepositoryRemote _repo;
   late final UserRepositoryRemote _userRepo;
+  late final ChatService _chat;
+  late final OnboardingViewmodel _onborader;
 
   @override
   Future<AuthState> build() async {
     _userRepo = ref.read(userRepoProvider);
-
+    _repo = ref.watch(authProvider);
     final isAuth = await _repo.isAuthenticated;
     if (!isAuth) return const AuthState(user: null);
-
+    _chat = ref.watch(chatServiceProvider);
     final result = await _userRepo.getCurrentUser();
 
     return result.fold(
-      (user) => AuthState(user: user),
+      (user) {
+        _chat.initializeChatPlugin(user.id);
+        return AuthState(user: user);
+      },
       (_, __) => const AuthState(user: null),
     );
   }
@@ -97,5 +105,14 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       (user) => state = AsyncData(AuthState(user: user)),
       (_, _) => state = const AsyncData(AuthState(user: null)),
     );
+  }
+
+  Future<Err?> registerUser() async{
+    _onborader = ref.watch(onboardingProvider.notifier);
+    final result = await _onborader.completeOnboarding();
+    return result.fold((user){
+      AuthState(user:user);
+      return null;
+    }, (error, stackTrace) => Result.error(error) as Err,);
   }
 }

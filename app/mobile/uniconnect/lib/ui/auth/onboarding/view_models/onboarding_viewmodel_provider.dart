@@ -121,7 +121,7 @@ class OnboardingViewmodel extends Notifier<OnboardingState> {
     );
   }
 
-  Future<Err?> completeOnboarding() async {
+  Future<Result<User>> completeOnboarding() async {
     state = state.copyWith(isLoading: true);
     try {
       //TODO: call to api to submit profile details and complete onboarding
@@ -144,37 +144,37 @@ class OnboardingViewmodel extends Notifier<OnboardingState> {
             currentStep: OnboardingStep.completed,
             isLoading: false,
           );
-          // ref.read(currentUserProvider.notifier).state = User(
-          //   id: state.id,
-          //   firstName: state.firstName,
-          //   lastName: state.lastName,
-          //   username: state.username,
-          //   email: state.email,
-          //   university: state.university,
-          //   degree: state.degree,
-          //   currentYear: state.currentYear,
-          //   expectedGraduationYear: state.expectedGraduationYear!,
-          //   bio: state.bio,
-          //   interests: state.interests
-          //       ?.map((interest) => interest.interest)
-          //       .toList(),
-          //   profilePicture: data,
-          //   createdAt: DateTime.now(),
-          //   updatedAt: DateTime.now(),
-          // );
-          return null;
+          final user = User(
+            id: state.id,
+            firstName: state.firstName,
+            lastName: state.lastName,
+            username: state.username,
+            email: state.email,
+            university: state.university,
+            degree: state.degree,
+            currentYear: state.currentYear,
+            expectedGraduationYear: state.expectedGraduationYear!,
+            bio: state.bio,
+            interests: state.interests
+                ?.map((interest) => interest.interest)
+                .toList(),
+            profilePicture: data,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          );
+          return Result.ok(user);
         },
         (error, stackTrace) {
           state = state.copyWith(
             isLoading: false,
             errorMessage: error.toString(),
           );
-          return Result.error(error) as Err;
+          return Result.error(error);
         },
       );
     } catch (e) {
       state = state.copyWith(isLoading: false, errorMessage: e.toString());
-      return Result.error('Failed to complete onboarding') as Err;
+      return Result.error('Failed to complete onboarding');
     }
   }
 }

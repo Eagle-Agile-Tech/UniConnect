@@ -90,7 +90,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: Routes.messaging,
-        builder: (context, state) => const MessageScreen(),
+        builder: (context, state) {
+          final data = state.extra as Map<String, String>;
+          return MessageScreen(
+            receiverId: data['userId']!,
+            receiverName: data['username']!,
+          );
+        },
       ),
       GoRoute(
         path: Routes.setting,

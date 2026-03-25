@@ -8,8 +8,9 @@ import '../../../routing/routes.dart';
 import '../../core/theme/dimens.dart';
 import '../view_models/user_provider.dart';
 
-class ProfileHeader extends ConsumerWidget{
+class ProfileHeader extends ConsumerWidget {
   const ProfileHeader({super.key, required this.user, required this.isMe});
+
   final User user;
   final bool isMe;
 
@@ -106,13 +107,13 @@ class ProfileHeader extends ConsumerWidget{
                             ),
                             const SizedBox(width: Dimens.sm),
                             ElevatedButton(
-                              onPressed: () {
-                                ref
-                                        .read(selectedChatUserProvider.notifier)
-                                        .state =
-                                    user;
-                                context.push(Routes.messaging);
-                              },
+                              onPressed: () => context.push(
+                                Routes.messaging,
+                                extra: {
+                                  'userId': user.id,
+                                  'username': user.username,
+                                },
+                              ),
                               style: ElevatedButton.styleFrom(
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(0),
