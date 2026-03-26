@@ -6,7 +6,6 @@ import '../../../config/assets.dart';
 import '../../../domain/models/user/user.dart';
 import '../../../routing/routes.dart';
 import '../../core/theme/dimens.dart';
-import '../view_models/user_provider.dart';
 
 class ProfileHeader extends ConsumerWidget {
   const ProfileHeader({super.key, required this.user, required this.isMe});

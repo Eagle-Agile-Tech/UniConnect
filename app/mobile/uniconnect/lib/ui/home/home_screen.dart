@@ -5,8 +5,6 @@ import 'package:uniconnect/ui/core/common/widgets/post_card/post_card.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
 import 'package:uniconnect/ui/home/view_models/home_viewmodel_provider.dart';
 import 'package:uniconnect/ui/home/widgets/drawer_content.dart';
-import 'package:uniconnect/ui/post/create_post.dart';
-import 'package:uniconnect/ui/profile/view_models/user_provider.dart';
 
 import '../../routing/routes.dart';
 

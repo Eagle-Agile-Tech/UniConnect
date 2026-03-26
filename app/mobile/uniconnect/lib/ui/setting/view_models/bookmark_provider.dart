@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uniconnect/ui/profile/view_models/user_provider.dart';
 
 import '../../../data/repository/post/post_repository.dart';
 import '../../../data/repository/post/post_repository_remote.dart';

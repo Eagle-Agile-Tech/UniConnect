@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uniconnect/config/assets.dart';
-import 'package:uniconnect/config/dummy_data.dart';
 import 'package:uniconnect/ui/core/common/widgets/post_card/post_card.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
 import 'package:uniconnect/ui/search/viewmodels/search_viewmodel_provider.dart';

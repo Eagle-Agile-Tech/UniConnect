@@ -6,7 +6,6 @@ import 'package:uniconnect/ui/auth/auth_state_provider.dart';
 
 import '../../../data/repository/post/post_repository_remote.dart';
 import '../../../domain/models/comment/comment.dart';
-import '../../profile/view_models/user_provider.dart';
 
 final commentProvider = AsyncNotifierProvider.autoDispose
     .family<CommentNotifier, List<Comment>, String>(CommentNotifier.new);

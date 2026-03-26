@@ -5,7 +5,6 @@ import 'package:uniconnect/utils/result.dart';
 
 import '../../../domain/models/community/community.dart';
 import '../../../ui/auth/auth_state_provider.dart';
-import '../../../ui/profile/view_models/user_provider.dart';
 import '../../service/api/api_client.dart';
 import 'community_repository.dart';
 

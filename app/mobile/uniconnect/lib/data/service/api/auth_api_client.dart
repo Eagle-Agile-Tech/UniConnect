@@ -2,11 +2,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../utils/result.dart';
 import '../local/secure_token_storage.dart';
-import '../socket/socket_service.dart';
 import 'models/create_account/create_account_response.dart';
 
 final authApiProvider = Provider((ref) {

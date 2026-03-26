@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fresh_dio/fresh_dio.dart';
 
 import '../local/secure_token_storage.dart';
-import 'api_client.dart';
 import 'auth_api_client.dart';
 
 final freshProvider = Provider<Fresh<OAuth2Token>>((ref) {

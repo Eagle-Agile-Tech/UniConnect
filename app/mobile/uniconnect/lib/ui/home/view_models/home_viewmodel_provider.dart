@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uniconnect/data/repository/post/post_repository.dart';
 import 'package:uniconnect/domain/models/post/post.dart';
-import 'package:uniconnect/ui/profile/view_models/user_provider.dart';
 
 import '../../../data/repository/post/post_repository_remote.dart';
 import '../../auth/auth_state_provider.dart';

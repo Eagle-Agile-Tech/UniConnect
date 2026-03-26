@@ -4,7 +4,6 @@ import 'package:uniconnect/ui/core/common/widgets/post_card/post_card.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
 import 'package:uniconnect/ui/setting/view_models/bookmark_provider.dart';
 
-import '../profile/view_models/user_provider.dart';
 
 class SavedScreen extends ConsumerWidget {
   const SavedScreen({super.key});

@@ -87,13 +87,10 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     _chat = ref.watch(chatServiceProvider);
     final result = await _userRepo.getCurrentUser();
 
-    return result.fold(
-      (user) {
-        _chat.initializeChatPlugin(user.id);
-        return AuthState(user: user);
-      },
-      (_, __) => const AuthState(user: null),
-    );
+    return result.fold((user) {
+      _chat.initializeChatPlugin(user.id);
+      return AuthState(user: user);
+    }, (_, _) => const AuthState(user: null));
   }
 
   Future<void> login(String username, String password) async {
@@ -101,18 +98,18 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
 
     final result = await _repo.login(username, password);
 
-     result.fold(
+    result.fold(
       (user) => state = AsyncData(AuthState(user: user)),
       (_, _) => state = const AsyncData(AuthState(user: null)),
     );
   }
 
-  Future<Err?> registerUser() async{
+  Future<Err?> registerUser() async {
     _onborader = ref.watch(onboardingProvider.notifier);
     final result = await _onborader.completeOnboarding();
-    return result.fold((user){
-      AuthState(user:user);
+    return result.fold((user) {
+      AuthState(user: user);
       return null;
-    }, (error, stackTrace) => Result.error(error) as Err,);
+    }, (error, stackTrace) => Result.error(error) as Err);
   }
 }

@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
 import 'package:uniconnect/ui/post/view_models/create_post_viewmodel_provider.dart';
-import 'package:uniconnect/ui/profile/view_models/user_provider.dart';
 import 'package:uniconnect/utils/helper_functions.dart';
 
 import '../auth/auth_state_provider.dart';

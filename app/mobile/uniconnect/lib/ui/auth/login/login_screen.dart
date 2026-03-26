@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:uniconnect/ui/auth/login/viewmodels/auth_provider.dart';
 import 'package:uniconnect/utils/validator.dart';
 
-import '../../../routing/routes.dart';
 import '../../core/common/styles/spacing_style.dart';
 import '../../core/common/widgets/form_divider.dart';
 import '../../core/common/widgets/signin_with_button.dart';

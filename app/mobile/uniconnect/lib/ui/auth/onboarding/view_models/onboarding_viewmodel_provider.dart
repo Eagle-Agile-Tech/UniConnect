@@ -3,10 +3,8 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uniconnect/config/dummy_data.dart';
-import 'package:uniconnect/data/repository/user/user_repository_remote.dart';
 import 'package:uniconnect/domain/models/onboarding/onboarding_state.dart';
 import 'package:uniconnect/domain/models/user/user.dart';
-import 'package:uniconnect/ui/profile/view_models/user_provider.dart';
 import 'package:uniconnect/utils/result.dart';
 
 import '../../../../data/repository/auth/auth_repository_remote.dart';

@@ -37,7 +37,7 @@ class _MessagesState extends ConsumerState<Messages>
     );
   }
 
-  _handleNewMessageNotification(Map<String, dynamic> messageData) {
+  void _handleNewMessageNotification(Map<String, dynamic> messageData) {
     final senderId = messageData['sender'];
     if (senderId != null) {
       _newMessageCount[senderId] = (_newMessageCount[senderId] ?? 0) + 1;
@@ -73,6 +73,7 @@ class _MessagesState extends ConsumerState<Messages>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!mounted) return;
     if (state == AppLifecycleState.resumed) {
       _ensureChatConnection();
     } else if (state == AppLifecycleState.paused) {
@@ -84,29 +85,33 @@ class _MessagesState extends ConsumerState<Messages>
   }
 
   @override
+  void dispose(){
+    super.dispose();
+    WidgetsBinding.instance.removeObserver(this);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final chatRooms = ChatPlugin.chatService.chatRooms;
     if (chatRooms.isEmpty) {
-      return Expanded(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.chat_bubble_outline,
-                size: Dimens.iconLg,
-                color: Colors.grey,
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.chat_bubble_outline,
+              size: Dimens.iconLg,
+              color: Colors.grey,
+            ),
+            const SizedBox(height: Dimens.md),
+            Text(
+              'No conversations yet',
+              style: TextStyle(
+                fontSize: Dimens.fontMd,
+                color: Colors.grey[600],
               ),
-              const SizedBox(height: Dimens.md),
-              Text(
-                'No conversations yet',
-                style: TextStyle(
-                  fontSize: Dimens.fontMd,
-                  color: Colors.grey[600],
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       );
     }
