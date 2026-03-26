@@ -54,6 +54,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
               const SizedBox(height: Dimens.sm),
               SearchBar(
                 hintText: 'What are you looking for?',
+                readOnly: true,
                 hintStyle: WidgetStatePropertyAll(
                   TextStyle(fontWeight: FontWeight.w600),
                 ),
