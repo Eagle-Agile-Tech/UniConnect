@@ -5,14 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
-import 'package:uniconnect/config/assets.dart';
 import 'package:uniconnect/ui/community/view_models/community_onboard_viewmodel.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
 import 'package:uniconnect/utils/validator.dart';
 
 import '../../domain/models/user/user.dart';
 import '../../routing/routes.dart';
-import 'community_screen.dart';
 
 class CreateCommunityScreen extends ConsumerStatefulWidget {
   const CreateCommunityScreen({super.key});
@@ -56,7 +54,7 @@ class _CreateCommunityScreenState extends ConsumerState<CreateCommunityScreen> {
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(const SnackBar(content: Text('Community Created')));
-          context.go(Routes.community(id));
+          context.go(Routes.community(id),extra: true);
         },
         error: (error, stackTrace) {
           ScaffoldMessenger.of(context).showSnackBar(

@@ -1,20 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:uniconnect/ui/community/view_models/community_viewmodel.dart';
-import 'package:uniconnect/ui/profile/view_models/user_provider.dart';
 
 import '../../config/assets.dart';
-import '../../config/dummy_data.dart';
 import '../../domain/models/community/community.dart';
 import '../../domain/models/post/post.dart';
 import '../../domain/models/user/user.dart';
+import '../../routing/routes.dart';
 import '../core/common/widgets/post_card/post_card.dart';
 import '../core/theme/dimens.dart';
 
 class CommunityScreen extends ConsumerWidget {
-  const CommunityScreen({super.key, required this.communityId});
+  const CommunityScreen({
+    super.key,
+    required this.communityId,
+    required this.isCreated,
+  });
 
   final String communityId;
+  final bool isCreated;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -28,6 +33,12 @@ class CommunityScreen extends ConsumerWidget {
           headerSliverBuilder: (context, innerBoxIsScrolled) {
             return [
               SliverAppBar(
+                leading: IconButton(
+                  icon: Icon(Icons.arrow_back),
+                  onPressed: isCreated
+                      ? () => context.go(Routes.home)
+                      : context.pop,
+                ),
                 title: const Text(
                   'Community',
                   style: TextStyle(fontWeight: FontWeight.bold),
@@ -112,7 +123,9 @@ class CommunityScreen extends ConsumerWidget {
                             ? Container(
                                 padding: EdgeInsets.all(Dimens.sm),
                                 decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(Dimens.md),
+                                  borderRadius: BorderRadius.circular(
+                                    Dimens.md,
+                                  ),
                                   color: Color(0xFFe8edea),
                                 ),
                                 child: Text('Owner'),
