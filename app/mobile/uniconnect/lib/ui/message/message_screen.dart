@@ -2,10 +2,8 @@ import 'package:chat_plugin/chat_plugin.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:uniconnect/config/assets.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
-import 'package:uniconnect/ui/profile/view_models/user_provider.dart';
 
 class MessageScreen extends ConsumerStatefulWidget {
   const MessageScreen({
@@ -43,8 +41,15 @@ class _MessageScreenState extends ConsumerState<MessageScreen>
 
   @override
   void dispose() {
-    super.dispose();
+    WidgetsBinding.instance.removeObserver(this);
     _scrollController.dispose();
+    _textMessage.dispose();
+    _chatService.removeEventListener(ChatEventType.messagesChanged, '$listenerId-messages');
+    _chatService.removeEventListener(ChatEventType.typingStatusChanged, '$listenerId-typing');
+    _chatService.removeEventListener(ChatEventType.onlineStatusChanged, '$listenerId-online');
+    _chatService.removeEventListener(ChatEventType.messageStatusChanged, '$listenerId-status');
+    _chatService.removeEventListener(ChatEventType.error,'$listenerId-error');
+    super.dispose();
   }
 
   Future<void> _chatInit() async {
@@ -64,7 +69,6 @@ class _MessageScreenState extends ConsumerState<MessageScreen>
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _scrollToBottom();
       });
-    } catch (e) {
     } finally {
       setState(() {
         _isLoading = false;
@@ -102,7 +106,7 @@ class _MessageScreenState extends ConsumerState<MessageScreen>
       (isTyping) {
         if (mounted) {
           setState(() {
-            _isTyping = true;
+            _isTyping = isTyping;
           });
         }
       },
@@ -149,6 +153,7 @@ class _MessageScreenState extends ConsumerState<MessageScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if(!mounted) return;
     if (state == AppLifecycleState.resumed) {
       _chatService.updateUserStatus(true);
     } else if (state == AppLifecycleState.paused) {
@@ -236,7 +241,10 @@ class _MessageScreenState extends ConsumerState<MessageScreen>
                                 : Alignment.centerLeft,
                             child: Container(
                               padding: EdgeInsets.all(10),
-                              margin: EdgeInsets.only(right: 70, left: 10),
+                                margin: EdgeInsets.only(
+                                  right: isMe ? 10 : 70,
+                                  left: isMe ? 70 : 10,
+                                ),
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.all(
@@ -288,6 +296,7 @@ class _MessageScreenState extends ConsumerState<MessageScreen>
                   ),
                   Expanded(
                     child: TextField(
+                      controller: _textMessage,
                       decoration: InputDecoration().copyWith(
                         hintText: 'Type a message',
                         enabledBorder: InputBorder.none,
@@ -328,7 +337,7 @@ class _MessageScreenState extends ConsumerState<MessageScreen>
   }
 
   Future<void> _loadMoreMessages() async {
-    if (_chatService.messages.isEmpty || _isLoadingMore || _hasMoreMessages) {
+    if (_chatService.messages.isEmpty || _isLoadingMore || !_hasMoreMessages) {
       return;
     }
     setState(() {
@@ -341,7 +350,6 @@ class _MessageScreenState extends ConsumerState<MessageScreen>
       if (newMessages.isEmpty) {
         _hasMoreMessages = false;
       }
-    } catch (e) {
     } finally {
       setState(() {
         _isLoadingMore = false;
