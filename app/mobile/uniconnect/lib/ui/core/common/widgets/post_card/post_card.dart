@@ -9,12 +9,10 @@ import 'package:uniconnect/ui/home/view_models/comment_provider.dart';
 import 'package:uniconnect/ui/home/view_models/home_viewmodel_provider.dart';
 
 import '../../../../../domain/models/post/post.dart';
-import '../../../../../domain/models/user/user.dart';
 import '../../../theme/colors.dart';
 
 class UCPostCard extends ConsumerStatefulWidget {
   const UCPostCard({required this.post, super.key});
-
   final Post post;
 
   @override
@@ -95,14 +93,13 @@ class _UCPostCardState extends ConsumerState<UCPostCard> {
                   ImageCarousel(
                     isExpanded: _isExpanded,
                     controller: _controller,
-                    imageWidth: _imageWidth,
-                    widget: widget,
+                    images: widget.post.mediaUrls!,
                   ),
 
                 if (widget.post.mediaUrls != null &&
                     widget.post.mediaUrls!.length > 1)
                   PostCarouselIndicator(
-                    widget: widget,
+                    length: widget.post.mediaUrls!.length,
                     currentIndex: _currentIndex,
                     controller: _controller,
                     imageWidth: _imageWidth,

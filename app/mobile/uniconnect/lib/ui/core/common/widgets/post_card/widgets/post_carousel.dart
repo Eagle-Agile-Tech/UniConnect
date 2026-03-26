@@ -1,29 +1,29 @@
 import 'package:flutter/material.dart';
 
 import '../../../../theme/dimens.dart';
-import '../post_card.dart';
 
 class PostCarouselIndicator extends StatelessWidget {
   const PostCarouselIndicator({
     super.key,
-    required this.widget,
     required int currentIndex,
     required CarouselController controller,
     required double imageWidth,
-  }) : _currentIndex = currentIndex,
-        _controller = controller,
-        _imageWidth = imageWidth;
+    required int length,
+  }) : _length = length,
+       _currentIndex = currentIndex,
+       _controller = controller,
+       _imageWidth = imageWidth;
 
-  final UCPostCard widget;
   final int _currentIndex;
   final CarouselController _controller;
   final double _imageWidth;
+  final int _length;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(widget.post.mediaUrls!.length, (index) {
+      children: List.generate(_length, (index) {
         bool isActive = index == _currentIndex;
         return InkWell(
           hoverColor: Colors.transparent,
