@@ -75,7 +75,7 @@ abstract final class UCValidator {
       return 'Above 3 characters are allowed';
     }
     final regex = RegExp(r'^[a-zA-Z][a-zA-Z0-9_]*$');
-    if(regex.hasMatch(username)){
+    if(!regex.hasMatch(username)){
       return 'Only letters, numbers, and underscores allowed';
     }
     return null;
@@ -86,7 +86,7 @@ abstract final class UCValidator {
       return 'Please select an interest.';
     }
     if (interest.toSet().length > 5) {
-      return 'You can not select up to 5 interests.';
+      return 'You can not select up to 5  interests.';
     }
     return null;
   }
@@ -97,6 +97,13 @@ abstract final class UCValidator {
     }
     if (members.toSet().length < 5) {
       return 'You need at least 5 members to create a community.';
+    }
+    return null;
+  }
+
+  static String? validateUniCode(String? code){
+    if (code == null || code.isEmpty) {
+      return 'Please provide uni code.';
     }
     return null;
   }

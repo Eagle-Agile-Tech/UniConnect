@@ -18,7 +18,7 @@ class AuthApiClient {
   final Dio _client;
 
   AuthApiClient({Dio? client})
-    : _client = client ?? Dio(BaseOptions(baseUrl: baseUrl));
+      : _client = client ?? Dio(BaseOptions(baseUrl: baseUrl));
 
   Future<Result<CreateAccountResponse>> createUserAccount({
     required String firstName,
@@ -44,11 +44,11 @@ class AuthApiClient {
     }
   }
 
-  Future<Result> verifyOtp(String userId, String otp) async {
+  Future<Result> verifyOtp(String email, String otp) async {
     try {
       await _client.post(
         '/verifyOtp/',
-        data: {'userId': userId, 'otp': otp},
+        data: {'email': email, 'otp': otp},
       );
       return Result.ok('');
     } on DioException catch (e) {
@@ -57,11 +57,11 @@ class AuthApiClient {
   }
 
   //todo: create username checker
-  Future<Result> usernameChecker(String username) async{
-    try{
+  Future<Result> usernameChecker(String username) async {
+    try {
       await _client.get('/checkUsername/', data: {'username': username});
       return Result.ok('');
-    }on DioException catch (e) {
+    } on DioException catch (e) {
       return Result.error(e);
     }
   }
@@ -92,7 +92,9 @@ class AuthApiClient {
       if (profilePicture != null) {
         userData['profilePicture'] = await MultipartFile.fromFile(
           profilePicture.path,
-          filename: profilePicture.path.split('/').last,
+          filename: profilePicture.path
+              .split('/')
+              .last,
         );
       }
       final formData = FormData.fromMap(userData);
@@ -106,10 +108,8 @@ class AuthApiClient {
     }
   }
 
-  Future<Result<Map<String, dynamic>>> loginUser(
-    String username,
-    String password,
-  ) async {
+  Future<Result<Map<String, dynamic>>> loginUser(String username,
+      String password,) async {
     try {
       final response = await _client.post(
         '/login/',
@@ -133,5 +133,53 @@ class AuthApiClient {
 
   Future<void> logoutUser() async {
     await SecureTokenStorage().delete();
+  }
+
+  // Expert
+  Future<Result> registerExpert(String firstName, String lastName, String email,
+      String university, String uniCode, String password) async {
+    try {
+      await _client.post('/register/expert/', data: {
+        'fistName': firstName,
+        'lastName': lastName,
+        'email': email,
+        'university': university,
+        'uniCode': uniCode,
+        'password': password,
+      });
+      return Result.ok('');
+    } on DioException catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<Map<String,dynamic>>> createExpertProfile(
+      String expertise,
+      String honor,
+      String username,
+      String? bio,
+      File? profilePicture,) async {
+    try{
+      final Map<String, dynamic> userData = {
+        'expertise': expertise,
+        'honor': honor,
+        'username': username,
+        'bio': ?bio,
+      };
+      if (profilePicture != null) {
+        userData['profilePicture'] = await MultipartFile.fromFile(
+          profilePicture.path,
+          filename: profilePicture.path
+              .split('/')
+              .last,
+        );
+      }
+      final formData = FormData.fromMap(userData);
+      final response = await _client.post('/createExpertProfile/', data: formData);
+      // Response contains tokens plus profile picture url
+      return Result.ok(response.data);
+    } on DioException catch(e){
+      return Result.error(e);
+    }
   }
 }

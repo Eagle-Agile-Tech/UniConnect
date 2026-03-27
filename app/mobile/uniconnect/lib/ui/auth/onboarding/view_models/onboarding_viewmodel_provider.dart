@@ -67,7 +67,7 @@ class OnboardingViewmodel extends Notifier<OnboardingState> {
   Future<Err?> verifyOtp(String otp) async {
     state = state.copyWith(isLoading: true, errorMessage: null);
 
-    final result = await _authRepo.verifyOtp(state.id, otp);
+    final result = await _authRepo.verifyOtp(state.email, otp);
 
     if (!result) {
       state = state.copyWith(isLoading: false);

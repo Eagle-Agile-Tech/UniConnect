@@ -5,6 +5,9 @@ import 'package:uniconnect/ui/auth/auth_screen.dart';
 import 'package:uniconnect/ui/auth/onboarding/academic_profile/academic_profile.dart';
 import 'package:uniconnect/ui/auth/onboarding/personalization/create_profile.dart';
 import 'package:uniconnect/ui/auth/onboarding/verify_email/verify_email_screen.dart';
+import 'package:uniconnect/ui/auth/onboarding_experts/academic_profile.dart';
+import 'package:uniconnect/ui/auth/onboarding_experts/signup/signup_screen.dart';
+import 'package:uniconnect/ui/auth/onboarding_experts/verify_university/verify_university.dart';
 import 'package:uniconnect/ui/message/message_screen.dart';
 import 'package:uniconnect/ui/post/create_post.dart';
 import 'package:uniconnect/ui/setting/saved_screen.dart';
@@ -22,31 +25,30 @@ final routerProvider = Provider<GoRouter>((ref) {
   final authAsync = ref.watch(authNotifierProvider);
 
   return GoRouter(
-    initialLocation: Routes.loginOrSignup,
+    initialLocation: Routes.expertSignup,
 
-    redirect: (context, state) {
-      if (authAsync.isLoading) return null;
-
-      if (authAsync.hasError) {
-        return Routes.loginOrSignup;
-      }
-
-      final auth = authAsync.value!;
-      final isLoggedIn = auth.isAuthenticated;
-
-      final isAuthPage = state.matchedLocation == Routes.loginOrSignup;
-
-      if (!isLoggedIn && !isAuthPage) {
-        return Routes.loginOrSignup;
-      }
-
-      if (isLoggedIn && isAuthPage) {
-        return Routes.home;
-      }
-
-      return null;
-    },
-
+    // redirect: (context, state) {
+    //   if (authAsync.isLoading) return null;
+    //
+    //   if (authAsync.hasError) {
+    //     return Routes.loginOrSignup;
+    //   }
+    //
+    //   final auth = authAsync.value!;
+    //   final isLoggedIn = auth.isAuthenticated;
+    //
+    //   final isAuthPage = state.matchedLocation == Routes.loginOrSignup;
+    //
+    //   if (!isLoggedIn && !isAuthPage) {
+    //     return Routes.loginOrSignup;
+    //   }
+    //
+    //   if (isLoggedIn && isAuthPage) {
+    //     return Routes.home;
+    //   }
+    //
+    //   return null;
+    // },
     routes: [
       GoRoute(
         path: Routes.loginOrSignup,
@@ -130,8 +132,23 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: Routes.communityScreen,
         builder: (context, state) {
           final id = state.pathParameters['id']!;
-          return CommunityScreen(communityId: id);
+          final isCreated = state.extra as bool;
+          return CommunityScreen(communityId: id, isCreated: isCreated);
         },
+      ),
+
+      // Experts
+      GoRoute(
+        path: Routes.expertSignup,
+        builder: (context, state) => ExpertSignupScreen(),
+      ),
+      GoRoute(
+        path: Routes.expertVerifyUni,
+        builder: (context, state) => ExpertVerifyUni(),
+      ),
+    GoRoute(
+        path: Routes.expertProfile,
+        builder: (context, state) => ExpertAcademicProfileScreen(),
       ),
     ],
   );
