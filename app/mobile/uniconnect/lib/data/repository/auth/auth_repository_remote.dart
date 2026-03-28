@@ -6,9 +6,12 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:fresh_dio/fresh_dio.dart';
 import 'package:uniconnect/data/service/api/models/create_account/create_account_response.dart';
 import 'package:uniconnect/data/service/socket/chat_service.dart' as Chat;
+import 'package:uniconnect/utils/enums.dart';
 
 import 'package:uniconnect/utils/result.dart';
 
+import '../../../domain/models/user/expert/expert.dart';
+import '../../../domain/models/user/student/student.dart';
 import '../../../domain/models/user/user.dart';
 import '../../service/api/auth_api_client.dart';
 import '../../service/api/token_refresher.dart';
@@ -110,24 +113,40 @@ class AuthRepositoryRemote implements AuthRepository {
           refreshToken: data['refreshToken'],
         );
         await _fresh.setToken(token);
-        final user = User(
-          id: data['id'],
-          firstName: data['firstName'],
-          lastName: data['lastName'],
-          email: data['email'],
-          username: data['username'],
-          university: data['university'],
-          degree: data['degree'],
-          currentYear: data['currentYear'],
-          expectedGraduationYear: DateTime.parse(data['graduation']),
-          createdAt: DateTime.parse(data['createdAt']),
-          updatedAt: DateTime.parse(data['updatedAt']),
-          role: data['role'],
-          bio: data['bio'],
-          interests: data['interest'],
-          profilePicture: data['profilePicture'],
-          isVerified: data['isVerified'],
-        );
+        final role = UserRole.values.firstWhere((e) => e.name == data['role']);
+        final user = switch (role) {
+          UserRole.student => User(
+            id: data['id'],
+            firstName: data['firstName'],
+            lastName: data['lastName'],
+            email: data['email'],
+            username: data['username'],
+            university: data['university'],
+            role: data['role'],
+            bio: data['bio'],
+            profilePicture: data['profilePicture'],
+            student: Student(
+              degree: data['degree'],
+              currentYear: data['currentYear'],
+              expectedGraduationYear: DateTime.parse(data['graduation']),
+              interests: data['interest'],
+              isVerified: data['isVerified'],
+            ),
+          ),
+
+          UserRole.expert => User(
+            id: data['id'],
+            firstName: data['firstName'],
+            lastName: data['lastName'],
+            email: data['email'],
+            username: data['username'],
+            university: data['university'],
+            role: data['role'],
+            bio: data['bio'],
+            profilePicture: data['profilePicture'],
+            expert: Expert(expertise: data['expertise'], honor: data['honor']),
+          ),
+        };
         // todo: token
         await _chatService.initializeChatPlugin(data['id']);
         await Future.delayed(Duration(milliseconds: 500));
@@ -151,13 +170,13 @@ class AuthRepositoryRemote implements AuthRepository {
 
   // Expert
   @override
-  Future<Result> registerExpert(
+  Future<Result<String>> registerExpert(
     String firstName,
     String lastName,
     String email,
     String university,
     String uniCode,
-      String password,
+    String password,
   ) async {
     final result = await _authClient.registerExpert(
       firstName,
@@ -168,16 +187,28 @@ class AuthRepositoryRemote implements AuthRepository {
       password,
     );
     return result.fold(
-      (data) => Result.ok(''),
+      (data) => Result.ok(data['userId']),
       (error, stackTrace) => Result.error(error),
     );
   }
 
   @override
-  Future<Result<String>> createExpertProfile(String expertise, String honor, String username, String? bio, File? profilePicture) async {
-    final result = await _authClient.createExpertProfile(expertise, honor, username, bio, profilePicture);
+  Future<Result<String>> createExpertProfile(
+    String expertise,
+    String honor,
+    String username,
+    String? bio,
+    File? profilePicture,
+  ) async {
+    final result = await _authClient.createExpertProfile(
+      expertise,
+      honor,
+      username,
+      bio,
+      profilePicture,
+    );
     return result.fold(
-          (data) async {
+      (data) async {
         final token = OAuth2Token(
           accessToken: data['accessToken'],
           refreshToken: data['refreshToken'],
@@ -188,7 +219,7 @@ class AuthRepositoryRemote implements AuthRepository {
         await Future.delayed(Duration(milliseconds: 500));
         return Result.ok(data['profilePicture']);
       },
-          (error, _) {
+      (error, _) {
         return Result.error(error);
       },
     );

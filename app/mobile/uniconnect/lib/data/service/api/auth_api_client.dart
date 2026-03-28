@@ -30,6 +30,7 @@ class AuthApiClient {
       final response = await _client.post(
         '/auth/register',
         data: {
+          //todo: ask Tsega if she needs role when sending this user data - this one is student
           'firstName': firstName,
           'lastName': lastName,
           'email': email,
@@ -136,10 +137,10 @@ class AuthApiClient {
   }
 
   // Expert
-  Future<Result> registerExpert(String firstName, String lastName, String email,
+  Future<Result<dynamic>> registerExpert(String firstName, String lastName, String email,
       String university, String uniCode, String password) async {
     try {
-      await _client.post('/register/expert/', data: {
+      final response = await _client.post('/register/expert/', data: {
         'fistName': firstName,
         'lastName': lastName,
         'email': email,
@@ -147,7 +148,7 @@ class AuthApiClient {
         'uniCode': uniCode,
         'password': password,
       });
-      return Result.ok('');
+      return Result.ok(response.data);
     } on DioException catch (e) {
       return Result.error(e);
     }

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uniconnect/config/dummy_data.dart';
 import 'package:uniconnect/domain/models/onboarding/onboarding_state.dart';
+import 'package:uniconnect/domain/models/user/student/student.dart';
 import 'package:uniconnect/domain/models/user/user.dart';
 import 'package:uniconnect/utils/result.dart';
 
@@ -149,16 +150,17 @@ class OnboardingViewmodel extends Notifier<OnboardingState> {
             username: state.username,
             email: state.email,
             university: state.university,
-            degree: state.degree,
-            currentYear: state.currentYear,
-            expectedGraduationYear: state.expectedGraduationYear!,
             bio: state.bio,
-            interests: state.interests
-                ?.map((interest) => interest.interest)
-                .toList(),
             profilePicture: data,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
+            role: UserRole.student,
+            student: Student(
+              degree: state.degree,
+              currentYear: state.currentYear,
+              expectedGraduationYear: state.expectedGraduationYear!,
+              interests: state.interests
+                  ?.map((interest) => interest.interest)
+                  .toList(),
+            ),
           );
           return Result.ok(user);
         },

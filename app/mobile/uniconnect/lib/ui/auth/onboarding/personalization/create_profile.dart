@@ -225,7 +225,7 @@ class _CreateProfileState extends ConsumerState<CreateProfile> {
                       _selectedInterests.toSet().toList(),
                       File(_profileImage!.path),
                     );
-                    final result = await authState.registerUser();
+                    final result = await authState.registerStudent();
                     if (result == null) {
                       context.go(Routes.home);
                     } else {

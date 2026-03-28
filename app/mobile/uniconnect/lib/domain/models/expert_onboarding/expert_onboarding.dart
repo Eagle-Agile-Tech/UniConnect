@@ -7,6 +7,7 @@ part 'expert_onboarding.freezed.dart';
 @freezed
 abstract class ExpertOnboardingState with _$ExpertOnboardingState{
   factory ExpertOnboardingState({
+    @Default('') String id,
     @Default('') String firstName,
     @Default('')  String lastName,
     @Default('')  String email,
@@ -15,7 +16,7 @@ abstract class ExpertOnboardingState with _$ExpertOnboardingState{
     @Default('') String expertise,
     @Default('') String honor,
     @Default('') String username,
-    @Default('') String bio,
+    String? bio,
     File? profilePicture
 
 }) = _ExpertOnboardingState;

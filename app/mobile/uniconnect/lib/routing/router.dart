@@ -7,7 +7,6 @@ import 'package:uniconnect/ui/auth/onboarding/personalization/create_profile.dar
 import 'package:uniconnect/ui/auth/onboarding/verify_email/verify_email_screen.dart';
 import 'package:uniconnect/ui/auth/onboarding_experts/academic_profile.dart';
 import 'package:uniconnect/ui/auth/onboarding_experts/signup/signup_screen.dart';
-import 'package:uniconnect/ui/auth/onboarding_experts/verify_university/verify_university.dart';
 import 'package:uniconnect/ui/message/message_screen.dart';
 import 'package:uniconnect/ui/post/create_post.dart';
 import 'package:uniconnect/ui/setting/saved_screen.dart';
@@ -141,10 +140,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.expertSignup,
         builder: (context, state) => ExpertSignupScreen(),
-      ),
-      GoRoute(
-        path: Routes.expertVerifyUni,
-        builder: (context, state) => ExpertVerifyUni(),
       ),
     GoRoute(
         path: Routes.expertProfile,
