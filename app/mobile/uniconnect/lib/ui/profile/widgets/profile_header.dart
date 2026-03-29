@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../config/assets.dart';
 import '../../../domain/models/user/user.dart';
 import '../../../routing/routes.dart';
+import '../../../utils/enums.dart';
 import '../../core/theme/dimens.dart';
 
 class ProfileHeader extends ConsumerWidget {
@@ -78,7 +79,9 @@ class ProfileHeader extends ConsumerWidget {
                         ),
                         const SizedBox(height: Dimens.xs),
                         Text(
-                          user.degree,
+                          user.role == UserRole.student
+                              ? user.student!.degree
+                              : user.expert!.expertise,
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                         const SizedBox(height: Dimens.sm),
@@ -134,44 +137,51 @@ class ProfileHeader extends ConsumerWidget {
             ],
           ),
         ),
-        const Divider(),
         const SizedBox(height: Dimens.md),
-        Padding(
-          padding: const EdgeInsets.only(left: 20.0),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'Interests',
-              style: Theme.of(
-                context,
-              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+        const Divider(
+          height: 5,
+        ),
+        if (user.role == UserRole.student)
+          const SizedBox(height: Dimens.md),
+        if (user.role == UserRole.student)
+          Padding(
+            padding: const EdgeInsets.only(left: 20.0),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Interests',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: Dimens.sm),
-        Padding(
-          padding: const EdgeInsets.only(left: 20.0),
-          child: SizedBox(
-            width: double.infinity,
-            child: Wrap(
-              spacing: Dimens.sm,
-              runSpacing: Dimens.sm,
-              children: List.generate(user.interests!.length, (index) {
-                return Chip(
-                  label: Text(user.interests![index]),
-                  visualDensity: VisualDensity.compact,
-                  backgroundColor: Theme.of(
-                    context,
-                  ).colorScheme.primaryContainer.withAlpha(50),
-                  side: BorderSide.none,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(Dimens.sm),
-                  ),
-                );
-              }),
+        if (user.role == UserRole.student)
+          const SizedBox(height: Dimens.sm),
+        if (user.role == UserRole.student)
+          Padding(
+            padding: const EdgeInsets.only(left: 20.0),
+            child: SizedBox(
+              width: double.infinity,
+              child: Wrap(
+                spacing: Dimens.sm,
+                runSpacing: Dimens.sm,
+                children: List.generate(user.student!.interests!.length, (index) {
+                  return Chip(
+                    label: Text(user.student!.interests![index]),
+                    visualDensity: VisualDensity.compact,
+                    backgroundColor: Theme.of(
+                      context,
+                    ).colorScheme.primaryContainer.withAlpha(50),
+                    side: BorderSide.none,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(Dimens.sm),
+                    ),
+                  );
+                }),
+              ),
             ),
           ),
-        ),
       ],
     );
   }

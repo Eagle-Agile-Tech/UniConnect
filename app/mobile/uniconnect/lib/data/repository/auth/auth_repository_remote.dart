@@ -122,30 +122,23 @@ class AuthRepositoryRemote implements AuthRepository {
             email: data['email'],
             username: data['username'],
             university: data['university'],
-            role: data['role'],
+            role: role,
             bio: data['bio'],
             profilePicture: data['profilePicture'],
             student: Student(
               degree: data['degree'],
               currentYear: data['currentYear'],
-              expectedGraduationYear: DateTime.parse(data['graduation']),
-              interests: data['interest'],
-              isVerified: data['isVerified'],
+              expectedGraduationYear: DateTime.parse(
+                data['expectedGraduationYear'],
+              ),
+              interests: (data['interests'] as List)
+                  .map((e) => e as String)
+                  .toList(),
+              isVerified: bool.parse(data['isVerified']),
             ),
           ),
 
-          UserRole.expert => User(
-            id: data['id'],
-            firstName: data['firstName'],
-            lastName: data['lastName'],
-            email: data['email'],
-            username: data['username'],
-            university: data['university'],
-            role: data['role'],
-            bio: data['bio'],
-            profilePicture: data['profilePicture'],
-            expert: Expert(expertise: data['expertise'], honor: data['honor']),
-          ),
+          UserRole.expert => User.fromJson(data),
         };
         // todo: token
         await _chatService.initializeChatPlugin(data['id']);
@@ -159,13 +152,12 @@ class AuthRepositoryRemote implements AuthRepository {
     );
   }
 
-  Future<void> logout() async {
-    await _authClient.logoutUser();
-    try {
-      if (ChatConfig.instance.userId != null) {
-        ChatPlugin.chatService.fullDisconnect();
-      }
-    } catch (e) {}
+  Future<bool> logout() async {
+    final result = await _authClient.logoutUser();
+    if (ChatConfig.instance.userId != null) {
+      ChatPlugin.chatService.fullDisconnect();
+    }
+    return result;
   }
 
   // Expert

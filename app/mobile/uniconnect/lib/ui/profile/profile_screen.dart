@@ -38,42 +38,92 @@ class ProfileScreen extends ConsumerWidget {
             ? ref.watch(profileViewModelProvider(currentUser.id))
             : ref.watch(profileViewModelProvider(userId!));
 
-        return Scaffold(
-          body: RefreshIndicator(
-            onRefresh: () =>
-                ref.refresh(profileViewModelProvider(activeId).future),
-            child: CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.only(top: Dimens.sm),
-                    child: isMe
-                        ? ProfileHeader(user: currentUser, isMe: true)
-                        : user.when(
-                            data: (User data) =>
-                                ProfileHeader(user: data, isMe: false),
-                            error: (Object error, StackTrace stackTrace) =>
-                                Center(child: Text('Error: $error')),
-                            loading: () =>
-                                Center(child: CircularProgressIndicator()),
+        return DefaultTabController(
+          length: 2,
+          child: Scaffold(
+            body: RefreshIndicator(
+              onRefresh: () =>
+                  ref.refresh(profileViewModelProvider(activeId).future),
+              child: NestedScrollView(
+                headerSliverBuilder:
+                    (BuildContext context, bool innerBoxIsScrolled) {
+                      return [
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: EdgeInsets.only(top: Dimens.sm),
+                            child: isMe
+                                ? ProfileHeader(user: currentUser, isMe: true)
+                                : user.when(
+                                    data: (User data) =>
+                                        ProfileHeader(user: data, isMe: false),
+                                    error:
+                                        (Object error, StackTrace stackTrace) =>
+                                            Center(
+                                              child: Text('Error: $error'),
+                                            ),
+                                    loading: () => Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                  ),
                           ),
-                  ),
-                ),
-                postAsync.when(
-                  data: (posts) => SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) => UCPostCard(post: posts[index]),
-                      childCount: posts.length,
-                    ),
-                  ),
-                  error: (err, stack) => SliverToBoxAdapter(
-                    child: Center(child: Text('Error: $err')),
-                  ),
-                  loading: () => const SliverToBoxAdapter(
-                    child: Center(child: CircularProgressIndicator()),
-                  ),
-                ),
-              ],
+                        ),
+                        if (currentUser.isExpert)
+                          SliverPersistentHeader(
+                            pinned: true,
+                            delegate: _HeaderDelegate(
+                              TabBar(
+                                labelPadding: EdgeInsets.symmetric(vertical: 0),
+                                overlayColor: WidgetStatePropertyAll(
+                                  Colors.transparent,
+                                ),
+                                indicatorSize: TabBarIndicatorSize.tab,
+                                indicator: UnderlineTabIndicator(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: const BorderSide(width: 3),
+                                  insets: EdgeInsetsGeometry.symmetric(
+                                    horizontal: 48,
+                                  ),
+                                ),
+                                tabs: [
+                                  Tab(text: 'Posts'),
+                                  Tab(text: 'Courses'),
+                                ],
+                              ),
+                            ),
+                          ),
+                      ];
+                    },
+                body: currentUser.isExpert
+                    ? TabBarView(
+                        children: [
+                          postAsync.when(
+                            data: (posts) => ListView.builder(
+                              itemCount: posts.length,
+                              itemBuilder: (context, index) {
+                                return UCPostCard(post: posts[index]);
+                              },
+                            ),
+                            error: (err, stack) =>
+                                Center(child: Text('Error: $err')),
+                            loading: () => const Center(
+                              child: CircularProgressIndicator(),
+                            ),
+                          ),
+                          Text('hello'),
+                        ],
+                      )
+                    : postAsync.when(
+                        data: (posts) => ListView.builder(
+                          itemCount: posts.length,
+                          itemBuilder: (context, index) =>
+                              UCPostCard(post: posts[index]),
+                        ),
+                        error: (err, stack) =>
+                            Center(child: Text('Error: $err')),
+                        loading: () =>
+                            const Center(child: CircularProgressIndicator()),
+                      ),
+              ),
             ),
           ),
         );
@@ -82,5 +132,30 @@ class ProfileScreen extends ConsumerWidget {
           const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (err, stack) => Scaffold(body: Center(child: Text('Error: $err'))),
     );
+  }
+}
+
+class _HeaderDelegate extends SliverPersistentHeaderDelegate {
+  _HeaderDelegate(this._tabBar);
+
+  final TabBar _tabBar;
+
+  @override
+  double get maxExtent => _tabBar.preferredSize.height;
+
+  @override
+  double get minExtent => _tabBar.preferredSize.height;
+
+  @override
+  bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) =>
+      false;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Container(color: Colors.white, child: _tabBar);
   }
 }

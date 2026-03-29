@@ -25,6 +25,7 @@ abstract class User with _$User{
 }) = _User;
 
   String get fullName => '$firstName $lastName';
+  bool get isExpert => role == UserRole.expert;
 
   factory User.fromJson(Map<String,dynamic> json) => _$UserFromJson(json);
 }
