@@ -9,7 +9,7 @@ import 'package:uniconnect/ui/auth/onboarding_experts/academic_profile.dart';
 import 'package:uniconnect/ui/auth/onboarding_experts/signup/signup_screen.dart';
 import 'package:uniconnect/ui/message/message_screen.dart';
 import 'package:uniconnect/ui/post/create_post.dart';
-import 'package:uniconnect/ui/setting/saved_screen.dart';
+import 'package:uniconnect/ui/setting/widgets/saved_screen.dart';
 import 'package:uniconnect/utils/navigation_wrapper.dart';
 
 import '../ui/auth/auth_state_provider.dart';
@@ -19,35 +19,36 @@ import '../ui/community/explore_community.dart';
 import '../ui/profile/profile_screen.dart';
 import '../ui/search/search_screen.dart';
 import '../ui/setting/setting_screen.dart';
+import '../ui/setting/widgets/manage_profile.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authAsync = ref.watch(authNotifierProvider);
 
   return GoRouter(
-    initialLocation: Routes.expertSignup,
+    initialLocation: Routes.loginOrSignup,
 
-    // redirect: (context, state) {
-    //   if (authAsync.isLoading) return null;
-    //
-    //   if (authAsync.hasError) {
-    //     return Routes.loginOrSignup;
-    //   }
-    //
-    //   final auth = authAsync.value!;
-    //   final isLoggedIn = auth.isAuthenticated;
-    //
-    //   final isAuthPage = state.matchedLocation == Routes.loginOrSignup;
-    //
-    //   if (!isLoggedIn && !isAuthPage) {
-    //     return Routes.loginOrSignup;
-    //   }
-    //
-    //   if (isLoggedIn && isAuthPage) {
-    //     return Routes.home;
-    //   }
-    //
-    //   return null;
-    // },
+    redirect: (context, state) {
+      if (authAsync.isLoading) return null;
+
+      if (authAsync.hasError) {
+        return Routes.loginOrSignup;
+      }
+
+      final auth = authAsync.value!;
+      final isLoggedIn = auth.isAuthenticated;
+
+      final isAuthPage = state.matchedLocation == Routes.loginOrSignup;
+
+      if (!isLoggedIn && !isAuthPage) {
+        return Routes.loginOrSignup;
+      }
+
+      if (isLoggedIn && isAuthPage) {
+        return Routes.home;
+      }
+
+      return null;
+    },
     routes: [
       GoRoute(
         path: Routes.loginOrSignup,
@@ -102,6 +103,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.setting,
         builder: (context, state) => const SettingScreen(),
+      ),
+      GoRoute(
+        path: Routes.manageProfile,
+        builder: (context, state) => const ManageProfile(),
       ),
       GoRoute(
         path: Routes.saved,

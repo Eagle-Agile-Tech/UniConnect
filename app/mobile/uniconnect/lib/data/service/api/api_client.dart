@@ -163,6 +163,29 @@ class ApiClient {
     }
   }
 
+  Future<Result> updateProfile(String? firstName, String? lastName, String? username, String? bio, File? profilePic) async {
+    try {
+      final Map<String,dynamic> change = {
+        'firstName': ?firstName,
+        'lastName': ?lastName,
+        'username': ?username,
+        'bio': ?bio,
+      };
+      if (profilePic != null){
+        final file = MultipartFile.fromFile(
+          profilePic.path,
+          filename: profilePic.path.split('/').last,
+        );
+        change['profilePic'] = file;
+      }
+      final formData = FormData.fromMap(change);
+      await _client.post('/updateProfile/', data: formData);
+      return Result.ok('');
+    } on DioException catch (e){
+      return Result.error(e);
+    }
+  }
+
   Future<Result> bookmarkPost(String postId) async {
     try {
       await _client.post('/bookmarkPost/$postId', data: {'userId': _userId});

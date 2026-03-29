@@ -55,11 +55,19 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     );
   }
 
+  Future<bool> logout() async {
+    final result = await _repo.logout();
+    if (result) {
+      state = AsyncData(AuthState(user: null));
+    }
+    return result;
+  }
+
   Future<Err?> registerStudent() async {
     _onborader = ref.read(onboardingProvider.notifier);
     final result = await _onborader.completeOnboarding();
     return result.fold((user) {
-      AuthState(user: user);
+      state = AsyncData(AuthState(user: user));
       return null;
     }, (error, stackTrace) => Result.error(error) as Err);
   }
@@ -83,5 +91,32 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       AuthState(user: user);
       return null;
     }, (error, stackTrace) => Result.error(error) as Err);
+  }
+
+  Future<Result> updateProfile({
+    String? firstName,
+    String? lastName,
+    String? username,
+    String? bio,
+    File? profilePic,
+  }) async {
+
+    final userRepo = _userRepo;
+    final result = await userRepo.updateProfile(
+      firstName,
+      lastName,
+      username,
+      bio,
+      profilePic,
+    );
+
+    return result.fold((data) async {
+      final updatedUser = await _userRepo.getCurrentUser();
+      updatedUser.fold(
+        (data) => state = AsyncData(AuthState(user: data)),
+        (error, stackTrace) => state  = const AsyncData(AuthState(user: null)),
+      );
+      return Result.ok('Profile updated');
+    }, (error, _) => Result.error(error));
   }
 }

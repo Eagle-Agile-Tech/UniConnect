@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uniconnect/data/repository/user/user_repository.dart';
 import 'package:uniconnect/domain/models/user/user.dart';
@@ -13,6 +15,21 @@ class UserRepositoryRemote implements UserRepository {
   final ApiClient _client;
 
   const UserRepositoryRemote(this._client);
+
+  @override
+  Future<Result> updateProfile(
+      String? firstName,
+      String? lastName,
+      String? username,
+      String? bio,
+      File? profilePic,
+      ) async {
+    final result = await _client.updateProfile(firstName, lastName, username, bio, profilePic);
+    return result.fold(
+      (data) => Result.ok(''),
+      (error, stackTrace) => Result.ok(error),
+    );
+  }
 
   @override
   Future<Result<List<User>>> searchUsers(String keyWord) async {

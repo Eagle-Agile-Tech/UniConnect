@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import '../../../domain/models/user/user.dart';
 import '../../../utils/result.dart';
 
@@ -7,4 +9,5 @@ abstract class UserRepository {
   Future<Result<User>> getCurrentUser();
   Future<Result<List<User>>> getFriends();
   Future<Result<List<User>>> getCommunityMembers(String id);
+  Future<Result> updateProfile(String? firstName, String? lastName, String? username, String? bio, File? profilePic);
 }

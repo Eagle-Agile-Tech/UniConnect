@@ -132,8 +132,13 @@ class AuthApiClient {
     }
   }
 
-  Future<void> logoutUser() async {
-    await SecureTokenStorage().delete();
+  Future<bool> logoutUser() async {
+    try{
+      await SecureTokenStorage().delete();
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   // Expert

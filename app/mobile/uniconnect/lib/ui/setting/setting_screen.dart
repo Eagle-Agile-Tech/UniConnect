@@ -24,12 +24,12 @@ class SettingScreen extends StatelessWidget {
                 'Your Account',
                 style: TextStyle().copyWith(fontWeight: FontWeight.bold),
               ),
-
               leading: Icon(Icons.person),
               subtitle: Padding(
                 padding: const EdgeInsets.only(top: Dimens.sm),
                 child: Text('See information about your account '),
               ),
+              onTap: () => context.push(Routes.manageProfile)
             ),
             // Heading
             SizedBox(
