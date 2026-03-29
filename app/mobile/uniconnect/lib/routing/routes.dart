@@ -24,4 +24,5 @@ abstract final class Routes {
   static const String expertSignup = '/expert/signup';
   static const String expertVerifyUni = '/expert/verifyUni';
   static const String expertProfile = '/expert/profile';
+  static const String addCourse = '/expert/setting/addCourse';
 }

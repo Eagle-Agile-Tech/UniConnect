@@ -1,7 +1,9 @@
+import 'package:flutter/src/widgets/framework.dart';
 import 'package:uniconnect/config/dummy_data.dart';
 import 'package:uniconnect/utils/enums.dart';
 
 import '../domain/models/user/user.dart';
+import 'helper_functions.dart';
 
 abstract final class UCValidator {
   static String? validateEmptyText(String fieldName, String? value) {
@@ -104,6 +106,16 @@ abstract final class UCValidator {
   static String? validateUniCode(String? code){
     if (code == null || code.isEmpty) {
       return 'Please provide uni code.';
+    }
+    return null;
+  }
+
+  static String?  validateLink(String? link)  {
+    if ( link == null || link.isEmpty) {
+      return 'Please provide a link.';
+    }
+    if(!UCHelperFunctions.isUrl(link)){
+      return 'Provide a link';
     }
     return null;
   }
