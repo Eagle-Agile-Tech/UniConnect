@@ -6,4 +6,3 @@ void main() {
   //FlutterNativeSplash.preserve(widgetsBinding: widgetBinding);
   runApp(UniConnect());
 }
-

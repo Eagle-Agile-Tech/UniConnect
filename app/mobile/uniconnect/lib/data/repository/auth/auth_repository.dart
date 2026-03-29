@@ -48,4 +48,4 @@ abstract class AuthRepository {
     String? bio,
     File? profilePicture,
   );
-}
+   }
