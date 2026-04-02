@@ -11,6 +11,7 @@ part 'onboarding_state.freezed.dart';
 abstract class OnboardingState with _$OnboardingState {
   factory OnboardingState({
     @Default(OnboardingStep.account) OnboardingStep currentStep,
+    @Default(EmailType.general) EmailType emailType,
     @Default(false) bool isLoading,
     String? errorMessage,
 
@@ -35,5 +36,7 @@ abstract class OnboardingState with _$OnboardingState {
     String? bio,
     List<InterestRecord>? interests,
     File? profilePicture,
+    File? frontID,
+    File? backID,
   }) = _OnboardingState;
 }

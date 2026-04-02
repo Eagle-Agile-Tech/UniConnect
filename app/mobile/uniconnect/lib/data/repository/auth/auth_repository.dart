@@ -7,14 +7,17 @@ import '../../service/api/models/create_account/create_account_response.dart';
 abstract class AuthRepository {
   Future<bool> get isAuthenticated;
 
-  Future<Result<CreateAccountResponse>> createUserAccount({
+  Future<Result> createUserAccount({
     required String firstName,
     required String lastName,
     required String email,
     required String password,
+    required String confirmPassword,
   });
 
-  Future<bool> verifyOtp(String email, String otp);
+  Future<Result<String>> verifyOtp(String email, String otp);
+
+  Future<Result> verifyId(File front,  File back);
 
   Future<bool> isUsernameAvailable(String username);
 

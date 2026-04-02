@@ -17,10 +17,13 @@ final onboardingProvider =
     );
 
 class OnboardingViewmodel extends Notifier<OnboardingState> {
-  late final AuthRepositoryRemote _authRepo;
+  late AuthRepositoryRemote _authRepo;
 
   @override
-  OnboardingState build() => OnboardingState();
+  OnboardingState build() {
+    _authRepo = ref.read(authProvider);
+    return OnboardingState();
+  }
 
   // Account
   void updateAccount(
@@ -37,21 +40,20 @@ class OnboardingViewmodel extends Notifier<OnboardingState> {
     );
   }
 
-  Future<Err?> submitAccount() async {
-    _authRepo = ref.read(authProvider);
+  Future<Err?> submitAccount(String confirmPassword) async {
     state = state.copyWith(isLoading: true, errorMessage: null);
     final result = await _authRepo.createUserAccount(
       firstName: state.firstName,
       lastName: state.lastName,
       email: state.email,
       password: state.password,
+      confirmPassword: confirmPassword,
     );
     return result.fold(
       (data) {
         state = state.copyWith(
           currentStep: OnboardingStep.verifyEmail,
           isLoading: false,
-          id: data.userId,
         );
         return null;
       },
@@ -70,18 +72,24 @@ class OnboardingViewmodel extends Notifier<OnboardingState> {
 
     final result = await _authRepo.verifyOtp(state.email, otp);
 
-    if (!result) {
-      state = state.copyWith(isLoading: false);
-      return Result.error('Invalid otp') as Err;
-    }
+    return result.fold((data) {
+      state = state.copyWith(
+        isEmailVerified: true,
+        currentStep: OnboardingStep.academic,
+        isLoading: false,
+        university: data,
+      );
+      return null;
+    }, (error, stackTrace) => Result.error(error) as Err);
+  }
 
-    state = state.copyWith(
-      isEmailVerified: true,
-      currentStep: OnboardingStep.academic,
-      isLoading: false,
+  Future<Err?> verifyId(File front, File back) async {
+    state = state.copyWith(isLoading: true, errorMessage: null);
+    final result = await _authRepo.verifyId(front, back);
+    return result.fold(
+      (data) => null,
+      (error, stackTrace) => Result.error(error) as Err,
     );
-
-    return null;
   }
 
   // Academic
@@ -123,7 +131,6 @@ class OnboardingViewmodel extends Notifier<OnboardingState> {
   Future<Result<User>> completeOnboarding() async {
     state = state.copyWith(isLoading: true);
     try {
-      //TODO: call to api to submit profile details and complete onboarding
       final result = await _authRepo.createUserProfile(
         id: state.id,
         username: state.username,
