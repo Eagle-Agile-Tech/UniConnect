@@ -3,6 +3,7 @@ const router = express.Router();
 
 const authController = require('./auth.controller');
 const validateRequest = require('../../middlewares/validateRequest');
+const authenticate = require('../../middlewares/authMiddleware');
 const { uploadIdVerificationDocument, attachUploadedDocumentImage } = require('../../middlewares/idVerificationUpload');
 const {
   registerSchema,
@@ -60,6 +61,7 @@ router.post('/logout', validateRequest(logoutSchema, 'query'), authController.lo
 // Submit university ID for verification
 router.post(
   '/verify-id',
+  authenticate,
   uploadIdVerificationDocument,
   attachUploadedDocumentImage,
   validateRequest(submitIdVerificationSchema),

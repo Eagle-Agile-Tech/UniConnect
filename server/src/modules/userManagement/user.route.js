@@ -14,6 +14,7 @@ const {
   updateUserSchema,
   upsertUserSchema,
   checkUsernameSchema,
+  checkUsernameParamsSchema,
   
 } = require('./user.schema');
 
@@ -29,6 +30,11 @@ router.get(
   userController.checkUsernameAvailability
 );
 
+router.get(
+  '/username/:username/available',
+  validateRequest(checkUsernameParamsSchema, 'params'),
+  userController.checkUsernameAvailableSimple
+);
 
 router.get('/profiles/username/:username', userController.searchUsernames);
 

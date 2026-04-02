@@ -210,18 +210,13 @@ class AuthService {
   // ==========================
   async register(data) {
     const email = this.normalizeEmail(data.email);
-    const university = this.detectUniversity(email);
-
-    if (!university) {
-      throw new AuthError('No university detected. Please use ID verification.', 400, true, 'NON_UNIVERSITY_EMAIL');
-    }
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) throw new AuthError('Email already registered', 409);
 
     const hashedPassword = await bcrypt.hash(data.password, 12);
 
-    await prisma.user.create({
+    const user = await prisma.user.create({
       data: {
         firstName: data.firstName,
         lastName: data.lastName,
@@ -229,7 +224,8 @@ class AuthService {
         passwordHash: hashedPassword,
         role: 'STUDENT',
         verificationStatus: 'PENDING',
-        verificationMethod: 'UNIVERSITY_EMAIL',
+        
+        
       },
     });
 
@@ -237,14 +233,14 @@ class AuthService {
       this.getUsernameSeed({ email, firstName: data.firstName, lastName: data.lastName })
     );
     await prisma.userProfile.create({
-      data: { userId: user.id, universityId: universityRecord?.id, username },
+      data: { userId: user.id, username },
     });
 
     await this.issueEmailOtp(email);
 
     return {
       message: 'Registration successful. Please verify email with the OTP sent.',
-      universityDetected: university.name,
+     
     
     };
   }
@@ -252,6 +248,8 @@ class AuthService {
   async verifyOtp(emailInput, otp) {
     const email = this.normalizeEmail(emailInput);
     const user = await prisma.user.findUnique({ where: { email } });
+
+    
     if (!user) throw new AuthError('User not found', 404);
     if (user.verificationStatus === 'EMAIL_VERIFIED') throw new AuthError('Email already verified', 400);
     if (user.verificationMethod && user.verificationMethod !== 'UNIVERSITY_EMAIL') {
@@ -272,26 +270,33 @@ class AuthService {
       throw new AuthError('Invalid OTP', 400);
     }
 
-    await prisma.user.update({ where: { id: user.id }, data: { verificationStatus: 'EMAIL_VERIFIED' } });
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { verificationStatus: 'EMAIL_VERIFIED', verificationMethod: 'UNIVERSITY_EMAIL' },
+    });
     user.verificationStatus = 'EMAIL_VERIFIED';
     await redisClient.del(this.otpKey(email), this.otpAttemptsKey(email), this.otpResendKey(email));
 
-    if (user.verificationMethod === 'UNIVERSITY_EMAIL') {
-      const detectedUniversity = this.detectUniversity(email);
-      const universityRecord = await this.getOrCreateUniversity(detectedUniversity);
-      if (universityRecord?.id) {
-        await prisma.userProfile.updateMany({
-          where: {
-            userId: user.id,
-            universityId: null,
-          },
-          data: {
-            universityId: universityRecord.id,
-          },
-        });
-      }
+    const detectedUniversity = this.detectUniversity(email);
+    const universityRecord = await this.getOrCreateUniversity(detectedUniversity);
+    if (universityRecord?.id) {
+      await prisma.userProfile.updateMany({
+        where: { userId: user.id },
+        data: { universityId: universityRecord.id },
+      });
+    } else {
+      await prisma.userProfile.updateMany({
+        where: { userId: user.id },
+        data: { universityId: null },
+      });
     }
 
+    if(detectedUniversity) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { verificationMethod: 'UNIVERSITY_EMAIL' },
+      });
+    }
    const sessionId = crypto.randomUUID();
 
    const refreshToken = this.signRefreshToken(user, sessionId);
@@ -303,6 +308,7 @@ await this.createSession({
 });
 
 const accessToken = this.signAccessToken(user);
+const university = detectedUniversity?.name || 'general';
 
 return {
   message: 'Email verified successfully',
@@ -312,7 +318,8 @@ return {
     verificationStatus: user.verificationStatus
   },
   accessToken,
-  refreshToken
+  refreshToken,
+  university
 };
   }
 
@@ -577,69 +584,30 @@ return {
   async submitIdVerification(data) {
     const {
       userId: providedUserId,
-      firstName,
-      lastName,
-      email: rawEmail,
-      password,
-      passwordConfirm,
-      documentImage,
+      documentFrontImage,
+      documentBackImage,
       documentType,
       submittedNotes,
     } = data;
 
-    if (!documentImage) throw new AuthError('documentImage is required', 400);
+    if (!documentFrontImage || !documentBackImage) {
+      throw new AuthError('Both front and back ID images are required', 400);
+    }
 
-    let userId = providedUserId;
+    const documentImage = JSON.stringify({
+      front: documentFrontImage,
+      back: documentBackImage,
+    });
 
-    if (!userId) {
-      if (!rawEmail || !firstName || !lastName || !password || !passwordConfirm) {
-        throw new AuthError('firstName, lastName, email, password and passwordConfirm are required when userId is not provided', 400);
-      }
-      if (password !== passwordConfirm) throw new AuthError('Passwords do not match', 400);
+    const userId = providedUserId;
+    if (!userId) throw new AuthError('User id is required', 400);
 
-      const email = this.normalizeEmail(rawEmail);
-      const detectedUniversity = this.detectUniversity(email);
-      if (detectedUniversity) {
-        throw new AuthError('University email detected. Use standard registration instead.', 400);
-      }
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new AuthError('User not found', 404);
 
-      const existingUser = await prisma.user.findUnique({ where: { email } });
-      if (existingUser && existingUser.verificationMethod !== 'ID_DOCUMENT_ADMIN') {
-        throw new AuthError('Email already registered', 409);
-      }
-
-      if (existingUser) {
-        userId = existingUser.id;
-      } else {
-        const hashedPassword = await bcrypt.hash(password, 12);
-        const createdUser = await prisma.$transaction(async (tx) => {
-          const newUser = await tx.user.create({
-            data: {
-              firstName,
-              lastName,
-              email,
-              passwordHash: hashedPassword,
-              role: 'STUDENT',
-              verificationStatus: 'PENDING',
-              verificationMethod: 'ID_DOCUMENT_ADMIN',
-            },
-          });
-
-          const username = await this.resolveUniqueUsername(
-            this.getUsernameSeed({ email, firstName, lastName }),
-            tx
-          );
-          await tx.userProfile.create({
-            data: { userId: newUser.id, username },
-          });
-
-          return newUser;
-        });
-        userId = createdUser.id;
-      }
-    } else {
-      const user = await prisma.user.findUnique({ where: { id: userId } });
-      if (!user) throw new AuthError('User not found', 404);
+    const detectedUniversity = this.detectUniversity(this.normalizeEmail(user.email));
+    if (detectedUniversity) {
+      throw new AuthError('University email detected. Use standard registration instead.', 400);
     }
 
     const existingRequest = await prisma.idVerificationRequest.findUnique({ where: { userId } });

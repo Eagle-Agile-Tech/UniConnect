@@ -14,13 +14,19 @@ const uploadIdVerificationDocument = multer({
   fileFilter,
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB
-    files: 1,
+    files: 2,
   },
-}).single('documentImage');
+}).fields([
+  { name: 'documentFrontImage', maxCount: 1 },
+  { name: 'documentBackImage', maxCount: 1 },
+]);
 
 async function attachUploadedDocumentImage(req, _res, next) {
   try {
-    if (!req.file) return next();
+    const files = req.files || {};
+    const frontFile = files.documentFrontImage?.[0];
+    const backFile = files.documentBackImage?.[0];
+    if (!frontFile && !backFile) return next();
 
     const supabase = getSupabaseClient();
     if (!supabase) {
@@ -33,27 +39,36 @@ async function attachUploadedDocumentImage(req, _res, next) {
     }
 
     const bucket = process.env.SUPABASE_ID_VERIFICATION_BUCKET || 'id-verifications';
-    const ext = path.extname(req.file.originalname || '').toLowerCase() || '.jpg';
-    const objectPath = `${Date.now()}-${crypto.randomUUID()}${ext}`;
 
-    const { error } = await supabase.storage
-      .from(bucket)
-      .upload(objectPath, req.file.buffer, {
-        contentType: req.file.mimetype,
-        upsert: false,
-      });
+    const uploadImage = async (file) => {
+      if (!file) return undefined;
+      const ext = path.extname(file.originalname || '').toLowerCase() || '.jpg';
+      const objectPath = `${Date.now()}-${crypto.randomUUID()}${ext}`;
+      const { error } = await supabase.storage
+        .from(bucket)
+        .upload(objectPath, file.buffer, {
+          contentType: file.mimetype,
+          upsert: false,
+        });
+      if (error) {
+        throw new AppError(
+          'Failed to upload verification document',
+          503,
+          true,
+          'STORAGE_UPLOAD_FAILED'
+        );
+      }
+      const { data } = supabase.storage.from(bucket).getPublicUrl(objectPath);
+      return data?.publicUrl || `${bucket}/${objectPath}`;
+    };
 
-    if (error) {
-      throw new AppError(
-        'Failed to upload verification document',
-        503,
-        true,
-        'STORAGE_UPLOAD_FAILED'
-      );
-    }
+    const [frontUrl, backUrl] = await Promise.all([
+      uploadImage(frontFile),
+      uploadImage(backFile),
+    ]);
 
-    const { data } = supabase.storage.from(bucket).getPublicUrl(objectPath);
-    req.body.documentImage = data?.publicUrl || `${bucket}/${objectPath}`;
+    if (frontUrl) req.body.documentFrontImage = frontUrl;
+    if (backUrl) req.body.documentBackImage = backUrl;
 
     return next();
   } catch (err) {
