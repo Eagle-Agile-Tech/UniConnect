@@ -5,6 +5,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  
 }
 
 // =========================
@@ -188,6 +189,7 @@ posts                Post[]
 
   @@index([email])
   @@index([verificationStatus])
+  messageReceipts MessageReceipt[]
 }
 
 model Institution {
@@ -492,6 +494,8 @@ model Chat {
   avatarUrl String?
   createdById String?
   uniqueKey String? @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   participants ChatParticipant[]
   messages     Message[]
@@ -516,6 +520,7 @@ model Message {
   chatId    String
   senderId  String
   content   String
+  clientMessageId String?
   isDeleted Boolean @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -523,9 +528,27 @@ model Message {
   chat      Chat @relation(fields: [chatId], references: [id])
   sender    User @relation(fields: [senderId], references: [id])
   messageReactions MessageReaction[]
+  receipts  MessageReceipt[]
 
   media     Media[] @relation("MediaMessage") // structured relation
   @@index([chatId])
+  @@unique([senderId, clientMessageId])
+}
+
+model MessageReceipt {
+  id          String   @id @default(uuid())
+  messageId   String
+  userId      String
+  deliveredAt DateTime?
+  readAt      DateTime?
+  createdAt   DateTime @default(now())
+
+  message     Message  @relation(fields: [messageId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@unique([messageId, userId])
+  @@index([userId])
+  @@index([messageId])
 }
 
 // =========================
