@@ -167,7 +167,7 @@ class AuthController {
 
       const result = await authService.submitIdVerification({
         ...req.body,
-        userId: req.user?.id || req.body.userId,
+        userId: req.user?.id,
       });
 
       res.status(201).json(result);

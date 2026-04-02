@@ -11,6 +11,16 @@ class UserController {
     }
   }
 
+  async checkUsernameAvailableSimple(req, res, next) {
+    try {
+      const { username } = req.params;
+      await userService.assertUsernameAvailable(username);
+      res.status(200).json({ available: true });
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async createUserProfile(req, res, next) {
     try {
       const userId = req.user?.sub || req.user?.id;

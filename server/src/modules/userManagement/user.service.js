@@ -1,5 +1,6 @@
 const prisma = require("./../../lib/prisma");
 const { createUserSchema } = require("./user.schema");
+const crypto = require("crypto");
 const {
     BadRequestError,
     ConflictError,
@@ -13,6 +14,44 @@ class userService {
     normalizeUsername(username) {
         if (typeof username !== "string") return "";
         return username.trim().toLowerCase();
+    }
+
+    async resolveUniqueUsername(baseUsername, userId) {
+        const normalized = this.normalizeUsername(baseUsername);
+        if (!normalized) return "";
+
+        const maxLength = 20;
+        const base = normalized.slice(0, maxLength);
+
+        const conflict = await prisma.userProfile.findFirst({
+            where: {
+                username: base,
+                ...(userId ? { userId: { not: userId } } : {}),
+            },
+            select: { id: true },
+        });
+        if (!conflict) return base;
+
+        const suffixLength = 5; // _ + 4 digits
+        const baseMax = Math.max(1, maxLength - suffixLength);
+        const trimmedBase = base.slice(0, baseMax);
+
+        for (let i = 0; i < 5; i += 1) {
+            const suffix = String(1000 + Math.floor(Math.random() * 9000));
+            const candidate = `${trimmedBase}_${suffix}`;
+            const existing = await prisma.userProfile.findFirst({
+                where: {
+                    username: candidate,
+                    ...(userId ? { userId: { not: userId } } : {}),
+                },
+                select: { id: true },
+            });
+            if (!existing) return candidate;
+        }
+
+        const randomSuffix = crypto.randomBytes(4).toString("hex");
+        const fallbackBase = base.slice(0, Math.max(1, maxLength - (1 + randomSuffix.length)));
+        return `${fallbackBase}_${randomSuffix}`;
     }
 
     detectUniversity(email) {
@@ -65,6 +104,21 @@ class userService {
         return { available: !exists };
     }
 
+    async assertUsernameAvailable(username) {
+        const normalized = this.normalizeUsername(username);
+        try {
+            usernameOnlySchema.parse({ username: normalized });
+        } catch (err) {
+            throw new ValidationError("Invalid username");
+        }
+
+        const exists = await this.checkUsernameExists(normalized);
+        if (exists) {
+            throw new ConflictError("Username is already taken");
+        }
+        return true;
+    }
+
     async createUser(userId, userData){
         if (!userId) {
             throw new BadRequestError("User id is required");
@@ -79,6 +133,7 @@ class userService {
             department,
             level,
             universityId,
+            universityName,
             yearOfStudy,
             graduationYear,
         } = data;
@@ -119,7 +174,21 @@ class userService {
             }
         }
 
+        const detectedUniversity = this.detectUniversity(user?.email);
+
         if (existingProfile) {
+            let resolvedUniversityId = universityId;
+            if (detectedUniversity) {
+                const universityRecord = await this.getOrCreateUniversity(detectedUniversity);
+                resolvedUniversityId = universityRecord?.id || undefined;
+            } else if (!resolvedUniversityId && universityName) {
+                const universityRecord = await this.getOrCreateUniversity({
+                    name: universityName,
+                    domains: [],
+                });
+                resolvedUniversityId = universityRecord?.id || undefined;
+            }
+
             const updatedProfile = await prisma.userProfile.update({
                 where: { userId },
                 data: {
@@ -130,7 +199,7 @@ class userService {
                     interests,
                     department,
                     level,
-                    universityId,
+                    universityId: resolvedUniversityId,
                     yearOfStudy,
                     graduationYear,
                 },
@@ -140,10 +209,20 @@ class userService {
         }
 
         let resolvedUniversityId = universityId;
-        if (!resolvedUniversityId) {
-            const detectedUniversity = this.detectUniversity(user?.email);
+        if (detectedUniversity) {
             const universityRecord = await this.getOrCreateUniversity(detectedUniversity);
             resolvedUniversityId = universityRecord?.id || undefined;
+        } else if (!resolvedUniversityId) {
+            if (universityName) {
+                const universityRecord = await this.getOrCreateUniversity({
+                    name: universityName,
+                    domains: [],
+                });
+                resolvedUniversityId = universityRecord?.id || undefined;
+            } else {
+                const universityRecord = await this.getOrCreateUniversity(detectedUniversity);
+                resolvedUniversityId = universityRecord?.id || undefined;
+            }
         }
 
         const userProfile = await prisma.userProfile.create({
@@ -299,6 +378,7 @@ class userService {
             department,
             level,
             universityId,
+            universityName,
             yearOfStudy,
             graduationYear,
         } = data;
@@ -318,10 +398,20 @@ class userService {
                 data.username = normalizedUsername;
         }
 
+        let resolvedUniversityId = universityId;
+        if (!resolvedUniversityId && universityName) {
+            const universityRecord = await this.getOrCreateUniversity({
+                name: universityName,
+                domains: [],
+            });
+            resolvedUniversityId = universityRecord?.id || undefined;
+        }
+
         const updatedProfile = await prisma.userProfile.update({
             where: { userId },
             data: {
                 ...data,
+                universityId: resolvedUniversityId,
                 fullName: fullName || undefined,
             }
         });
