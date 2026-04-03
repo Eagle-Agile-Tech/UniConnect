@@ -54,6 +54,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
               const SizedBox(height: Dimens.sm),
               SearchBar(
                 hintText: 'What are you looking for?',
+                readOnly: true,
                 hintStyle: WidgetStatePropertyAll(
                   TextStyle(fontWeight: FontWeight.w600),
                 ),
@@ -61,10 +62,12 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 leading: Icon(Icons.search, size: Dimens.iconLg),
                 shape: WidgetStateProperty.all(
                   RoundedRectangleBorder(
-                    borderRadius: BorderRadiusGeometry.circular(Dimens.radiusLg),
+                    borderRadius: BorderRadiusGeometry.circular(
+                      Dimens.radiusLg,
+                    ),
                   ),
                 ),
-                onTap: (){
+                onTap: () {
                   context.push(Routes.search);
                 },
               ),
@@ -77,6 +80,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 crossAxisSpacing: Dimens.sm,
                 children: [
                   ExploreItem(
+                    onTap: () => context.push(Routes.communities),
                     color: Color(0xFF00786A),
                     title: 'Communities',
                     image: Assets.event,
@@ -138,7 +142,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                   ],
                 ),
               ),
-        
+
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(_totalItems, (index) {

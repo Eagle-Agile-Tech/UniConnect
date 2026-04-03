@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -10,7 +11,8 @@ import 'package:multi_select_flutter/util/multi_select_item.dart';
 import 'package:multi_select_flutter/util/multi_select_list_type.dart';
 import 'package:uniconnect/config/dummy_data.dart';
 import 'package:uniconnect/routing/routes.dart';
-import 'package:uniconnect/ui/auth/onboarding/view_models/onboarding_viewmodel.dart';
+import 'package:uniconnect/ui/auth/auth_state_provider.dart';
+import 'package:uniconnect/ui/auth/onboarding/view_models/onboarding_viewmodel_provider.dart';
 import 'package:uniconnect/ui/core/common/styles/spacing_style.dart';
 import 'package:uniconnect/ui/core/common/widgets/app_bar.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
@@ -29,8 +31,13 @@ class _CreateProfileState extends ConsumerState<CreateProfile> {
   XFile? _profileImage;
 
   final TextEditingController _bioController = TextEditingController();
+  final TextEditingController _usernameController = TextEditingController();
 
   List<InterestRecord> _selectedInterests = [];
+
+  Timer? debounce;
+
+  bool? isUsernameAvailable;
 
   Future _pickImage(String source) async {
     try {
@@ -46,8 +53,16 @@ class _CreateProfileState extends ConsumerState<CreateProfile> {
   }
 
   @override
+  void dispose() {
+    _bioController.dispose();
+    _usernameController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final onboarding = ref.watch(onboardingProvider.notifier);
+    final authState = ref.watch(authNotifierProvider.notifier);
     return Scaffold(
       appBar: UCAppBar('Create Profile'),
       body: SingleChildScrollView(
@@ -108,6 +123,33 @@ class _CreateProfileState extends ConsumerState<CreateProfile> {
                     'Pick Image',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
+                ),
+                const SizedBox(height: Dimens.defaultSpace),
+                TextFormField(
+                  controller: _usernameController,
+                  validator: (value) {
+                    final validate = UCValidator.validateUsername(value);
+                    if (validate != null) return validate;
+                    if (isUsernameAvailable == null) {
+                      return 'Checking username...';
+                    }
+
+                    if (isUsernameAvailable == false) {
+                      return 'Username is already taken!';
+                    }
+                    return null;
+                  },
+                  onChanged: (value) {
+                    if (debounce?.isActive ?? false) {
+                      debounce!.cancel();
+                    }
+                    setState(() => isUsernameAvailable = null);
+                    debounce = Timer(Duration(milliseconds: 300), () async {
+                      final isIt = await onboarding.isUsernameAvailable(value);
+                      setState(() => isUsernameAvailable = isIt);
+                    });
+                  },
+                  decoration: const InputDecoration(labelText: 'Username'),
                 ),
                 const SizedBox(height: Dimens.defaultSpace),
                 TextFormField(
@@ -179,13 +221,14 @@ class _CreateProfileState extends ConsumerState<CreateProfile> {
                     //Todo: what if the profile image is not selected?
                     onboarding.updateProfile(
                       _bioController.text.trim(),
-                      _selectedInterests.toSet() as List<InterestRecord>?,
+                      _usernameController.text.trim(),
+                      _selectedInterests.toSet().toList(),
                       File(_profileImage!.path),
                     );
-                    final result = await onboarding.completeOnboarding();
-                    if(result == null){
+                    final result = await authState.registerStudent();
+                    if (result == null) {
                       context.go(Routes.home);
-                    }else{
+                    } else {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text(result.error.toString())),
                       );

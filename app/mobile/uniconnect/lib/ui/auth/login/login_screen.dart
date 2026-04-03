@@ -1,64 +1,94 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uniconnect/utils/validator.dart';
 
-import '../../../routing/routes.dart';
 import '../../core/common/styles/spacing_style.dart';
 import '../../core/common/widgets/form_divider.dart';
 import '../../core/common/widgets/signin_with_button.dart';
 import '../../core/theme/dimens.dart';
+import '../auth_state_provider.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends ConsumerState<LoginScreen> {
+  final GlobalKey<FormState> _key = GlobalKey<FormState>();
+  final _username = TextEditingController(text: 'feisel');
+  final _password = TextEditingController(text: '!@Fffds1ff');
+
+  @override
   Widget build(BuildContext context) {
+    final auth = ref.watch(authNotifierProvider.notifier);
     return Padding(
       padding: UCSpacingStyle.paddingWithAppBarHeight,
       child: SingleChildScrollView(
-        child: Column(
-          children: [
-            TextFormField(decoration: InputDecoration(labelText: 'Email')),
-            SizedBox(height: Dimens.defaultSpace),
-            TextFormField(decoration: InputDecoration(labelText: 'Password')),
-            SizedBox(height: Dimens.defaultSpace),
-            Align(
-              alignment: Alignment.topRight,
-              child: TextButton(
-                child: Text('Forgot Password?'),
-                onPressed: () {},
+        child: Form(
+          key: _key,
+          child: Column(
+            children: [
+              TextFormField(
+                controller: _username,
+                validator: (value) =>
+                    UCValidator.validateEmptyText('username', value),
+                decoration: InputDecoration(labelText: 'Email'),
               ),
-            ),
-            SizedBox(height: Dimens.defaultSpace),
-            ElevatedButton(
-              onPressed: () => context.go(Routes.home),
-              style: ElevatedButton.styleFrom(
-                minimumSize: Size(double.infinity, 48),
+              SizedBox(height: Dimens.defaultSpace),
+              TextFormField(
+                controller: _password,
+                validator: (value) =>
+                    UCValidator.validateEmptyText('password', value),
+                decoration: InputDecoration(labelText: 'Password'),
               ),
-              child: Text('Log in'),
-            ),
-            SizedBox(height: Dimens.spaceBtwSections),
+              SizedBox(height: Dimens.defaultSpace),
+              Align(
+                alignment: Alignment.topRight,
+                child: TextButton(
+                  child: Text('Forgot Password?'),
+                  onPressed: () {},
+                ),
+              ),
+              SizedBox(height: Dimens.defaultSpace),
+              ElevatedButton(
+                onPressed: () async {
+                  if (!_key.currentState!.validate()) return;
+                  await auth.login(
+                    _username.text.trim(),
+                    _password.text.trim(),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  minimumSize: Size(double.infinity, 48),
+                ),
+                child: Text('Log in'),
+              ),
+              SizedBox(height: Dimens.spaceBtwSections),
 
-            FormDivider(),
-            SizedBox(height: Dimens.defaultSpace),
-            SignInWith(),
-            SizedBox(height: Dimens.spaceBtwSections),
-            Text.rich(
-              TextSpan(
-                text: "Don't have an account?",
-                style: TextStyle(color: Colors.black),
-                children: [
-                  TextSpan(
-                    text: ' Sign up',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue,
+              FormDivider(),
+              SizedBox(height: Dimens.defaultSpace),
+              SignInWith(),
+              SizedBox(height: Dimens.spaceBtwSections),
+              Text.rich(
+                TextSpan(
+                  text: "Don't have an account?",
+                  style: TextStyle(color: Colors.black),
+                  children: [
+                    TextSpan(
+                      text: ' Sign up',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue,
+                      ),
+                      recognizer: null,
                     ),
-                    recognizer: null,
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

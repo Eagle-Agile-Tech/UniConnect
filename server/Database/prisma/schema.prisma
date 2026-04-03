@@ -5,6 +5,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  
 }
 
 // =========================
@@ -23,7 +24,22 @@ enum VerificationStatus {
   REJECTED
   EMAIL_VERIFIED
 }
+enum InstitutionVerificationStatus {
+  PENDING
+  UNVERIFIED
+  VERIFIED
+  REJECTED
+}
 
+enum InstitutionType {
+  UNIVERSITY
+  COMPANY
+  NGO
+  RESEARCH_CENTER
+  TRAINING_CENTER
+  GOVERNMENT
+  OTHER
+}
 enum VerificationMethod {
   UNIVERSITY_EMAIL
   ID_DOCUMENT_ADMIN
@@ -132,6 +148,7 @@ model User {
 
   verificationStatus VerificationStatus  @default(PENDING)
   verificationMethod VerificationMethod?
+  
 
   isDeleted          Boolean             @default(false)
 
@@ -142,12 +159,18 @@ model User {
   profile              UserProfile?
   idVerificationRequest IdVerificationRequest? @relation("UserVerificationRequest")
   reviewedRequests IdVerificationRequest[] @relation("AdminReviewedRequests")
+  reviewedInstitutionRequests InstitutionVerificationRequest[] @relation("AdminReviewedInstitutionRequests")
+  moderatedPosts       Post[]           @relation("PostModeratedBy")
+  moderatedComments    PostComment[]    @relation("CommentModeratedBy")
+institution         Institution []    @relation("ManagedBy")
+verifiedInstitutions Institution[]    @relation("VerifiedBy")
 
-  posts                Post[]
+posts                Post[]
   comments             PostComment[]
   messages             Message[]
   communities          CommunityMember[]
   expertProfile        ExpertProfile?
+  institutionProfile   Institution?     @relation("InstitutionProfile")
   notificationsReceived Notification[]     @relation("NotificationRecipient")
   notificationsSent     Notification[]     @relation("NotificationActor")
   postReactions        PostReaction[]
@@ -167,20 +190,53 @@ model User {
 
   @@index([email])
   @@index([verificationStatus])
+  messageReceipts MessageReceipt[]
 }
 
 model Institution {
   id          String @id @default(uuid())
   name        String
+  type        InstitutionType
   description String?
   website     String?
   logoUri     String?
-  isVerified  Boolean @default(false)
+  verificationStatus  InstitutionVerificationStatus    @default(UNVERIFIED)
   verificationDocument String?
+  userId      String? @unique
+  secretCode  String?  @unique
+  secretCodeExpiresAt DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  verifiedAt DateTime?
+  verifiedById String?
+  profileUserId String? @unique
 
-  affiliatedExperts ExpertProfile[]
+  managedBy            User?           @relation("ManagedBy", fields: [userId], references: [id])
+  verifiedBy           User?           @relation("VerifiedBy", fields: [verifiedById], references: [id])
+  profileUser          User?           @relation("InstitutionProfile", fields: [profileUserId], references: [id])
+  affiliatedExperts    ExpertProfile[]
+  invitations          ExpertInvitation[]
+  verificationRequests InstitutionVerificationRequest[]
+
+  @@index([verifiedById])
+}
+
+model InstitutionVerificationRequest {
+  id String @id @default(uuid())
+  institutionId String
+  documentUrl String
+  status ModerationStatus @default(PENDING)
+  reviewedById String?
+  reviewedAt DateTime?
+
+  institution Institution @relation(fields: [institutionId], references: [id])
+  reviewedBy   User?       @relation("AdminReviewedInstitutionRequests", fields: [reviewedById], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([institutionId])
+  @@index([status])
+  @@index([reviewedById])
 }
 model University {
   id       String   @id @default(uuid())
@@ -266,6 +322,10 @@ model ExpertInvitation {
   token         String @unique
   createdAt     DateTime @default(now())
   expiresAt     DateTime
+
+  institution   Institution @relation(fields: [institutionId], references: [id])
+
+  @@index([institutionId])
 }
 
 // =========================
@@ -288,6 +348,7 @@ model Post {
   updatedAt        DateTime @updatedAt
 
   author      User @relation(fields: [authorId], references: [id])
+  moderator   User? @relation("PostModeratedBy", fields: [moderatedById], references: [id])
   comments    PostComment[]
   media       Media[] @relation("MediaPost") // structured relation
   favorites   Favorite[]
@@ -301,7 +362,7 @@ model Post {
   @@index([createdAt])
   @@index([visibility])
   @@index([moderationStatus])
-  @@index([visibility, moderationStatus, createdAt])
+  @@index([authorId, visibility, createdAt])
   @@index([authorId, createdAt])
 }
 
@@ -310,6 +371,7 @@ model PostComment {
   postId          String
   commenterId     String
   parentCommentId String?
+  moderatedById    String?
   content         String
   moderationStatus ModerationStatus @default(PENDING)
   isDeleted        Boolean @default(false)
@@ -422,14 +484,17 @@ model CommunityMember {
 // CHAT & MESSAGES
 // =========================
 model Chat {
-  id      String @id @default(uuid())
-  type    ChatType
-  uniqueKey  String? @unique // for direct chats, a unique key combining user IDs to prevent duplicates
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+   id String @id @default(uuid())
+  type ChatType
+  name String?
+  avatarUrl String?
+  createdById String?
+  uniqueKey String? @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  participants  ChatParticipant[]
-  messages      Message[]
+  participants ChatParticipant[]
+  messages     Message[]
 }
 
 model ChatParticipant {
@@ -451,6 +516,7 @@ model Message {
   chatId    String
   senderId  String
   content   String
+  clientMessageId String?
   isDeleted Boolean @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -458,9 +524,27 @@ model Message {
   chat      Chat @relation(fields: [chatId], references: [id])
   sender    User @relation(fields: [senderId], references: [id])
   messageReactions MessageReaction[]
+  receipts  MessageReceipt[]
 
   media     Media[] @relation("MediaMessage") // structured relation
   @@index([chatId])
+  @@unique([senderId, clientMessageId])
+}
+
+model MessageReceipt {
+  id          String   @id @default(uuid())
+  messageId   String
+  userId      String
+  deliveredAt DateTime?
+  readAt      DateTime?
+  createdAt   DateTime @default(now())
+
+  message     Message  @relation(fields: [messageId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@unique([messageId, userId])
+  @@index([userId])
+  @@index([messageId])
 }
 // =========================
 // NOTIFICATIONS 
@@ -480,6 +564,7 @@ model Notification {
   actor         User? @relation("NotificationActor", fields: [actorId], references: [id])
 
 @@index([recipientId, isRead])
+@@index([recipientId, createdAt])
 }
 
 // =========================

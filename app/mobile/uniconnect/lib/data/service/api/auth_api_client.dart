@@ -1,96 +1,190 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart' as http;
-import 'package:uniconnect/data/service/api/models/create_account/create_account_response.dart';
-import 'package:uniconnect/utils/result.dart';
+import '../../../utils/result.dart';
+import '../local/secure_token_storage.dart';
+import 'models/create_account/create_account_response.dart';
 
-final authApiClientProvider = Provider((ref) => AuthApiClient());
+final authApiProvider = Provider((ref) {
+  return AuthApiClient();
+});
+
+// fixme: the baseurl is 'http://localhost:3000/api'
+final String baseUrl = 'http://localhost:8080';
 
 class AuthApiClient {
-  final http.Client client;
+  final Dio _client;
 
-  AuthApiClient({http.Client? client}) : client = client ?? http.Client();
+  AuthApiClient({Dio? client})
+      : _client = client ?? Dio(BaseOptions(baseUrl: baseUrl));
 
   Future<Result<CreateAccountResponse>> createUserAccount({
     required String firstName,
     required String lastName,
-    required String username,
     required String email,
     required String password,
   }) async {
     try {
-      var response = await client.post(
-        Uri.http('localhost:8080', '/createAccount'),
-        body: {
+      final response = await _client.post(
+        '/auth/register',
+        data: {
+          //todo: ask Tsega if she needs role when sending this user data - this one is student
           'firstName': firstName,
           'lastName': lastName,
-          'username': username,
           'email': email,
           'password': password,
         },
       );
-      if (response.statusCode == 200) {
-        return Result.ok(
-          CreateAccountResponse.fromJson(jsonDecode(response.body)),
-        );
-      } else {
-        return Result.error(Exception('Failed to create account'));
-      }
+      return Result.ok(CreateAccountResponse.fromJson(response.data));
+    } on DioException catch (e) {
+      return Result.error(e);
     } catch (e) {
+      return Result.error(Exception(e.toString()));
+    }
+  }
+
+  Future<Result> verifyOtp(String email, String otp) async {
+    try {
+      await _client.post(
+        '/verifyOtp/',
+        data: {'email': email, 'otp': otp},
+      );
+      return Result.ok('');
+    } on DioException catch (e) {
       return Result.error(e);
     }
   }
 
-  Future<Result<String>> createUserProfile({
+  //todo: create username checker
+  Future<Result> usernameChecker(String username) async {
+    try {
+      await _client.get('/checkUsername/', data: {'username': username});
+      return Result.ok('');
+    } on DioException catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<Map<String, dynamic>>> createUserProfile({
     required String id,
+    required String username,
     required String university,
     required String degree,
     required String currentYear,
     required DateTime expectedGraduationYear,
-    required DateTime createdAt,
     String? bio,
     List<String>? interests,
     File? profilePicture,
   }) async {
     try {
-      var request = http.MultipartRequest(
-        'POST',
-        Uri.http('localhost:8080', '/createProfile'),
-      );
-      request.fields['id'] = id;
-      request.fields['university'] = university;
-      request.fields['degree'] = degree;
-      request.fields['currentYear'] = currentYear;
-      request.fields['expectedGraduationYear'] = expectedGraduationYear
-          .toIso8601String();
-      request.fields['createdAt'] = createdAt.toIso8601String();
-      if (bio != null) request.fields['bio'] = bio;
-      if (interests != null) {
-        request.fields['interests'] = jsonEncode(interests);
-      }
+      final Map<String, dynamic> userData = {
+        'id': id,
+        'university': university,
+        'degree': degree,
+        'username': username,
+        'currentYear': currentYear,
+        'expectedGraduationYear': expectedGraduationYear.toIso8601String(),
+        'bio': ?bio,
+        if (interests != null) 'interests': jsonEncode(interests),
+      };
+
       if (profilePicture != null) {
-        final stream = http.ByteStream(profilePicture.openRead());
-        final length = await profilePicture.length();
-        final image = http.MultipartFile(
-          'profilePicture',
-          stream,
-          length,
-          filename: profilePicture.path,
+        userData['profilePicture'] = await MultipartFile.fromFile(
+          profilePicture.path,
+          filename: profilePicture.path
+              .split('/')
+              .last,
         );
-        request.files.add(image);
       }
-      var streamResponse = await client.send(request);
-      final response = await http.Response.fromStream(streamResponse);
-      // The API is expected to return the URL of the uploaded profile picture on success
-      if (response.statusCode == 200) {
-        final responseBody = jsonDecode(response.body);
-        return Result.ok(responseBody['profilePicture'] as String);
-      } else {
-        return Result.error(Exception('Failed to create profile'));
-      }
+      final formData = FormData.fromMap(userData);
+      final response = await _client.post('/createProfile/$id', data: formData);
+      // Response contains tokens plus profile picture url
+      return Result.ok(response.data);
+    } on DioException catch (e) {
+      return Result.error(e);
     } catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<Map<String, dynamic>>> loginUser(String username,
+      String password,) async {
+    try {
+      final response = await _client.post(
+        '/login/',
+        data: {'username': username, 'password': password},
+      );
+      // return user data
+      return Result.ok(response.data);
+    } on DioException catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<bool> isLoggedIn() async {
+    final token = await SecureTokenStorage().read();
+    if (token == null) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+
+  Future<bool> logoutUser() async {
+    try{
+      await SecureTokenStorage().delete();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Expert
+  Future<Result<dynamic>> registerExpert(String firstName, String lastName, String email,
+      String university, String uniCode, String password) async {
+    try {
+      final response = await _client.post('/register/expert/', data: {
+        'fistName': firstName,
+        'lastName': lastName,
+        'email': email,
+        'university': university,
+        'uniCode': uniCode,
+        'password': password,
+      });
+      return Result.ok(response.data);
+    } on DioException catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<Map<String,dynamic>>> createExpertProfile(
+      String expertise,
+      String honor,
+      String username,
+      String? bio,
+      File? profilePicture,) async {
+    try{
+      final Map<String, dynamic> userData = {
+        'expertise': expertise,
+        'honor': honor,
+        'username': username,
+        'bio': ?bio,
+      };
+      if (profilePicture != null) {
+        userData['profilePicture'] = await MultipartFile.fromFile(
+          profilePicture.path,
+          filename: profilePicture.path
+              .split('/')
+              .last,
+        );
+      }
+      final formData = FormData.fromMap(userData);
+      final response = await _client.post('/createExpertProfile/', data: formData);
+      // Response contains tokens plus profile picture url
+      return Result.ok(response.data);
+    } on DioException catch(e){
       return Result.error(e);
     }
   }

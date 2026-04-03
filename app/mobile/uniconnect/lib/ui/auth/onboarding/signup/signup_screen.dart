@@ -2,7 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:uniconnect/ui/auth/onboarding/view_models/onboarding_viewmodel.dart';
+import 'package:uniconnect/ui/auth/onboarding/view_models/onboarding_viewmodel_provider.dart';
 import 'package:uniconnect/ui/core/common/styles/spacing_style.dart';
 import 'package:uniconnect/ui/core/common/widgets/signin_with_button.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
@@ -23,18 +23,16 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   final GlobalKey<FormState> _signupFormKey = GlobalKey<FormState>();
   final _firstNameController = TextEditingController(text: 'Feysel');
   final _lastNameController = TextEditingController(text: 'Feysel');
-  final _usernameController = TextEditingController(text: 'feisel');
   final _emailController = TextEditingController(
     text: 'feysleteshome05@gmail.com',
   );
-  final _passwordController = TextEditingController(text: '!@Fffds1');
-  final _confirmPasswordController = TextEditingController(text: '!@Fffds1');
+  final _passwordController = TextEditingController(text: '!@Fffds1ff');
+  final _confirmPasswordController = TextEditingController(text: '!@Fffds1ff');
 
   @override
   void dispose() {
     _firstNameController.dispose();
     _lastNameController.dispose();
-    _usernameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -77,13 +75,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               ),
               SizedBox(height: Dimens.defaultSpace),
               TextFormField(
-                controller: _usernameController,
-                validator: (value) =>
-                    UCValidator.validateEmptyText('Username', value),
-                decoration: const InputDecoration(labelText: 'Username'),
-              ),
-              SizedBox(height: Dimens.defaultSpace),
-              TextFormField(
                 controller: _emailController,
                 validator: (value) {
                   final emailStatus = UCValidator.validateEmail(value);
@@ -103,28 +94,19 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 ),
               ),
               SizedBox(height: Dimens.defaultSpace),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Flexible(
-                    child: TextFormField(
-                      controller: _passwordController,
-                      validator: (value) => UCValidator.validatePassword(value),
-                      decoration: const InputDecoration(labelText: 'Password'),
-                    ),
-                  ),
-                  SizedBox(width: Dimens.spaceBtwItems),
-                  Flexible(
-                    child: TextFormField(
-                      controller: _confirmPasswordController,
-                      validator: (value) => UCValidator.validateConfirmPassword(
-                        value,
-                        _passwordController.text.trim(),
-                      ),
-                      decoration: const InputDecoration(labelText: 'Confirm'),
-                    ),
-                  ),
-                ],
+              TextFormField(
+                controller: _passwordController,
+                validator: (value) => UCValidator.validatePassword(value),
+                decoration: const InputDecoration(labelText: 'Password'),
+              ),
+              SizedBox(height: Dimens.defaultSpace),
+              TextFormField(
+                controller: _confirmPasswordController,
+                validator: (value) => UCValidator.validateConfirmPassword(
+                  value,
+                  _passwordController.text.trim(),
+                ),
+                decoration: const InputDecoration(labelText: 'Confirm Password'),
               ),
               SizedBox(height: Dimens.spaceBtwSections),
               ElevatedButton(
@@ -133,7 +115,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   onboarding.updateAccount(
                     _firstNameController.text.trim(),
                     _lastNameController.text.trim(),
-                    _usernameController.text.trim(),
                     _emailController.text.trim(),
                     _passwordController.text.trim(),
                   );

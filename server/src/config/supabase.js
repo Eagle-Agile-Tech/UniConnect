@@ -1,52 +1,52 @@
-// server/src/config/supabase.js
-const { createClient } = require("@supabase/supabase-js");
+const { createClient } = require('@supabase/supabase-js');
 
-// Try to load from parent directory if not found in current
-require("dotenv").config({
-  path: require("path").join(__dirname, "../../.env"),
-});
+let supabase = null;
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
+function getSupabaseClient() {
+  if (supabase) return supabase;
 
-console.log("🔍 Checking Supabase config:");
-console.log("- SUPABASE_URL:", supabaseUrl ? "✅ Found" : "❌ Missing");
-console.log(
-  "- SUPABASE_SERVICE_KEY:",
-  supabaseServiceKey ? "✅ Found" : "❌ Missing",
-);
+  const supabaseUrl = process.env.SUPABASE_URL;
 
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.warn(
-    "⚠️  Supabase URL and Service Key are missing. Using MOCK storage!",
-  );
-  console.warn(
-    "Expected .env file at:",
-    require("path").join(__dirname, "../../.env"),
-  );
+  // support BOTH env names (important for compatibility)
+  const supabaseKey =
+    process.env.SUPABASE_SERVICE_KEY ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  // Export mock client
-  module.exports = {
-    storage: {
-      from: () => ({
-        upload: async (path, file, options) => {
-          console.log("📁 MOCK upload:", path);
-          return { data: { path }, error: null };
-        },
-        getPublicUrl: (path) => ({
-          data: {
-            publicUrl: `https://mock-storage.uniconnect.local/${path}`,
+  console.log("🔍 Checking Supabase config:");
+  console.log("- SUPABASE_URL:", supabaseUrl ? "✅ Found" : "❌ Missing");
+  console.log("- SUPABASE_KEY:", supabaseKey ? "✅ Found" : "❌ Missing");
+
+  if (!supabaseUrl || !supabaseKey) {
+    console.warn("⚠️ Supabase not configured. Using MOCK storage!");
+
+    // return mock instead of real client
+    return {
+      storage: {
+        from: () => ({
+          upload: async (path, file, options) => {
+            console.log("📁 MOCK upload:", path);
+            return { data: { path }, error: null };
+          },
+          getPublicUrl: (path) => ({
+            data: {
+              publicUrl: `https://mock-storage.uniconnect.local/${path}`,
+            },
+          }),
+          remove: async (paths) => {
+            console.log("📁 MOCK delete:", paths);
+            return { data: {}, error: null };
           },
         }),
-        remove: async (paths) => {
-          console.log("📁 MOCK delete:", paths);
-          return { data: {}, error: null };
-        },
-      }),
-    },
-  };
-} else {
+      },
+    };
+  }
+
   console.log("✅ Supabase configured successfully");
-  const supabase = createClient(supabaseUrl, supabaseServiceKey);
-  module.exports = supabase;
+
+  supabase = createClient(supabaseUrl, supabaseKey);
+  return supabase;
 }
+
+module.exports = {
+  getSupabaseClient,
+};

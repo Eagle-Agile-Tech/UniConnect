@@ -3,47 +3,51 @@ import 'package:flutter/material.dart';
 import '../../core/theme/dimens.dart';
 
 class ExploreItem extends StatelessWidget {
-  const ExploreItem({super.key, required this.color, required this.image, required this.title});
+   const ExploreItem({super.key, required this.color, required this.image, required this.title, this.onTap});
 
   final Color color;
   final String image;
   final String title;
+  final void Function()? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.only(top: Dimens.sm, left: Dimens.sm),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(Dimens.radiusLg),
-      ),
-      child: Stack(
-        children: [
-          Text(
-            title,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: Dimens.fontMd,
-              fontWeight: FontWeight.w700,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.only(top: Dimens.sm, left: Dimens.sm),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(Dimens.radiusLg),
+        ),
+        child: Stack(
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: Dimens.fontMd,
+                fontWeight: FontWeight.w700,
+              ),
             ),
-          ),
-          Positioned(
-            bottom: -11,
-            right: -11,
-            child: Transform.rotate(
-              angle: 10 * (3.14 / 180),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(50),
-                child: Image.asset(
-                  image,
-                  height: Dimens.cardImageHeight,
-                  width: Dimens.cardImageWidth,
-                  fit: BoxFit.contain,
+            Positioned(
+              bottom: -11,
+              right: -11,
+              child: Transform.rotate(
+                angle: 10 * (3.14 / 180),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(50),
+                  child: Image.asset(
+                    image,
+                    height: Dimens.cardImageHeight,
+                    width: Dimens.cardImageWidth,
+                    fit: BoxFit.contain,
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

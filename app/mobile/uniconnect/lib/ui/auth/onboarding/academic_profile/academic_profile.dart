@@ -10,7 +10,7 @@ import 'package:uniconnect/ui/core/common/widgets/app_bar.dart';
 import 'package:uniconnect/utils/validator.dart';
 
 import '../../../core/theme/dimens.dart';
-import '../view_models/onboarding_viewmodel.dart';
+import '../view_models/onboarding_viewmodel_provider.dart';
 
 class AcademicProfile extends ConsumerStatefulWidget {
   const AcademicProfile({super.key});
@@ -23,7 +23,8 @@ class _AcademicProfileState extends ConsumerState<AcademicProfile> {
   final GlobalKey<FormState> _academicProfileFormKey = GlobalKey<FormState>();
 
   final TextEditingController _universityController = TextEditingController();
-  final TextEditingController _degreeProgramController = TextEditingController();
+  final TextEditingController _degreeProgramController =
+      TextEditingController();
   final TextEditingController _yearOfStudyController = TextEditingController();
   final TextEditingController _expectedGraduationYearController =
       TextEditingController();
@@ -54,7 +55,10 @@ class _AcademicProfileState extends ConsumerState<AcademicProfile> {
                   children: [
                     DropdownMenuFormField(
                       controller: _universityController,
-                      validator: (value) => UCValidator.validateEmptyText('University', value?.acronomy),
+                      validator: (value) => UCValidator.validateEmptyText(
+                        'University',
+                        value?.acronomy,
+                      ),
                       menuStyle: MenuStyle(
                         minimumSize: WidgetStateProperty.all(
                           Size(MediaQuery.of(context).size.width - 32, 0),
@@ -68,7 +72,8 @@ class _AcademicProfileState extends ConsumerState<AcademicProfile> {
                     ),
                     const SizedBox(height: Dimens.defaultSpace),
                     DropdownMenuFormField(
-                      validator: (value) => UCValidator.validateEmptyText('Major', value),
+                      validator: (value) =>
+                          UCValidator.validateEmptyText('Major', value),
                       width: MediaQuery.of(context).size.width - 32,
                       controller: _degreeProgramController,
                       menuStyle: MenuStyle(
@@ -87,7 +92,10 @@ class _AcademicProfileState extends ConsumerState<AcademicProfile> {
                       children: [
                         Flexible(
                           child: TextFormField(
-                            validator: (value) => UCValidator.validateEmptyText('Year of Study', value),
+                            validator: (value) => UCValidator.validateEmptyText(
+                              'Year of Study',
+                              value,
+                            ),
                             controller: _yearOfStudyController,
                             keyboardType: TextInputType.number,
                             inputFormatters: [
@@ -103,7 +111,10 @@ class _AcademicProfileState extends ConsumerState<AcademicProfile> {
                         const SizedBox(width: Dimens.spaceBtwItems),
                         Flexible(
                           child: TextFormField(
-                            validator: (value) => UCValidator.validateEmptyText('Graduation Date', value),
+                            validator: (value) => UCValidator.validateEmptyText(
+                              'Graduation Date',
+                              value,
+                            ),
                             readOnly: true,
                             showCursor: false,
                             enableInteractiveSelection: false,
@@ -121,7 +132,8 @@ class _AcademicProfileState extends ConsumerState<AcademicProfile> {
                                   if (pickedDate != null) {
                                     setState(() {
                                       _selectedGraduationDate = pickedDate;
-                                      _expectedGraduationYearController.text = DateFormat.yMMMd().format(pickedDate);
+                                      _expectedGraduationYearController.text =
+                                          DateFormat.yMMMd().format(pickedDate);
                                     });
                                   }
                                 },
@@ -136,7 +148,9 @@ class _AcademicProfileState extends ConsumerState<AcademicProfile> {
                     const SizedBox(height: Dimens.spaceBtwSections),
                     ElevatedButton(
                       onPressed: () {
-                        if (!_academicProfileFormKey.currentState!.validate()) return;
+                        if (!_academicProfileFormKey.currentState!.validate()) {
+                          return;
+                        }
                         onboarding.updateAcademic(
                           _universityController.text.trim(),
                           _degreeProgramController.text.trim(),

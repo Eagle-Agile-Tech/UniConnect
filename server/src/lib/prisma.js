@@ -1,47 +1,61 @@
-// server/src/lib/prisma.js
-const { PrismaClient } = require("@prisma/client");
+require('../config/env');
 
-// Create a singleton PrismaClient instance
-// Prisma client here is generated in driver-adapter mode, so we must use adapter-pg.
+const { PrismaClient } = require('@prisma/client');
+const { PrismaPg } = require('@prisma/adapter-pg');
+const { Pool } = require('pg');
+const { isProduction } = require('../config/env');
+
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+  throw new Error('DATABASE_URL is not set. Prisma client cannot be initialized.');
+}
+
 let prisma;
 
 function createPrismaClient() {
-  const { Pool } = require("pg");
-  const { PrismaPg } = require("@prisma/adapter-pg");
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-  const adapter = new PrismaPg(pool);
-  return new PrismaClient({ adapter, log: ["error", "warn"] });
+  const adapter = new PrismaPg(
+    new Pool({
+      connectionString,
+    })
+  );
+
+  return new PrismaClient({
+    adapter,
+    log: isProduction
+      ? ['error']
+      : ['query', 'info', 'warn', 'error'],
+  });
 }
 
-if (process.env.NODE_ENV === "production") {
+// ✅ Singleton pattern (prevents multiple instances in dev)
+if (process.env.NODE_ENV === 'production') {
   prisma = createPrismaClient();
 } else {
-  // In development, prevent multiple instances due to hot reload
   if (!global.prisma) {
     global.prisma = createPrismaClient();
   }
   prisma = global.prisma;
 }
 
-// Test the connection immediately
+// ✅ Test connection (good for debugging startup issues)
 (async () => {
   try {
     await prisma.$connect();
-    console.log("✅ Database connected successfully");
+    console.log('✅ Database connected successfully');
   } catch (error) {
-    console.error("❌ Database connection failed:", error.message);
-    console.error("Please check your DATABASE_URL in .env file");
+    console.error('❌ Database connection failed:', error.message);
     process.exit(1);
   }
 })();
 
-// Handle cleanup
-process.on("SIGINT", async () => {
+// ✅ Graceful shutdown
+process.on('SIGINT', async () => {
   await prisma.$disconnect();
   process.exit(0);
 });
 
-process.on("SIGTERM", async () => {
+process.on('SIGTERM', async () => {
   await prisma.$disconnect();
   process.exit(0);
 });
