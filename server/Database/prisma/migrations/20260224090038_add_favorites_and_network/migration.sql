@@ -12,7 +12,7 @@ SET search_path TO public;
 */
 
 -- Enable vector extension (required for embedding type)
--- CREATE EXTENSION IF NOT EXISTS vector;
+CREATE EXTENSION IF NOT EXISTS vector;
 -- CreateEnum
 CREATE TYPE "NetworkStatus" AS ENUM ('CONNECTED', 'PENDING');
 
@@ -45,7 +45,7 @@ ADD COLUMN     "shareCount" INTEGER NOT NULL DEFAULT 0;
 
 -- Handle vector column separately
 ALTER TABLE "Post" DROP COLUMN IF EXISTS "embedding";
-ALTER TABLE "Post" ADD COLUMN "embedding" public.vector(1536);
+ALTER TABLE "Post" ADD COLUMN "embedding" vector(1536);
 ALTER TABLE "Post" ALTER COLUMN "embedding" SET NOT NULL;
 DROP TABLE "Reaction";
 

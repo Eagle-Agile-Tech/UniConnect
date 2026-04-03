@@ -1,6 +1,5 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider        = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"]
 }
 
@@ -34,10 +33,10 @@ enum Visibility {
   PRIVATE 
   }
 enum ReactionType { 
-  LIKE,        // 👍 Thumbs up
-  LOVE,        // ❤️ Heart
-  INSIGHTFUL,  // 💡 Light bulb
-  SUPPORT,     // 🤝 Helping hands / support gesture
+  LIKE         // 👍 Thumbs up
+  LOVE         // ❤️ Heart
+  INSIGHTFUL   // 💡 Light bulb
+  SUPPORT      // 🤝 Helping hands / support gesture
   CELEBRATE    // 🎉 Party popper / celebration
 }
 enum GroupType { 
@@ -70,6 +69,7 @@ enum NotificationType {
   FOLLOW 
   MESSAGE 
   SYSTEM
+   REPOST 
    }
 enum NotificationReferenceType { 
   POST 
@@ -125,7 +125,8 @@ model User {
   firstName          String
   lastName           String
   email              String              @unique
-  passwordHash       String
+  passwordHash       String?
+  googleId           String?             @unique
 
   role               Role                @default(STUDENT)
 
@@ -193,7 +194,7 @@ model University {
 model UserProfile {
   id             String         @id @default(uuid())
   userId         String         @unique
-
+  username       String         @unique
   bio            String?
   profileImage   String?
   interests      String[]       @default([])
@@ -277,7 +278,7 @@ model Post {
   visibility       Visibility @default(PUBLIC)
   tags             String[]   @default([])
   category         String?
-  embedding        Unsupported("vector(1536)")
+  embedding        Unsupported("vector(1536)")?
   moderationStatus ModerationStatus @default(PENDING)
   isDeleted        Boolean @default(false)
   shareCount       Int    @default(0)
@@ -317,7 +318,6 @@ model PostComment {
 
   post            Post @relation(fields: [postId], references: [id])
   commenter       User @relation(fields: [commenterId], references: [id])
-
   parentComment   PostComment? @relation("CommentReplies", fields: [parentCommentId], references: [id])
   replies         PostComment[] @relation("CommentReplies")
   commentReactions CommentReaction[]
@@ -462,7 +462,6 @@ model Message {
   media     Media[] @relation("MediaMessage") // structured relation
   @@index([chatId])
 }
-
 // =========================
 // NOTIFICATIONS 
 // =========================
@@ -587,4 +586,3 @@ model AuditLog {
   @@index([isArchived])
   @@map("audit_logs")
 }
-

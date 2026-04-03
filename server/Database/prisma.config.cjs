@@ -1,19 +1,12 @@
 const path = require("path");
-require("dotenv").config({
-  path: path.resolve(__dirname, "../../.env"),
-});
+require("dotenv").config({ path: path.resolve(__dirname, "../../.env") });
 
-const { defineConfig } = require("prisma/config");
+const { defineConfig, env } = require("@prisma/config");
 
 module.exports = defineConfig({
-  schema: "prisma/schema.prisma",
-
-  migrations: {
-    path: "prisma/migrations",
-  },
-
+  schema: path.resolve(__dirname, "prisma/schema.prisma"),
   datasource: {
-    url: process.env.DATABASE_URL,
-    shadowDatabaseUrl: process.env.SHADOW_DATABASE_URL,
+    url: env("DATABASE_URL"),
+    shadowDatabaseUrl: env("SHADOW_DATABASE_URL"),
   },
 });
