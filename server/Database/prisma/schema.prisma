@@ -85,6 +85,7 @@ enum NotificationType {
   FOLLOW 
   MESSAGE 
   SYSTEM
+   REPOST 
    }
 enum NotificationReferenceType { 
   POST 
@@ -250,8 +251,6 @@ model UserProfile {
   id             String         @id @default(uuid())
   userId         String         @unique
   username       String         @unique
-  fullName       String?
-
   bio            String?
   profileImage   String?
   interests      String[]       @default([])
@@ -339,8 +338,7 @@ model Post {
   visibility       Visibility @default(PUBLIC)
   tags             String[]   @default([])
   category         String?
-  moderatedById    String?
-  embedding        Unsupported("vector(1536)")
+  embedding        Unsupported("vector(1536)")?
   moderationStatus ModerationStatus @default(PENDING)
   isDeleted        Boolean @default(false)
   shareCount       Int    @default(0)
@@ -382,8 +380,6 @@ model PostComment {
 
   post            Post @relation(fields: [postId], references: [id])
   commenter       User @relation(fields: [commenterId], references: [id])
-  moderator       User? @relation("CommentModeratedBy", fields: [moderatedById], references: [id])
-
   parentComment   PostComment? @relation("CommentReplies", fields: [parentCommentId], references: [id])
   replies         PostComment[] @relation("CommentReplies")
   commentReactions CommentReaction[]
@@ -550,7 +546,6 @@ model MessageReceipt {
   @@index([userId])
   @@index([messageId])
 }
-
 // =========================
 // NOTIFICATIONS 
 // =========================
