@@ -11,6 +11,7 @@ const passwordResetTemplate = require('../../templates/passwordResetEmail');
 const idVerificationSubmittedTemplate = require('../../templates/idVerificationSubmitted');
 const universityDomains = require('../../lib/data/universities.json');
 const verifyGoogleToken = require('../../lib/googleAuth');
+const buildUserResponse = require('../../lib/userResponse');
 
 class AuthError extends AppError {
   constructor(message, statusCode = 401, isOperational = true, errorCode = 'AUTH_ERROR') {
@@ -211,8 +212,41 @@ class AuthService {
   async register(data) {
     const email = this.normalizeEmail(data.email);
 
-    const existingUser = await prisma.user.findUnique({ where: { email } });
-    if (existingUser) throw new AuthError('Email already registered', 409);
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+      include: { profile: true },
+    });
+    if (existingUser) {
+      if (existingUser.verificationStatus !== 'PENDING') {
+        throw new AuthError('Email already registered', 409);
+      }
+
+      const hashedPassword = await bcrypt.hash(data.password, 12);
+
+      await prisma.user.update({
+        where: { id: existingUser.id },
+        data: {
+          firstName: data.firstName,
+          lastName: data.lastName,
+          passwordHash: hashedPassword,
+        },
+      });
+
+      if (!existingUser.profile) {
+        const username = await this.resolveUniqueUsername(
+          this.getUsernameSeed({ email, firstName: data.firstName, lastName: data.lastName })
+        );
+        await prisma.userProfile.create({
+          data: { userId: existingUser.id, username },
+        });
+      }
+
+      await this.issueEmailOtp(email);
+
+      return {
+        message: 'Registration successful. Please verify email with the OTP sent.',
+      };
+    }
 
     const hashedPassword = await bcrypt.hash(data.password, 12);
 
@@ -310,17 +344,24 @@ await this.createSession({
 const accessToken = this.signAccessToken(user);
 const university = detectedUniversity?.name || 'general';
 
-return {
-  message: 'Email verified successfully',
-  user: {
-    id: user.id,
-    email: user.email,
-    verificationStatus: user.verificationStatus
-  },
-  accessToken,
-  refreshToken,
-  university
-};
+    const profile = await prisma.userProfile.findUnique({
+      where: { userId: user.id },
+      include: { university: { select: { name: true } } },
+    });
+
+    const userResponse = buildUserResponse({
+      user,
+      profile,
+      universityName: university,
+      accessToken,
+      refreshToken,
+      sessionId,
+    });
+
+    return {
+      message: 'Email verified successfully',
+      ...userResponse,
+    };
   }
 
   async resendOtp(emailInput) {
@@ -468,7 +509,18 @@ return {
 
     await this.createSession({ userId: user.id, refreshToken, deviceInfo, sessionId });
 
-    return { accessToken, refreshToken , sessionId };
+    const profile = await prisma.userProfile.findUnique({
+      where: { userId: user.id },
+      include: { university: { select: { name: true } } },
+    });
+
+    return buildUserResponse({
+      user,
+      profile,
+      accessToken,
+      refreshToken,
+      sessionId,
+    });
   }
 
   async refreshToken(token) {
@@ -562,20 +614,18 @@ return {
     const refreshToken = this.signRefreshToken(user, sessionId);
     await this.createSession({ userId: user.id, refreshToken, deviceInfo, sessionId });
 
-    return {
+    const profile = await prisma.userProfile.findUnique({
+      where: { userId: user.id },
+      include: { university: { select: { name: true } } },
+    });
+
+    return buildUserResponse({
+      user,
+      profile,
       accessToken,
       refreshToken,
-      user: {
-        id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        role: user.role,
-        verificationStatus: user.verificationStatus,
-        verificationMethod: user.verificationMethod,
-        googleId: user.googleId,
-      },
-    };
+      sessionId,
+    });
   }
 
   // ==========================

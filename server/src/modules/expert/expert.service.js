@@ -6,6 +6,7 @@ const authService = require('../auth/auth.service');
 const mailer = require('../../config/mailer');
 const { getAppUrl } = require('../../lib/appUrl');
 const expertInvitationTemplate = require('../../templates/expertInvitationEmail');
+const buildUserResponse = require('../../lib/userResponse');
 const {
   acceptExpertInvitationSchema,
   joinInstitutionSchema,
@@ -53,30 +54,42 @@ class ExpertService {
       throw new BadRequestError('Invitation has expired');
     }
 
-    const existingUser = await prisma.user.findUnique({
-      where: { email: invitation.email },
-      select: { id: true },
-    });
-    if (existingUser) {
-      throw new ConflictError('Email already registered');
-    }
-
     if (!parsed.firstName || !parsed.lastName || !parsed.password) {
       throw new BadRequestError('firstName, lastName, and password are required');
     }
 
     const passwordHash = await bcrypt.hash(parsed.password, 12);
-    const user = await prisma.user.create({
-      data: {
-        firstName: parsed.firstName,
-        lastName: parsed.lastName,
-        email: invitation.email,
-        passwordHash,
-        role: 'EXPERT',
-        verificationStatus: 'EMAIL_VERIFIED',
-      },
-      select: { id: true, role: true },
+    const existingUser = await prisma.user.findUnique({
+      where: { email: invitation.email },
+      select: { id: true, role: true, verificationStatus: true },
     });
+    if (existingUser && (existingUser.verificationStatus !== 'PENDING' || existingUser.role !== 'EXPERT')) {
+      throw new ConflictError('Email already registered');
+    }
+
+    const user = existingUser
+      ? await prisma.user.update({
+          where: { id: existingUser.id },
+          data: {
+            firstName: parsed.firstName,
+            lastName: parsed.lastName,
+            passwordHash,
+            role: 'EXPERT',
+            verificationStatus: 'EMAIL_VERIFIED',
+          },
+          select: { id: true, role: true },
+        })
+      : await prisma.user.create({
+          data: {
+            firstName: parsed.firstName,
+            lastName: parsed.lastName,
+            email: invitation.email,
+            passwordHash,
+            role: 'EXPERT',
+            verificationStatus: 'EMAIL_VERIFIED',
+          },
+          select: { id: true, role: true },
+        });
 
     const username = await authService.resolveUniqueUsername(
       authService.getUsernameSeed({
@@ -86,16 +99,22 @@ class ExpertService {
       })
     );
 
-    await prisma.userProfile.create({
-      data: { userId: user.id, username },
+    const existingUserProfile = await prisma.userProfile.findUnique({
+      where: { userId: user.id },
+      select: { id: true },
     });
+    if (!existingUserProfile) {
+      await prisma.userProfile.create({
+        data: { userId: user.id, username },
+      });
+    }
 
-    const existingProfile = await prisma.expertProfile.findUnique({
+    const existingExpertProfile = await prisma.expertProfile.findUnique({
       where: { expertId: user.id },
       select: { id: true, invitedByInstitutionId: true },
     });
 
-    if (!existingProfile) {
+    if (!existingExpertProfile) {
       await prisma.expertProfile.create({
         data: {
           expertId: user.id,
@@ -103,7 +122,7 @@ class ExpertService {
           invitedByInstitutionId: invitation.institutionId,
         },
       });
-    } else if (!existingProfile.invitedByInstitutionId) {
+    } else if (!existingExpertProfile.invitedByInstitutionId) {
       await prisma.expertProfile.update({
         where: { expertId: user.id },
         data: { invitedByInstitutionId: invitation.institutionId },
@@ -145,14 +164,31 @@ class ExpertService {
       },
     });
 
-    return { ...tokens, profile };
+    const userProfile = await prisma.userProfile.findUnique({
+      where: { userId: user.id },
+      include: { university: { select: { name: true } } },
+    });
+
+    const userResponse = buildUserResponse({
+      user: profile?.expert,
+      profile: userProfile,
+      expertProfile: profile,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      sessionId: tokens.sessionId,
+    });
+
+    return {
+      ...userResponse,
+      institution: profile?.institution || null,
+    };
   }
 
   async joinInstitution(data) {
     const parsed = joinInstitutionSchema.parse(data);
     const email = normalizeEmail(parsed.email);
 
-    return prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const institution = await tx.institution.findFirst({
         where: {
           name: { equals: parsed.institutionName.trim(), mode: 'insensitive' },
@@ -165,14 +201,6 @@ class ExpertService {
 
       if (!institution) {
         throw new BadRequestError('Invalid institution name or secret code');
-      }
-
-      const existingUser = await tx.user.findUnique({
-        where: { email },
-        select: { id: true },
-      });
-      if (existingUser) {
-        throw new ConflictError('Email already registered');
       }
 
       const newSecretCode = generateSecretCode();
@@ -196,40 +224,111 @@ class ExpertService {
         throw new BadRequestError('Invalid institution name or secret code');
       }
 
+      const existingUser = await tx.user.findUnique({
+        where: { email },
+        select: { id: true, role: true, verificationStatus: true },
+      });
+      if (existingUser && (existingUser.verificationStatus !== 'PENDING' || existingUser.role !== 'EXPERT')) {
+        throw new ConflictError('Email already registered');
+      }
+
       const passwordHash = await bcrypt.hash(parsed.password, 12);
-      const user = await tx.user.create({
-        data: {
-          firstName: parsed.firstName,
-          lastName: parsed.lastName,
-          email,
-          passwordHash,
-          role: 'EXPERT',
-          verificationStatus: 'EMAIL_VERIFIED',
-        },
+      const user = existingUser
+        ? await tx.user.update({
+            where: { id: existingUser.id },
+            data: {
+              firstName: parsed.firstName,
+              lastName: parsed.lastName,
+              passwordHash,
+              role: 'EXPERT',
+              verificationStatus: 'EMAIL_VERIFIED',
+            },
+            select: { id: true },
+          })
+        : await tx.user.create({
+            data: {
+              firstName: parsed.firstName,
+              lastName: parsed.lastName,
+              email,
+              passwordHash,
+              role: 'EXPERT',
+              verificationStatus: 'EMAIL_VERIFIED',
+            },
+            select: { id: true },
+          });
+
+      const existingUserProfile = await tx.userProfile.findUnique({
+        where: { userId: user.id },
         select: { id: true },
       });
+      if (!existingUserProfile) {
+        const username = await authService.resolveUniqueUsername(
+          authService.getUsernameSeed({
+            email,
+            firstName: parsed.firstName,
+            lastName: parsed.lastName,
+          }),
+          tx
+        );
 
-      const username = await authService.resolveUniqueUsername(
-        authService.getUsernameSeed({
-          email,
-          firstName: parsed.firstName,
-          lastName: parsed.lastName,
-        }),
-        tx
-      );
+        await tx.userProfile.create({
+          data: { userId: user.id, username },
+        });
+      }
 
-      await tx.userProfile.create({
-        data: { userId: user.id, username },
+      const existingExpertProfile = await tx.expertProfile.findUnique({
+        where: { expertId: user.id },
+        select: { id: true, invitedByInstitutionId: true },
       });
+      if (!existingExpertProfile) {
+        await tx.expertProfile.create({
+          data: {
+            expertId: user.id,
+            expertise: 'General',
+            invitedByInstitutionId: institution.id,
+          },
+        });
+      } else if (!existingExpertProfile.invitedByInstitutionId) {
+        await tx.expertProfile.update({
+          where: { expertId: user.id },
+          data: { invitedByInstitutionId: institution.id },
+        });
+      }
 
-      return tx.expertProfile.create({
-        data: {
-          expertId: user.id,
-          expertise: 'General',
-          invitedByInstitutionId: institution.id,
-        },
-      });
+      return { userId: user.id };
     });
+
+    const profile = await prisma.expertProfile.findUnique({
+      where: { expertId: result.userId },
+      include: {
+        expert: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            role: true,
+          },
+        },
+        institution: true,
+      },
+    });
+
+    const userProfile = await prisma.userProfile.findUnique({
+      where: { userId: result.userId },
+      include: { university: { select: { name: true } } },
+    });
+
+    const userResponse = buildUserResponse({
+      user: profile?.expert,
+      profile: userProfile,
+      expertProfile: profile,
+    });
+
+    return {
+      ...userResponse,
+      institution: profile?.institution || null,
+    };
   }
 
   async getProfile(expertId) {
@@ -255,7 +354,21 @@ class ExpertService {
       throw new NotFoundError('Expert profile not found');
     }
 
-    return profile;
+    const userProfile = await prisma.userProfile.findUnique({
+      where: { userId: expertId },
+      include: { university: { select: { name: true } } },
+    });
+
+    const userResponse = buildUserResponse({
+      user: profile.expert,
+      profile: userProfile,
+      expertProfile: profile,
+    });
+
+    return {
+      ...userResponse,
+      institution: profile.institution || null,
+    };
   }
 
   async updateProfile(expertId, data) {
@@ -269,7 +382,7 @@ class ExpertService {
     });
 
     if (!existing) {
-      return prisma.expertProfile.create({
+      await prisma.expertProfile.create({
         data: {
           expertId,
           expertise: parsed.expertise ?? 'General',
@@ -277,16 +390,52 @@ class ExpertService {
           profileImage: parsed.profileImage,
         },
       });
+    } else {
+      await prisma.expertProfile.update({
+        where: { expertId },
+        data: {
+          expertise: parsed.expertise,
+          bio: parsed.bio,
+          profileImage: parsed.profileImage,
+        },
+      });
     }
 
-    return prisma.expertProfile.update({
+    const profile = await prisma.expertProfile.findUnique({
       where: { expertId },
-      data: {
-        expertise: parsed.expertise,
-        bio: parsed.bio,
-        profileImage: parsed.profileImage,
+      include: {
+        expert: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            role: true,
+          },
+        },
+        institution: true,
       },
     });
+
+    if (!profile) {
+      throw new NotFoundError('Expert profile not found');
+    }
+
+    const userProfile = await prisma.userProfile.findUnique({
+      where: { userId: expertId },
+      include: { university: { select: { name: true } } },
+    });
+
+    const userResponse = buildUserResponse({
+      user: profile.expert,
+      profile: userProfile,
+      expertProfile: profile,
+    });
+
+    return {
+      ...userResponse,
+      institution: profile.institution || null,
+    };
   }
 
   async deleteProfile(expertId) {
