@@ -1,6 +1,7 @@
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"]
+  output          = "../../src/node_modules/.prisma/client"
 }
 
 datasource db {
@@ -254,6 +255,7 @@ model UserProfile {
   bio            String?
   profileImage   String?
   interests      String[]       @default([])
+  networkCount   Int            @default(0)
 
   universityId   String?
   university     University?    @relation(fields: [universityId], references: [id])
@@ -340,6 +342,7 @@ model Post {
   category         String?
   embedding        Unsupported("vector(1536)")?
   moderationStatus ModerationStatus @default(PENDING)
+  moderatedById    String?
   isDeleted        Boolean @default(false)
   shareCount       Int    @default(0)
   originalPostId   String? // for shared comments, reference to original post
@@ -383,6 +386,7 @@ model PostComment {
   parentComment   PostComment? @relation("CommentReplies", fields: [parentCommentId], references: [id])
   replies         PostComment[] @relation("CommentReplies")
   commentReactions CommentReaction[]
+  moderator       User? @relation("CommentModeratedBy", fields: [moderatedById], references: [id])
 
 
 

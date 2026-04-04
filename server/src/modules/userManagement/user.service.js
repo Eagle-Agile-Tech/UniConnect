@@ -1,6 +1,7 @@
 const prisma = require("./../../lib/prisma");
 const { createUserSchema } = require("./user.schema");
 const crypto = require("crypto");
+const buildUserResponse = require("../../lib/userResponse");
 const {
     BadRequestError,
     ConflictError,
@@ -9,6 +10,80 @@ const {
 } = require("./../../errors");
 const universityDomains = require("./../../lib/data/universities.json");
 const usernameOnlySchema = createUserSchema.pick({ username: true });
+
+function parseGraduationYear(value) {
+    if (value === null || value === undefined || value === "") return undefined;
+    if (typeof value === "number" && Number.isInteger(value)) return value;
+    if (typeof value === "string") {
+        const trimmed = value.trim();
+        if (/^\d{4}$/.test(trimmed)) {
+            return Number(trimmed);
+        }
+        const parsedDate = new Date(trimmed);
+        if (!Number.isNaN(parsedDate.getTime())) {
+            return parsedDate.getUTCFullYear();
+        }
+    }
+    if (value instanceof Date && !Number.isNaN(value.getTime())) {
+        return value.getUTCFullYear();
+    }
+    return null;
+}
+
+function parseYearOfStudy(value) {
+    if (value === null || value === undefined || value === "") return undefined;
+    if (typeof value === "number" && Number.isInteger(value)) return value;
+    if (typeof value === "string") {
+        const trimmed = value.trim().toLowerCase();
+        if (/^\d+$/.test(trimmed)) return Number(trimmed);
+        const wordMap = {
+            first: 1,
+            second: 2,
+            third: 3,
+            fourth: 4,
+            fifth: 5,
+            sixth: 6,
+            seventh: 7,
+            eighth: 8,
+            ninth: 9,
+            tenth: 10,
+        };
+        if (wordMap[trimmed]) return wordMap[trimmed];
+    }
+    return null;
+}
+
+function mapStudentFields(input) {
+    const student = input?.student || {};
+    const degree = input?.degree ?? student?.degree;
+    const currentYear = input?.currentYear ?? student?.currentYear;
+    const expectedGraduationYear = input?.expectedGraduationYear ?? student?.expectedGraduationYear;
+    const interests = input?.interests ?? student?.interests;
+
+    const mapped = {};
+
+    if (degree !== undefined) mapped.department = degree;
+
+    const yearOfStudy = parseYearOfStudy(currentYear);
+    if (yearOfStudy === null) {
+        const err = new ValidationError("Invalid currentYear format");
+        err.source = "body";
+        throw err;
+    }
+    if (yearOfStudy !== undefined) mapped.yearOfStudy = yearOfStudy;
+
+    const graduationYear = parseGraduationYear(expectedGraduationYear);
+    if (graduationYear === null) {
+        const err = new ValidationError("Invalid expectedGraduationYear format");
+        err.source = "body";
+        throw err;
+    }
+    if (graduationYear !== undefined) mapped.graduationYear = graduationYear;
+
+    if (interests !== undefined) mapped.interests = interests;
+
+    return mapped;
+}
 
 class userService {
     normalizeUsername(username) {
@@ -124,7 +199,8 @@ class userService {
             throw new BadRequestError("User id is required");
         }
 
-        const data = createUserSchema.partial().parse(userData);
+        const mappedStudent = mapStudentFields(userData || {});
+        const data = createUserSchema.partial().parse({ ...mappedStudent, ...userData });
         const username = data.username ? this.normalizeUsername(data.username) : "";
         const {
             bio,
@@ -142,9 +218,6 @@ class userService {
             where: { id: userId },
             select: { email: true, firstName: true, lastName: true },
         });
-        const fullName = user
-            ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || null
-            : null;
 
         const existingProfile = await prisma.userProfile.findUnique({
             where: { userId },
@@ -189,11 +262,10 @@ class userService {
                 resolvedUniversityId = universityRecord?.id || undefined;
             }
 
-            const updatedProfile = await prisma.userProfile.update({
+            await prisma.userProfile.update({
                 where: { userId },
                 data: {
                     username: username || undefined,
-                    fullName: fullName || undefined,
                     bio,
                     profileImage,
                     interests,
@@ -204,8 +276,18 @@ class userService {
                     graduationYear,
                 },
             });
-
-            return updatedProfile;
+            const freshUser = await prisma.user.findUnique({
+                where: { id: userId },
+                select: { id: true, firstName: true, lastName: true, email: true, role: true },
+            });
+            const profile = await prisma.userProfile.findUnique({
+                where: { userId },
+                include: { university: { select: { name: true } } },
+            });
+            return buildUserResponse({
+                user: freshUser,
+                profile,
+            });
         }
 
         let resolvedUniversityId = universityId;
@@ -225,11 +307,10 @@ class userService {
             }
         }
 
-        const userProfile = await prisma.userProfile.create({
+        await prisma.userProfile.create({
             data: {
                 userId,
                 username,
-                fullName,
                 bio,
                 profileImage,
                 interests,
@@ -240,8 +321,18 @@ class userService {
                 graduationYear,
             },
         });
-
-        return userProfile;
+        const freshUser = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { id: true, firstName: true, lastName: true, email: true, role: true },
+        });
+        const profile = await prisma.userProfile.findUnique({
+            where: { userId },
+            include: { university: { select: { name: true } } },
+        });
+        return buildUserResponse({
+            user: freshUser,
+            profile,
+        });
     }
 
     async getUserProfile(userId){
@@ -253,7 +344,13 @@ class userService {
             where: { userId },
             include: {
                 user: {
-                    select: { role: true },
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true,
+                        email: true,
+                        role: true,
+                    },
                 },
                 university: {
                     select: { name: true },
@@ -265,14 +362,14 @@ class userService {
             throw new NotFoundError("User profile not found");
         }
 
-        const universityName = userProfile.university?.name || null;
-        const userRole = userProfile.user?.role || null;
-        const { university, user, ...rest } = userProfile;
-        return {
-            ...rest,
-            universityName,
-            role: userRole,
-        };
+        const { university, user, ...restProfile } = userProfile;
+        return buildUserResponse({
+            user,
+            profile: {
+                ...restProfile,
+                university,
+            },
+        });
     }
 
    async searchUsernames(username, currentUserId) {
@@ -362,14 +459,8 @@ class userService {
             throw new BadRequestError("User id is required");
         }
 
-        const data = createUserSchema.partial().parse(updateData);
-        const user = await prisma.user.findUnique({
-            where: { id: userId },
-            select: { firstName: true, lastName: true },
-        });
-        const fullName = user
-            ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || null
-            : null;
+        const mappedStudent = mapStudentFields(updateData || {});
+        const data = createUserSchema.partial().parse({ ...mappedStudent, ...updateData });
         const {
             username,
             bio,
@@ -407,16 +498,25 @@ class userService {
             resolvedUniversityId = universityRecord?.id || undefined;
         }
 
-        const updatedProfile = await prisma.userProfile.update({
+        await prisma.userProfile.update({
             where: { userId },
             data: {
                 ...data,
                 universityId: resolvedUniversityId,
-                fullName: fullName || undefined,
             }
         });
-
-        return updatedProfile;
+        const freshUser = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { id: true, firstName: true, lastName: true, email: true, role: true },
+        });
+        const profile = await prisma.userProfile.findUnique({
+            where: { userId },
+            include: { university: { select: { name: true } } },
+        });
+        return buildUserResponse({
+            user: freshUser,
+            profile,
+        });
     }
 
     async updateProfileImage(userId, profileImage){
@@ -427,12 +527,22 @@ class userService {
             throw new ValidationError("Profile image is required");
         }
 
-        const updatedProfile = await prisma.userProfile.update({
+        await prisma.userProfile.update({
             where: { userId },
             data: { profileImage },
         });
-
-        return updatedProfile;
+        const freshUser = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { id: true, firstName: true, lastName: true, email: true, role: true },
+        });
+        const profile = await prisma.userProfile.findUnique({
+            where: { userId },
+            include: { university: { select: { name: true } } },
+        });
+        return buildUserResponse({
+            user: freshUser,
+            profile,
+        });
     }
 
     async deleteUserProfile(userId){

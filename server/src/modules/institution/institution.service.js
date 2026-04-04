@@ -5,6 +5,7 @@ const prisma = require('../../lib/prisma');
 const authService = require('../auth/auth.service');
 const mailer = require('../../config/mailer');
 const { getAppUrl } = require('../../lib/appUrl');
+const buildUserResponse = require('../../lib/userResponse');
 const expertInvitationTemplate = require('../../templates/expertInvitationEmail');
 const {
   registerInstitutionSchema,
@@ -68,10 +69,7 @@ class InstitutionService {
     });
 
     return {
-      message: result.message,
-      user: result.user,
-      accessToken: result.accessToken,
-      refreshToken: result.refreshToken,
+      ...result,
       institution: institution || null,
     };
   }
@@ -103,10 +101,93 @@ class InstitutionService {
 
     const existingUser = await prisma.user.findUnique({
       where: { email },
-      select: { id: true },
+      select: { id: true, role: true, verificationStatus: true },
     });
     if (existingUser) {
-      throw new ConflictError('Email already registered. Please log in or reset your password.');
+      if (existingUser.verificationStatus !== 'PENDING' || existingUser.role !== 'INSTITUTION') {
+        throw new ConflictError('Email already registered. Please log in or reset your password.');
+      }
+
+      const existingInstitutionByName = await prisma.institution.findFirst({
+        where: { name: { equals: name, mode: 'insensitive' } },
+        select: { id: true, userId: true },
+      });
+      if (existingInstitutionByName && existingInstitutionByName.userId !== existingUser.id) {
+        throw new ConflictError('Institution name already exists. Please use a different name.');
+      }
+
+      const hashedPassword = await bcrypt.hash(parsed.password, 12);
+
+      const { user, institution } = await prisma.$transaction(async (tx) => {
+        const user = await tx.user.update({
+          where: { id: existingUser.id },
+          data: {
+            firstName: name,
+            lastName: 'Institution',
+            passwordHash: hashedPassword,
+          },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            role: true,
+            verificationStatus: true,
+          },
+        });
+
+        const managedInstitution = await tx.institution.findFirst({
+          where: { userId: user.id },
+          select: { id: true },
+        });
+
+        let institution;
+        if (managedInstitution) {
+          institution = await tx.institution.update({
+            where: { id: managedInstitution.id },
+            data: {
+              name,
+              type: parsed.type,
+              description: parsed.description,
+              website: parsed.website,
+              logoUri: parsed.logoUri,
+            },
+          });
+        } else {
+          institution = await tx.institution.create({
+            data: {
+              name,
+              type: parsed.type,
+              description: parsed.description,
+              website: parsed.website,
+              logoUri: parsed.logoUri,
+              userId: user.id,
+            },
+          });
+        }
+
+        return { user, institution };
+      });
+
+      await authService.issueEmailOtp(email);
+
+      const sessionId = crypto.randomUUID();
+      const refreshToken = authService.signRefreshToken(user, sessionId);
+      const accessToken = authService.signAccessToken(user);
+      await authService.createSession({ userId: user.id, refreshToken, deviceInfo, sessionId });
+
+      const userResponse = buildUserResponse({
+        user,
+        accessToken,
+        refreshToken,
+        sessionId,
+      });
+
+      return {
+        message: 'Registration successful. Please verify email with the OTP sent.',
+        ...userResponse,
+        institution,
+      };
     }
 
     const existingInstitution = await prisma.institution.findFirst({
@@ -160,13 +241,17 @@ class InstitutionService {
     const accessToken = authService.signAccessToken(user);
     await authService.createSession({ userId: user.id, refreshToken, deviceInfo, sessionId });
 
-    return {
-      message: 'Registration successful. Please verify email with the OTP sent.',
+    const userResponse = buildUserResponse({
       user,
-      institution,
       accessToken,
       refreshToken,
       sessionId,
+    });
+
+    return {
+      message: 'Registration successful. Please verify email with the OTP sent.',
+      ...userResponse,
+      institution,
     };
   }
 

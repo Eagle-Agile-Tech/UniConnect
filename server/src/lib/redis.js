@@ -9,8 +9,10 @@ class RedisClient {
 
   async connect() {
     try {
+      const isDocker = process.env.PRISMA_ENV === 'docker';
+      const defaultUrl = isDocker ? 'redis://redis:6379' : 'redis://localhost:6379';
       this.client = createClient({
-        url: process.env.REDIS_URL || 'redis://localhost:6379',
+        url: process.env.REDIS_URL || defaultUrl,
         socket: {
           reconnectStrategy: (retries) => {
             if (retries > 10) {

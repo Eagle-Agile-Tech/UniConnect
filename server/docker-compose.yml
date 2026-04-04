@@ -46,6 +46,9 @@ services:
       - .env.docker
     environment:
       PRISMA_ENV: docker
+      REDIS_URL: redis://redis:6379
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     ports:
       - "${API_HOST_PORT:-3000}:3000"
     command: >

@@ -9,7 +9,7 @@ ALTER TABLE "UserProfile" ALTER COLUMN "username" SET NOT NULL;
 CREATE UNIQUE INDEX "UserProfile_username_key" ON "UserProfile"("username");
 
 -- Remove GROUP from Visibility enum (ensure existing rows are remapped)
-UPDATE "Post" SET "visibility" = 'PUBLIC' WHERE "visibility" = 'GROUP';
+UPDATE "Post" SET "visibility" = 'PUBLIC' WHERE "visibility"::text = 'GROUP';
 
 ALTER TABLE "Post" ALTER COLUMN "visibility" DROP DEFAULT;
 
