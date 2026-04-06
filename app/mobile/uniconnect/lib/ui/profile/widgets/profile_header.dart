@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:uniconnect/utils/helper_functions.dart';
 
 import '../../../config/assets.dart';
 import '../../../domain/models/user/user.dart';
 import '../../../routing/routes.dart';
 import '../../../utils/enums.dart';
+import '../../core/theme/colors.dart';
 import '../../core/theme/dimens.dart';
+import 'my_network.dart';
+import 'others_network.dart';
 
 class ProfileHeader extends ConsumerWidget {
   const ProfileHeader({super.key, required this.user, required this.isMe});
@@ -18,22 +22,49 @@ class ProfileHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Column(
       children: [
-        if (isMe)
-          Align(
-            alignment: AlignmentGeometry.topEnd,
-            child: IconButton(
-              onPressed: () => context.push(Routes.setting),
-              icon: const Icon(Icons.settings),
-            ),
-          ),
-        if (!isMe)
-          Align(
-            alignment: Alignment.topLeft,
-            child: IconButton(
-              onPressed: () => context.pop(),
-              icon: const Icon(Icons.arrow_back),
-            ),
-          ),
+        Row(
+          mainAxisAlignment: isMe
+              ? MainAxisAlignment.end
+              : MainAxisAlignment.spaceBetween,
+          children: [
+            if (!isMe)
+              IconButton(
+                onPressed: () => context.pop(),
+                icon: const Icon(Icons.arrow_back),
+              ),
+            isMe
+                ? IconButton(
+                    onPressed: () => context.push(Routes.setting),
+                    icon: const Icon(Icons.settings),
+                  )
+                : PopupMenuButton<TextButton>(
+              //fixme: the pop menu looks terrible
+                    itemBuilder: (BuildContext context) {
+                      return [
+                        if (user.areWe)
+                          PopupMenuItem(
+                            child: TextButton(
+                              onPressed: null,
+                              child: Text('UnLink'),
+                            ),
+                          ),
+                        PopupMenuItem(
+                          child: TextButton(
+                            onPressed: null,
+                            child: Text('Block'),
+                          ),
+                        ),
+                        PopupMenuItem(
+                          child: TextButton(
+                            onPressed: null,
+                            child: Text('Report User 🚩'),
+                          ),
+                        ),
+                      ];
+                    },
+                  ),
+          ],
+        ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: Dimens.defaultSpace),
           child: Column(
@@ -79,8 +110,8 @@ class ProfileHeader extends ConsumerWidget {
                         ),
                         const SizedBox(height: Dimens.xs),
                         Text(
-                          user.role == UserRole.student
-                              ? user.student!.degree
+                          user.role == UserRole.STUDENT
+                              ? user.student!.department
                               : user.expert!.expertise,
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
@@ -92,43 +123,8 @@ class ProfileHeader extends ConsumerWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: Dimens.md),
-                        Row(
-                          children: [
-                            ElevatedButton(
-                              onPressed: () {},
-                              style: ElevatedButton.styleFrom(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(0),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: Dimens.lg,
-                                  vertical: Dimens.sm,
-                                ),
-                              ),
-                              child: const Text('Network'),
-                            ),
-                            const SizedBox(width: Dimens.sm),
-                            ElevatedButton(
-                              onPressed: () => context.push(
-                                Routes.messaging,
-                                extra: {
-                                  'userId': user.id,
-                                  'username': user.username,
-                                },
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(0),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: Dimens.lg,
-                                  vertical: Dimens.sm,
-                                ),
-                              ),
-                              child: const Text('Chat'),
-                            ),
-                          ],
-                        ),
+                        if (isMe) MyNetwork(),
+                        if (!isMe) OthersNetwork(user: user),
                       ],
                     ),
                   ),
@@ -138,12 +134,10 @@ class ProfileHeader extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: Dimens.md),
-        const Divider(
-          height: 5,
-        ),
-        if (user.role == UserRole.student)
+        const Divider(height: 5),
+        if (user.role == UserRole.STUDENT && user.student?.interests != null)
           const SizedBox(height: Dimens.md),
-        if (user.role == UserRole.student)
+        if (user.role == UserRole.STUDENT && user.student?.interests != null)
           Padding(
             padding: const EdgeInsets.only(left: 20.0),
             child: Align(
@@ -156,9 +150,9 @@ class ProfileHeader extends ConsumerWidget {
               ),
             ),
           ),
-        if (user.role == UserRole.student)
+        if (user.role == UserRole.STUDENT && user.student?.interests != null)
           const SizedBox(height: Dimens.sm),
-        if (user.role == UserRole.student)
+        if (user.role == UserRole.STUDENT && user.student?.interests != null)
           Padding(
             padding: const EdgeInsets.only(left: 20.0),
             child: SizedBox(
@@ -166,7 +160,9 @@ class ProfileHeader extends ConsumerWidget {
               child: Wrap(
                 spacing: Dimens.sm,
                 runSpacing: Dimens.sm,
-                children: List.generate(user.student!.interests!.length, (index) {
+                children: List.generate(user.student!.interests!.length, (
+                  index,
+                ) {
                   return Chip(
                     label: Text(user.student!.interests![index]),
                     visualDensity: VisualDensity.compact,
