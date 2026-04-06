@@ -5,6 +5,7 @@ import 'package:uniconnect/data/service/api/token_refresher.dart';
 
 import '../../../ui/auth/auth_state_provider.dart';
 import '../api/auth_api_client.dart';
+import '../api/routes/api_routes.dart';
 
 final chatServiceProvider = Provider((ref) {
   final dio = ref.watch(dioProvider);

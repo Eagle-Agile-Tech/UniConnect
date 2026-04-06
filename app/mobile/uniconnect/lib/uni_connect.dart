@@ -9,13 +9,11 @@ class UniConnect extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
-    return ProviderScope(
-      child: MaterialApp.router(
-        routerConfig: router,
-        debugShowCheckedModeBanner: false,
-        theme: UCTheme.lightTheme,
-        darkTheme: UCTheme.darkTheme,
-      ),
+    return MaterialApp.router(
+      routerConfig: router,
+      debugShowCheckedModeBanner: false,
+      theme: UCTheme.lightTheme,
+      darkTheme: UCTheme.darkTheme,
     );
   }
 }

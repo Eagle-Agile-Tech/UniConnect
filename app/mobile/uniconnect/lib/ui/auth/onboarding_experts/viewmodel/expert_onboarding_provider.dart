@@ -52,11 +52,14 @@ class ExpertOnboardingViewModel extends Notifier<ExpertOnboardingState> {
 
   Future<Err?> verifyEmail(String otp) async {
     final result = await _authRepo.verifyOtp(state.email, otp);
-    if (result) {
-      return null;
-    } else {
-      return Result.error('Invalid otp') as Err;
-    }
+    return result.fold(
+      (data) {
+        state = state.copyWith(
+          university: data
+        );
+        return null;
+      }, (error, stackTrace) => Result.error(error) as Err,
+    );
   }
 
   Future<bool> isUsernameAvailable(String username) async {
@@ -94,7 +97,8 @@ class ExpertOnboardingViewModel extends Notifier<ExpertOnboardingState> {
                 email: '',
                 username: '',
                 university: '',
-                role: UserRole.expert,
+                role: UserRole.EXPERT,
+                networkCount: 0
               ),
             ),
             (error, stackTrace) => Result.error(error.toString),

@@ -78,6 +78,7 @@ class _IdentityVerificationScreenState
 
   @override
   Widget build(BuildContext context) {
+    final onboard = ref.watch(onboardingProvider);
     return Scaffold(
       appBar: UCAppBar(
         'Identity Verification',
@@ -113,7 +114,7 @@ class _IdentityVerificationScreenState
                 height: 240,
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: Colors.black,
+                  color: Colors.grey.shade200,
                   borderRadius: BorderRadius.circular(Dimens.md),
                   image: _frontImage != null
                       ? DecorationImage(
@@ -160,7 +161,7 @@ class _IdentityVerificationScreenState
                 height: 240,
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: Colors.black,
+                  color: Colors.grey.shade200,
                   borderRadius: BorderRadius.circular(Dimens.md),
                   image: _backImage != null
                       ? DecorationImage(
@@ -195,7 +196,7 @@ class _IdentityVerificationScreenState
               SizedBox(height: Dimens.spaceBtwSections),
 
               ElevatedButton(
-                onPressed: () async {
+                onPressed: onboard.isLoading ? null : () async {
                   if (_frontImage == null || _backImage == null) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
@@ -229,8 +230,16 @@ class _IdentityVerificationScreenState
                 },
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 48),
+                  side: BorderSide(color: onboard.isLoading ? Colors.grey : Theme.of(context).primaryColor),
                 ),
-                child: const Text('Verify ID'),
+                child: onboard.isLoading ? SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Theme.of(context).primaryColor,
+                  ),
+                ) : const Text('Verify ID'),
               ),
             ],
           ),

@@ -1,4 +1,6 @@
-enum UserRole {student,expert}
+enum UserRole { STUDENT, EXPERT }
+
+enum VerificationStatus { PENDING, APPROVED, REJECTED, EMAIL_VERIFIED }
 
 enum EmailType { institutional, general, invalid }
 

@@ -31,6 +31,17 @@ class _AcademicProfileState extends ConsumerState<AcademicProfile> {
   DateTime? _selectedGraduationDate;
 
   @override
+  void initState() {
+    super.initState();
+    final initialState = ref.read(onboardingProvider);
+
+    if (initialState.university.isNotEmpty &&
+        initialState.university.toLowerCase() != 'general') {
+      _universityController.text = initialState.university;
+    }
+  }
+
+  @override
   void dispose() {
     _universityController.dispose();
     _degreeProgramController.dispose();
@@ -42,11 +53,12 @@ class _AcademicProfileState extends ConsumerState<AcademicProfile> {
   @override
   Widget build(BuildContext context) {
     final onboarding = ref.read(onboardingProvider.notifier);
+    final onBoardingState = ref.watch(onboardingProvider);
     return Scaffold(
-      appBar: UCAppBar('Academic Profile'),
+      appBar: UCAppBar('Academic Profile', showBack: false, centerTitle: true),
       body: SingleChildScrollView(
         child: Padding(
-          padding: UCSpacingStyle.paddingWithAppBarHeight,
+          padding: EdgeInsets.all(Dimens.defaultSpace),
           child: Column(
             children: [
               Form(
@@ -55,9 +67,15 @@ class _AcademicProfileState extends ConsumerState<AcademicProfile> {
                   children: [
                     DropdownMenuFormField(
                       controller: _universityController,
+                      enabled:
+                          onBoardingState.university.isNotEmpty &&
+                              onBoardingState.university !=
+                                  'general'
+                          ? false
+                          : true,
                       validator: (value) => UCValidator.validateEmptyText(
                         'University',
-                        value?.acronomy,
+                        _universityController.text.trim(),
                       ),
                       menuStyle: MenuStyle(
                         minimumSize: WidgetStateProperty.all(
@@ -117,6 +135,7 @@ class _AcademicProfileState extends ConsumerState<AcademicProfile> {
                             ),
                             readOnly: true,
                             showCursor: false,
+                            onTap: null,
                             enableInteractiveSelection: false,
                             controller: _expectedGraduationYearController,
                             decoration: InputDecoration(

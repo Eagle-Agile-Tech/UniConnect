@@ -14,9 +14,11 @@ import 'package:uniconnect/ui/setting/widgets/saved_screen.dart';
 import 'package:uniconnect/utils/navigation_wrapper.dart';
 
 import '../ui/auth/auth_state_provider.dart';
+import '../ui/auth/onboarding/verify_identity/verify_identity.dart';
 import '../ui/community/community_form.dart';
 import '../ui/community/community_screen.dart';
 import '../ui/community/explore_community.dart';
+import '../ui/network/network_screen.dart';
 import '../ui/profile/profile_screen.dart';
 import '../ui/search/search_screen.dart';
 import '../ui/setting/setting_screen.dart';
@@ -26,7 +28,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   final authAsync = ref.watch(authNotifierProvider);
 
   return GoRouter(
-    initialLocation: Routes.loginOrSignup,
+    initialLocation: Routes.home,
 
     redirect: (context, state) {
       if (authAsync.isLoading) return null;
@@ -38,16 +40,24 @@ final routerProvider = Provider<GoRouter>((ref) {
       final auth = authAsync.value!;
       final isLoggedIn = auth.isAuthenticated;
 
-      final isAuthPage = state.matchedLocation == Routes.loginOrSignup;
+      final publicRoutes = [
+        Routes.loginOrSignup,
+        Routes.verifyEmail,
+        Routes.verifyIdentity,
+        Routes.onboardingAcademic,
+        Routes.onBoardingProfile,
+      ];
 
-      if (!isLoggedIn && !isAuthPage) {
+      final isPublicRoute = publicRoutes.contains(state.matchedLocation);
+
+
+      if (!isLoggedIn && !isPublicRoute) {
         return Routes.loginOrSignup;
       }
 
-      if (isLoggedIn && isAuthPage) {
+      if (isLoggedIn && isPublicRoute) {
         return Routes.home;
       }
-
       return null;
     },
     routes: [
@@ -125,7 +135,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: Routes.communities,
         builder: (context, state) => const ExploreCommunityScreen(),
       ),
-
+      GoRoute(
+        path: Routes.verifyIdentity,
+        builder: (context, state) => const IdentityVerificationScreen(),
+      ),
       GoRoute(
         path: Routes.userProfilePath,
         builder: (context, state) {
@@ -140,6 +153,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           final isCreated = state.extra as bool;
           return CommunityScreen(communityId: id, isCreated: isCreated);
         },
+      ),
+      GoRoute(
+        path: Routes.networks,
+        builder: (context, state) => NetworkScreen(),
       ),
 
       // Experts

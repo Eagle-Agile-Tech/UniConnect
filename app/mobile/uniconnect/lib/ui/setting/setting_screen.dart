@@ -58,6 +58,13 @@ class SettingScreen extends ConsumerWidget {
               trailing: Icon(Icons.keyboard_arrow_right_outlined),
               onTap: () => context.push(Routes.saved),
             ),
+            //todo: change this into events
+            ListTile(
+              leading: Icon(Icons.bookmark_border_outlined),
+              title: Text('Events'),
+              trailing: Icon(Icons.keyboard_arrow_right_outlined),
+              onTap: () => context.push(Routes.saved),
+            ),
             if(user.isExpert)
             SizedBox(
               width: double.infinity,

@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fresh_dio/fresh_dio.dart';
+import 'package:uniconnect/data/service/api/routes/api_routes.dart';
 
 import '../local/secure_token_storage.dart';
 import 'auth_api_client.dart';

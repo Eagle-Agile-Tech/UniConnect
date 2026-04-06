@@ -17,7 +17,7 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final GlobalKey<FormState> _key = GlobalKey<FormState>();
-  final _username = TextEditingController(text: 'feisel');
+  final _email = TextEditingController(text: 'feyselteshome05@gmail.com');
   final _password = TextEditingController(text: '!@Fffds1ff');
 
   @override
@@ -31,7 +31,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           child: Column(
             children: [
               TextFormField(
-                controller: _username,
+                controller: _email,
                 validator: (value) =>
                     UCValidator.validateEmptyText('username', value),
                 decoration: InputDecoration(labelText: 'Email'),
@@ -56,7 +56,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 onPressed: () async {
                   if (!_key.currentState!.validate()) return;
                   await auth.login(
-                    _username.text.trim(),
+                    _email.text.trim(),
                     _password.text.trim(),
                   );
                 },

@@ -1,6 +1,7 @@
 abstract final class Routes {
   static const String loginOrSignup = '/auth';
   static const String verifyEmail = '/verifyEmail';
+  static const String verifyIdentity = '/verifyIdentity';
   static const String onboardingAcademic = '/onboarding/academic';
   static const String onBoardingProfile = '/onboarding/profile';
   static const String home = '/';
@@ -13,6 +14,9 @@ abstract final class Routes {
   static const String manageProfile = '/setting/manageProfile';
   static const String saved = '/saved';
   static const String post = '/createPost';
+  static const String networks = '/network';
+
+  // Community
   static const String createCommunity = '/createCommunity';
   static const String communities = '/communityCenter';
   static String userProfile(String userId) => '/userProfile/$userId';

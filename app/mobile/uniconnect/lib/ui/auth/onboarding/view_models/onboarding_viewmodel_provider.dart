@@ -22,37 +22,33 @@ class OnboardingViewmodel extends Notifier<OnboardingState> {
   @override
   OnboardingState build() {
     _authRepo = ref.read(authProvider);
-    return OnboardingState();
+    return OnboardingState(expectedGraduationYear: DateTime.now());
   }
 
-  // Account
-  void updateAccount(
+  Future<Err?> submitAccount(
+    String confirmPassword,
     String firstName,
     String lastName,
     String email,
     String password,
-  ) {
+  ) async {
     state = state.copyWith(
       firstName: firstName,
       lastName: lastName,
       email: email,
       password: password,
+      isLoading: true,
     );
-  }
-
-  Future<Err?> submitAccount(String confirmPassword) async {
-    state = state.copyWith(isLoading: true, errorMessage: null);
     final result = await _authRepo.createUserAccount(
-      firstName: state.firstName,
-      lastName: state.lastName,
-      email: state.email,
-      password: state.password,
+      firstName: firstName,
+      lastName: lastName,
+      email: email,
+      password: password,
       confirmPassword: confirmPassword,
     );
     return result.fold(
       (data) {
         state = state.copyWith(
-          currentStep: OnboardingStep.verifyEmail,
           isLoading: false,
         );
         return null;
@@ -60,7 +56,6 @@ class OnboardingViewmodel extends Notifier<OnboardingState> {
       (error, stackTrace) {
         state = state.copyWith(
           isLoading: false,
-          errorMessage: error.toString(),
         );
         return Result.error(error) as Err;
       },
@@ -68,27 +63,35 @@ class OnboardingViewmodel extends Notifier<OnboardingState> {
   }
 
   Future<Err?> verifyOtp(String otp) async {
-    state = state.copyWith(isLoading: true, errorMessage: null);
+    state = state.copyWith(isLoading: true,);
 
     final result = await _authRepo.verifyOtp(state.email, otp);
 
     return result.fold((data) {
       state = state.copyWith(
-        isEmailVerified: true,
-        currentStep: OnboardingStep.academic,
         isLoading: false,
         university: data,
       );
       return null;
-    }, (error, stackTrace) => Result.error(error) as Err);
+    }, (error, stackTrace) {
+      state = state.copyWith(
+        isLoading: false,
+      );
+      return Result.error(error) as Err;
+    });
   }
 
   Future<Err?> verifyId(File front, File back) async {
-    state = state.copyWith(isLoading: true, errorMessage: null);
+    state = state.copyWith(isLoading: true, );
     final result = await _authRepo.verifyId(front, back);
     return result.fold(
-      (data) => null,
-      (error, stackTrace) => Result.error(error) as Err,
+      (data) {
+        state = state.copyWith(isLoading: false, );
+      },
+      (error, stackTrace) {
+        state = state.copyWith(isLoading: false, );
+        return Result.error(error) as Err;
+      },
     );
   }
 
@@ -104,12 +107,10 @@ class OnboardingViewmodel extends Notifier<OnboardingState> {
       degree: degree,
       currentYear: currentYear,
       expectedGraduationYear: expectedGraduationYear,
-      currentStep: OnboardingStep.profile,
     );
   }
 
   Future<bool> isUsernameAvailable(String username) async {
-    await Future.delayed(Duration(seconds: 5));
     return await _authRepo.isUsernameAvailable(username);
   }
 
@@ -122,7 +123,7 @@ class OnboardingViewmodel extends Notifier<OnboardingState> {
   ) {
     state = state.copyWith(
       username: username,
-      bio: bio ?? state.bio,
+      bio: bio,
       interests: interests,
       profilePicture: profilePicture,
     );
@@ -132,7 +133,6 @@ class OnboardingViewmodel extends Notifier<OnboardingState> {
     state = state.copyWith(isLoading: true);
     try {
       final result = await _authRepo.createUserProfile(
-        id: state.id,
         username: state.username,
         bio: state.bio,
         interests: state.interests
@@ -147,40 +147,19 @@ class OnboardingViewmodel extends Notifier<OnboardingState> {
       return result.fold(
         (data) {
           state = state.copyWith(
-            currentStep: OnboardingStep.completed,
             isLoading: false,
           );
-          final user = User(
-            id: state.id,
-            firstName: state.firstName,
-            lastName: state.lastName,
-            username: state.username,
-            email: state.email,
-            university: state.university,
-            bio: state.bio,
-            profilePicture: data,
-            role: UserRole.student,
-            student: Student(
-              degree: state.degree,
-              currentYear: state.currentYear,
-              expectedGraduationYear: state.expectedGraduationYear!,
-              interests: state.interests
-                  ?.map((interest) => interest.interest)
-                  .toList(),
-            ),
-          );
-          return Result.ok(user);
+          return Result.ok(data);
         },
         (error, stackTrace) {
           state = state.copyWith(
             isLoading: false,
-            errorMessage: error.toString(),
           );
           return Result.error(error);
         },
       );
     } catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      state = state.copyWith(isLoading: false,);
       return Result.error('Failed to complete onboarding');
     }
   }
