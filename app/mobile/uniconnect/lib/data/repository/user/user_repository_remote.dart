@@ -3,8 +3,10 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uniconnect/data/repository/user/user_repository.dart';
 import 'package:uniconnect/domain/models/user/user.dart';
+import 'package:uniconnect/utils/enums.dart';
 import 'package:uniconnect/utils/result.dart';
 
+import '../../../domain/models/user/student/student.dart';
 import '../../service/api/api_client.dart';
 
 final userRepoProvider = Provider(
@@ -18,13 +20,19 @@ class UserRepositoryRemote implements UserRepository {
 
   @override
   Future<Result> updateProfile(
-      String? firstName,
-      String? lastName,
-      String? username,
-      String? bio,
-      File? profilePic,
-      ) async {
-    final result = await _client.updateProfile(firstName, lastName, username, bio, profilePic);
+    String? firstName,
+    String? lastName,
+    String? username,
+    String? bio,
+    File? profilePic,
+  ) async {
+    final result = await _client.updateProfile(
+      firstName,
+      lastName,
+      username,
+      bio,
+      profilePic,
+    );
     return result.fold(
       (data) => Result.ok(''),
       (error, stackTrace) => Result.ok(error),
@@ -44,8 +52,7 @@ class UserRepositoryRemote implements UserRepository {
   Future<Result<User>> getCurrentUser() async {
     final result = await _client.fetchCurrentUser();
     return result.fold((data) {
-      final user = User.fromJson(data);
-      return Result.ok(user);
+      return Result.ok(User.fromJson(data));
     }, (error, _) => Result.error(error));
   }
 
@@ -56,6 +63,17 @@ class UserRepositoryRemote implements UserRepository {
       final user = User.fromJson(data);
       return Result.ok(user);
     }, (error, _) => Result.error(error));
+  }
+
+  @override
+  Future<Result<List<User>>> getUserNetworks(String userId) async {
+    final result = await _client.fetchUserNetworks(userId);
+    return result.fold(
+      (data) {
+        final users = data.map((user) => User.fromJson(user)).toList();
+        return Result.ok(users);
+      }, (error, stackTrace) => Result.error(error),
+    );
   }
 
   @override

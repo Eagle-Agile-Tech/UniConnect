@@ -8,21 +8,16 @@ import 'routes/api_routes.dart';
 import 'token_refresher.dart';
 
 final apiClientProvider = Provider<ApiClient>((ref) {
-  final user = ref.watch(authNotifierProvider);
 
-  if (user.value == null) {
-    throw Exception('User not logged in');
-  }
-
-  return ApiClient(client: ref.watch(dioProvider), userId: user.value!.user!.id);
+  return ApiClient(client: ref.watch(dioProvider));
 });
 
 class ApiClient {
   final Dio _client;
-  final String _userId;
+  // final String _userId;
 
-  ApiClient({Dio? client, required String userId})
-    : _userId = userId,
+  ApiClient({Dio? client})
+    :
       _client = client ?? Dio();
 
   Future<Result<List<Map<String, dynamic>>>> fetchUserPost(
@@ -42,7 +37,7 @@ class ApiClient {
 
   Future<Result<Map<String, dynamic>>> fetchCurrentUser() async {
     try {
-      final response = await _client.get('/me/');
+      final response = await _client.get('/users/profile');
       final Map<String, dynamic> data = response.data;
       return Result.ok(data);
     } on DioException catch (e) {
@@ -64,9 +59,19 @@ class ApiClient {
     }
   }
 
+  Future<Result<List<Map<String,dynamic>>>> fetchUserNetworks(String userId) async {
+    try{
+      final response = await _client.get('/networks/$userId');
+      final List data = response.data;
+      return Result.ok(data.cast<Map<String,dynamic>>());
+    } on DioException catch (e){
+      return Result.error(e);
+    }
+  }
+
   Future<Result<List<Map<String, dynamic>>>> fetchFriends() async {
     try {
-      final response = await _client.get('/getFriends/$_userId');
+      final response = await _client.get('/getFriends/');
       await Future.delayed(Duration(seconds: 3));
       final List data = response.data;
       return Result.ok(data.cast<Map<String, dynamic>>());
@@ -103,7 +108,7 @@ class ApiClient {
 
       final formData = FormData.fromMap(postData);
       final response = await _client.post(
-        '${ApiRoutes.posts}/$_userId',
+        '${ApiRoutes.posts}',
         data: formData,
       );
 
@@ -116,7 +121,7 @@ class ApiClient {
   Future<Result<dynamic>> fetchFeed() async {
     try {
       //todo: pagination
-      final response = await _client.get('/feed/$_userId');
+      final response = await _client.get('/feed/');
       return Result.ok(response.data);
     } on DioException catch (e) {
       return Result.error(e);
@@ -126,7 +131,7 @@ class ApiClient {
   Future<Result> likePost(String postId) async {
     //todo: reaction type
     try {
-      await _client.post('/likePost/$postId', data: {'userId': _userId});
+      await _client.post('/likePost/$postId',);
       return Result.ok(null);
     } on DioException catch (e) {
       return Result.error(e);
@@ -145,7 +150,6 @@ class ApiClient {
           'postId': postId,
           'comment': comment,
           'createdAt': createdAt.toIso8601String(),
-          'authorId': _userId,
         },
       );
       return Result.ok(null);
@@ -188,7 +192,7 @@ class ApiClient {
 
   Future<Result> bookmarkPost(String postId) async {
     try {
-      await _client.post('/bookmarkPost/$postId', data: {'userId': _userId});
+      await _client.post('/bookmarkPost/$postId');
       return Result.ok(null);
     } on DioException catch (e) {
       return Result.error(e);
@@ -197,7 +201,7 @@ class ApiClient {
 
   Future<Result<dynamic>> fetchBookmarks() async {
     try {
-      final response = await _client.get('/bookmarks/$_userId');
+      final response = await _client.get('/bookmarks/');
       return Result.ok(response.data);
     } on DioException catch (e) {
       return Result.error(e);
@@ -236,7 +240,6 @@ class ApiClient {
         'name': name,
         'description': description,
         'members': members,
-        'ownerId': _userId,
       };
       if (profileImage != null) {
         mapData['profileImage'] = await MultipartFile.fromFile(
@@ -246,7 +249,7 @@ class ApiClient {
       }
       final formData = FormData.fromMap(mapData);
       final response = await _client.post(
-        '/createCommunity/$_userId',
+        '/createCommunity',
         data: formData,
       );
       // The response is expected to include id.
@@ -289,6 +292,30 @@ class ApiClient {
     } on DioException catch (e) {
       return Result.error(e);
     } catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<List<Map<String,dynamic>>>> fetchTopCommunities(
+      ) async {
+    try {
+      final response = await _client.get('/topCommunities');
+      final List data = response.data;
+      return Result.ok(data.cast<Map<String, dynamic>>());
+    } on DioException catch (e) {
+      return Result.error(e);
+    } catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  // Course
+  Future<Result<List<Map<String,dynamic>>>> fetchCourses(String id) async {
+    try{
+      final response = await _client.get('/courses/$id');
+      final data = response.data as List;
+      return Result.ok(data.cast<Map<String, dynamic>>());
+    } on DioException catch(e){
       return Result.error(e);
     }
   }

@@ -17,15 +17,17 @@ abstract class User with _$User{
     required String email,
     required String username,
     required String university,
+    required int networkCount,
     String? bio,
     String? profilePicture,
     required UserRole role,
     Student? student,
     Expert? expert,
+    @Default(false) bool areWe
 }) = _User;
 
   String get fullName => '$firstName $lastName';
-  bool get isExpert => role == UserRole.expert;
+  bool get isExpert => role == UserRole.EXPERT;
 
   factory User.fromJson(Map<String,dynamic> json) => _$UserFromJson(json);
 }
