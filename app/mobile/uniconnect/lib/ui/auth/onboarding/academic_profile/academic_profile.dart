@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:uniconnect/config/dummy_data.dart';
 import 'package:uniconnect/routing/routes.dart';
-import 'package:uniconnect/ui/core/common/styles/spacing_style.dart';
 import 'package:uniconnect/ui/core/common/widgets/app_bar.dart';
 import 'package:uniconnect/utils/validator.dart';
 

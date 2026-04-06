@@ -52,7 +52,6 @@ class OthersNetwork extends ConsumerWidget {
                   ref.read(selectedUserProfileProvider.notifier).state = user;
                   context.push(Routes.networks);
                 } : () {},
-                //take him to another screen : make them network,
                 child: Text(
                   user.areWe ? 'Linked' : 'Network',
                   style: TextStyle(

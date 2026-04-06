@@ -7,7 +7,6 @@ import 'package:uniconnect/data/service/api/routes/api_routes.dart';
 import 'package:uniconnect/data/service/api/token_refresher.dart';
 import '../../../utils/result.dart';
 import '../local/secure_token_storage.dart';
-import 'models/create_account/create_account_response.dart';
 
 final authApiProvider = Provider((ref) {
   final dio = ref.watch(dioProvider);

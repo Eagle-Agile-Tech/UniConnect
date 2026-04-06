@@ -3,10 +3,8 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uniconnect/data/repository/user/user_repository.dart';
 import 'package:uniconnect/domain/models/user/user.dart';
-import 'package:uniconnect/utils/enums.dart';
 import 'package:uniconnect/utils/result.dart';
 
-import '../../../domain/models/user/student/student.dart';
 import '../../service/api/api_client.dart';
 
 final userRepoProvider = Provider(

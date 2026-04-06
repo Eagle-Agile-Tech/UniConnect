@@ -4,12 +4,10 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uniconnect/config/dummy_data.dart';
 import 'package:uniconnect/domain/models/onboarding/onboarding_state.dart';
-import 'package:uniconnect/domain/models/user/student/student.dart';
 import 'package:uniconnect/domain/models/user/user.dart';
 import 'package:uniconnect/utils/result.dart';
 
 import '../../../../data/repository/auth/auth_repository_remote.dart';
-import '../../../../utils/enums.dart';
 
 final onboardingProvider =
     NotifierProvider<OnboardingViewmodel, OnboardingState>(
@@ -87,6 +85,7 @@ class OnboardingViewmodel extends Notifier<OnboardingState> {
     return result.fold(
       (data) {
         state = state.copyWith(isLoading: false, );
+        return null;
       },
       (error, stackTrace) {
         state = state.copyWith(isLoading: false, );
@@ -142,7 +141,7 @@ class OnboardingViewmodel extends Notifier<OnboardingState> {
         university: state.university,
         degree: state.degree,
         currentYear: state.currentYear,
-        expectedGraduationYear: state.expectedGraduationYear!,
+        expectedGraduationYear: state.expectedGraduationYear,
       );
       return result.fold(
         (data) {

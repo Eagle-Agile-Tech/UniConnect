@@ -3,13 +3,10 @@ import 'dart:io';
 import 'package:chat_plugin/chat_plugin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fresh_dio/fresh_dio.dart';
-import 'package:uniconnect/data/service/api/models/create_account/create_account_response.dart';
 import 'package:uniconnect/data/service/socket/chat_service.dart' as Chat;
-import 'package:uniconnect/utils/enums.dart';
 
 import 'package:uniconnect/utils/result.dart';
 
-import '../../../domain/models/user/student/student.dart';
 import '../../../domain/models/user/user.dart';
 import '../../service/api/auth_api_client.dart';
 import '../../service/api/token_refresher.dart';

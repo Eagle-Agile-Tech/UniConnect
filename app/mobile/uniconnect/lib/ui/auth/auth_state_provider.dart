@@ -47,7 +47,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         return AuthState(user: user);
       }, (_, _) => const AuthState(user: null));
 
-    } catch (e, st) {
+    } catch (e) {
       return const AuthState(user: null);
     }
   }
@@ -72,8 +72,8 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   }
 
   Future<Err?> registerStudent() async {
-    final _onborader = ref.read(onboardingProvider.notifier);
-    final result = await _onborader.completeOnboarding();
+    final onborader = ref.read(onboardingProvider.notifier);
+    final result = await onborader.completeOnboarding();
     return result.fold((user) {
       state = AsyncData(AuthState(user: user));
       return null;

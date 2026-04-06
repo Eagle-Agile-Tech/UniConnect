@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
 import 'package:uniconnect/ui/profile/view_models/course_viewmodel_provider.dart';
 import 'package:uniconnect/ui/profile/view_models/profile_viewmodel_provider.dart';

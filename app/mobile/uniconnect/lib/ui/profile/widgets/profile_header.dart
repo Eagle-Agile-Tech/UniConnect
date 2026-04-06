@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:uniconnect/utils/helper_functions.dart';
 
 import '../../../config/assets.dart';
 import '../../../domain/models/user/user.dart';
 import '../../../routing/routes.dart';
 import '../../../utils/enums.dart';
-import '../../core/theme/colors.dart';
 import '../../core/theme/dimens.dart';
 import 'my_network.dart';
 import 'others_network.dart';

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uniconnect/config/assets.dart';
-import 'package:uniconnect/ui/auth/auth_state_provider.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
 import 'package:uniconnect/ui/network/viewmodels/network_provider.dart';
 import 'package:uniconnect/ui/profile/view_models/user_provider.dart';

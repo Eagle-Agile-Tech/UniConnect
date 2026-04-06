@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uniconnect/ui/auth/auth_state_provider.dart';
 
 import '../../../utils/result.dart';
 import 'routes/api_routes.dart';
@@ -108,7 +107,7 @@ class ApiClient {
 
       final formData = FormData.fromMap(postData);
       final response = await _client.post(
-        '${ApiRoutes.posts}',
+        ApiRoutes.posts,
         data: formData,
       );
 
