@@ -35,32 +35,40 @@ class ProfileHeader extends ConsumerWidget {
                     onPressed: () => context.push(Routes.setting),
                     icon: const Icon(Icons.settings),
                   )
-                : PopupMenuButton<TextButton>(
-              //fixme: the pop menu looks terrible
-                    itemBuilder: (BuildContext context) {
-                      return [
-                        if (user.areWe)
-                          PopupMenuItem(
-                            child: TextButton(
-                              onPressed: null,
-                              child: Text('UnLink'),
-                            ),
-                          ),
+                : Row(
+              children: [
+                IconButton(
+                  onPressed: () => context.push(Routes.events(userId: user.id)),
+                  icon: const Icon(Icons.event_available_rounded),
+                ),
+                PopupMenuButton<TextButton>(
+                  //fixme: the pop menu looks terrible
+                  itemBuilder: (BuildContext context) {
+                    return [
+                      if (user.areWe)
                         PopupMenuItem(
                           child: TextButton(
                             onPressed: null,
-                            child: Text('Block'),
+                            child: Text('UnLink'),
                           ),
                         ),
-                        PopupMenuItem(
-                          child: TextButton(
-                            onPressed: null,
-                            child: Text('Report User 🚩'),
-                          ),
+                      PopupMenuItem(
+                        child: TextButton(
+                          onPressed: null,
+                          child: Text('Block'),
                         ),
-                      ];
-                    },
-                  ),
+                      ),
+                      PopupMenuItem(
+                        child: TextButton(
+                          onPressed: null,
+                          child: Text('Report User 🚩'),
+                        ),
+                      ),
+                    ];
+                  },
+                ),
+              ]
+            ),
           ],
         ),
         Padding(

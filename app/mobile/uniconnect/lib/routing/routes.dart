@@ -15,6 +15,12 @@ abstract final class Routes {
   static const String saved = '/saved';
   static const String post = '/createPost';
   static const String networks = '/network';
+  static String events({String? userId}) =>
+      userId == null ? '/events' : '/events?userId=$userId';
+  static const String eventsScreen = '/events';
+
+
+  static const String addEvent = '/addEvent';
 
   // Community
   static const String createCommunity = '/createCommunity';

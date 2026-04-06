@@ -318,4 +318,15 @@ class ApiClient {
       return Result.error(e);
     }
   }
+
+  // Events
+  Future<Result<List<Map<String, dynamic>>>> fetchEvents(String userId) async {
+    try{
+      final response = await _client.get('users/event/$userId');
+      final List data = response.data;
+      return Result.ok(data.cast<Map<String,dynamic>>());
+    } on DioException catch(e) {
+      return Result.error(e);
+    }
+  }
 }

@@ -423,6 +423,92 @@ void main() async {
 
   dioAdapter.onGet('/bookmarks/123', (server) => server.reply(200, []));
 
+  dioAdapter.onGet('users/event/123', (server) => server.reply(200, [
+    {
+      "title": "Tech Meetup Addis",
+      "description": "A meetup for developers to discuss Flutter and backend trends.",
+      "starts": "2026-04-10T09:00:00.000Z",
+      "ends": "2026-04-10T12:00:00.000Z",
+      "authorId": "user_101",
+      "eventDay": "2026-04-10T00:00:00.000Z"
+    },
+    {
+      "title": "Startup Pitch Night",
+      "description": "Local startups pitch their ideas to investors.",
+      "starts": "2026-04-12T17:00:00.000Z",
+      "ends": "2026-04-12T20:00:00.000Z",
+      "authorId": "user_102",
+      "eventDay": "2026-04-12T00:00:00.000Z"
+    },
+    {
+      "title": "UI/UX Workshop",
+      "description": "Hands-on workshop on designing modern mobile interfaces.",
+      "starts": "2026-04-15T13:00:00.000Z",
+      "ends": "2026-04-15T16:00:00.000Z",
+      "authorId": "user_103",
+      "eventDay": "2026-04-15T00:00:00.000Z"
+    },
+    {
+      "title": "Hackathon 2026",
+      "description": "24-hour coding challenge with prizes.",
+      "starts": "2026-04-20T08:00:00.000Z",
+      "ends": "2026-04-21T08:00:00.000Z",
+      "authorId": "user_104",
+      "eventDay": "2026-04-20T00:00:00.000Z"
+    },
+    {
+      "title": "AI & Machine Learning Talk",
+      "description": "Exploring practical AI applications in Africa.",
+      "starts": "2026-04-25T10:00:00.000Z",
+      "ends": "2026-04-25T12:30:00.000Z",
+      "authorId": "user_105",
+      "eventDay": "2026-04-25T00:00:00.000Z"
+    }
+  ]));
+
+  dioAdapter.onGet('users/event/u_002', (server) => server.reply(200, [
+    {
+      "title": "Tech Meetup Addis",
+      "description": "A meetup for developers to discuss Flutter and backend trends.",
+      "starts": "2026-04-10T09:00:00.000Z",
+      "ends": "2026-04-10T12:00:00.000Z",
+      "authorId": "user_101",
+      "eventDay": "2026-04-10T00:00:00.000Z"
+    },
+    {
+      "title": "Startup Pitch Night",
+      "description": "Local startups pitch their ideas to investors.",
+      "starts": "2026-04-12T17:00:00.000Z",
+      "ends": "2026-04-12T20:00:00.000Z",
+      "authorId": "user_102",
+      "eventDay": "2026-04-12T00:00:00.000Z"
+    },
+    {
+      "title": "UI/UX Workshop",
+      "description": "Hands-on workshop on designing modern mobile interfaces.",
+      "starts": "2026-04-15T13:00:00.000Z",
+      "ends": "2026-04-15T16:00:00.000Z",
+      "authorId": "user_103",
+      "eventDay": "2026-04-15T00:00:00.000Z"
+    },
+    {
+      "title": "Hackathon 2026",
+      "description": "24-hour coding challenge with prizes.",
+      "starts": "2026-04-20T08:00:00.000Z",
+      "ends": "2026-04-21T08:00:00.000Z",
+      "authorId": "user_104",
+      "eventDay": "2026-04-20T00:00:00.000Z"
+    },
+    {
+      "title": "AI & Machine Learning Talk",
+      "description": "Exploring practical AI applications in Africa.",
+      "starts": "2026-04-25T10:00:00.000Z",
+      "ends": "2026-04-25T12:30:00.000Z",
+      "authorId": "user_105",
+      "eventDay": "2026-04-25T00:00:00.000Z"
+    }
+  ]));
+
   // =========================
   // COMMUNITIES MOCKS
   // =========================

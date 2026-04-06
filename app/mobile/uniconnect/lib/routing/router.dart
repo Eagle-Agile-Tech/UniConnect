@@ -9,6 +9,7 @@ import 'package:uniconnect/ui/auth/onboarding_experts/academic_profile.dart';
 import 'package:uniconnect/ui/auth/onboarding_experts/signup/signup_screen.dart';
 import 'package:uniconnect/ui/message/message_screen.dart';
 import 'package:uniconnect/ui/post/create_post.dart';
+import 'package:uniconnect/ui/profile/widgets/event_form.dart';
 import 'package:uniconnect/ui/setting/widgets/add_course_form_screen.dart';
 import 'package:uniconnect/ui/setting/widgets/saved_screen.dart';
 import 'package:uniconnect/utils/navigation_wrapper.dart';
@@ -22,6 +23,7 @@ import '../ui/network/network_screen.dart';
 import '../ui/profile/profile_screen.dart';
 import '../ui/search/search_screen.dart';
 import '../ui/setting/setting_screen.dart';
+import '../ui/setting/widgets/events_screen.dart';
 import '../ui/setting/widgets/manage_profile.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -157,6 +159,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.networks,
         builder: (context, state) => NetworkScreen(),
+      ),
+      GoRoute(
+        path: Routes.eventsScreen,
+        builder: (context, state){
+          final id = state.uri.queryParameters['userId'];
+          return EventScreen(userId: id);
+        },
+      ),
+      GoRoute(
+        path: Routes.addEvent,
+        builder: (context, state) => EventFormPage(),
       ),
 
       // Experts
