@@ -1,13 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:uniconnect/config/assets.dart';
+import 'package:uniconnect/ui/community/view_models/community_viewmodel.dart';
+import 'package:uniconnect/utils/helper_functions.dart';
+import '../../domain/models/community/community.dart';
+import '../../routing/routes.dart';
 import '../core/theme/dimens.dart';
 
-class ExploreCommunityScreen extends StatelessWidget {
+class ExploreCommunityScreen extends ConsumerWidget {
   const ExploreCommunityScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final topCommunitiesAsync = ref.watch(communityProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -34,64 +41,79 @@ class ExploreCommunityScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const _SectionHeader(title: 'Top Communities'),
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(
-                horizontal: Dimens.defaultSpace,
-              ),
-              itemCount: 5,
-              separatorBuilder: (context, index) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                return Container(
-                  decoration: BoxDecoration(
-                    color: theme.cardColor,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.all(8),
-                    leading: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.asset(
-                        Assets.event,
-                        width: 50,
-                        height: 50,
-                        fit: BoxFit.cover,
-                      ),
+            topCommunitiesAsync.when(
+              data: (topCommunities) => ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: Dimens.defaultSpace,
+                ),
+                itemCount: 5,
+                separatorBuilder: (context, index) =>
+                    const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  Community community = topCommunities[index];
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: theme.cardColor,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
-                    title: const Text(
-                      'REtRo',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: const Text('Jimma University'),
-                    trailing: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.all(8),
+                      onTap:() => context.push(Routes.community(community.id),extra: false),
+                      leading: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: community.profilePicture != null
+                            ? Image.network(
+                                community.profilePicture!,
+                                width: 50,
+                                height: 50,
+                                fit: BoxFit.cover,
+                              )
+                            : Image.asset(
+                                Assets.community,
+                                width: 50,
+                                height: 50,
+                                fit: BoxFit.cover,
+                              ),
                       ),
-                      decoration: BoxDecoration(
-                        color: theme.primaryColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
+                      title: Text(
+                        community.communityName,
+                        style: TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      child: Text(
-                        '20.2k',
-                        style: TextStyle(
-                          color: theme.primaryColor,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
+                      subtitle: Text(community.university),
+                      trailing: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: theme.primaryColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          UCHelperFunctions.formatMembers(community.members),
+                          style: TextStyle(
+                            color: theme.primaryColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
+              error: (error, stackTrace) =>
+                  Center(child: Text(error.toString())),
+              loading: () => Center(child: CircularProgressIndicator()),
             ),
             const SizedBox(height: 24),
             const _SectionHeader(title: 'Picked for You'),
@@ -130,7 +152,7 @@ class _SectionHeader extends StatelessWidget {
               context,
             ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
-          TextButton(onPressed: () {}, child: const Text('See All')),
+          // TextButton(onPressed: () {}, child: const Text('See All')),
         ],
       ),
     );
