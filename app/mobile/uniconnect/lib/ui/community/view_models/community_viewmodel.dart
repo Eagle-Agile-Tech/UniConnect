@@ -10,13 +10,13 @@ import '../../../domain/models/community/community.dart';
 import '../../../domain/models/post/post.dart';
 import '../../../domain/models/user/user.dart';
 
-final communityProvider =
-    AsyncNotifierProvider.family<CommunityViewModel, Community, String>(
-      CommunityViewModel.new,
+final singleCommunityProvider =
+    AsyncNotifierProvider.family<SingleCommunityViewModel, Community, String>(
+      SingleCommunityViewModel.new,
     );
 
-class CommunityViewModel extends AsyncNotifier<Community> {
-  CommunityViewModel(this.id);
+class SingleCommunityViewModel extends AsyncNotifier<Community> {
+  SingleCommunityViewModel(this.id);
 
   final String id;
   late CommunityRepository _comRepo;
@@ -74,6 +74,22 @@ class CommunityMembersViewModel extends AsyncNotifier<List<User>>{
           (data) => data,
           (error, stack) =>
           Error.throwWithStackTrace(error, stack ?? StackTrace.current),
+    );
+  }
+}
+
+final communityProvider = AsyncNotifierProvider<CommunityViewModel, List<Community>>(CommunityViewModel.new);
+
+class CommunityViewModel extends AsyncNotifier<List<Community>>{
+  late final CommunityRepository _comRepo;
+  @override
+  @override
+  FutureOr<List<Community>> build() async {
+    _comRepo = ref.read(communityRepoProvider);
+    final result = await _comRepo.getTopCommunities();
+    return result.fold(
+          (data) => data,
+          (error, stackTrace) => throw error,
     );
   }
 }

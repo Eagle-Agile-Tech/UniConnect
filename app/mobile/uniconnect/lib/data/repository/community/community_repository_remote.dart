@@ -16,7 +16,7 @@ final communityRepoProvider = Provider<CommunityRepositoryRemote>((ref) {
 
 class CommunityRepositoryRemote implements CommunityRepository {
   const CommunityRepositoryRemote(this._client, {required String userId})
-      : _userId = userId;
+    : _userId = userId;
 
   final ApiClient _client;
   final String _userId;
@@ -41,12 +41,25 @@ class CommunityRepositoryRemote implements CommunityRepository {
   @override
   Future<Result<Community>> getCommunity(String id) async {
     final result = await _client.fetchCommunity(id);
-    return result.fold((data){
-      final community = Community.fromJson(data);
-      return Result.ok(community);
-    }, (error, stackTrace){
-      return Result.error(error,stackTrace);
-    });
+    return result.fold(
+      (data) {
+        final community = Community.fromJson(data);
+        return Result.ok(community);
+      },
+      (error, stackTrace) {
+        return Result.error(error, stackTrace);
+      },
+    );
   }
 
+  @override
+  Future<Result<List<Community>>> getTopCommunities() async {
+    final result = await _client.fetchTopCommunities();
+    return result.fold((data) {
+      List<Community> communities = data
+          .map((community) => Community.fromJson(community))
+          .toList();
+      return Result.ok(communities);
+    }, (error, stackTrace) => Result.error(error, stackTrace));
+  }
 }

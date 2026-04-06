@@ -11,4 +11,5 @@ abstract class CommunityRepository{
     File? profileImage,
   });
   Future<Result<Community>> getCommunity(String id);
+  Future<Result<List<Community>>> getTopCommunities();
 }

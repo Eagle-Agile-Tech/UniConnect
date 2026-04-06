@@ -10,8 +10,11 @@ abstract class Community with _$Community {
     required String communityName,
     required String ownerId,
     required String description,
-    required String profilePicture,
-    required List<String> members,
+    String? profilePicture,
+    required int members,
+    required String university,
+
+    @Default(false) bool isMember,
   }) = _Community;
 
   factory Community.fromJson(Map<String, dynamic> json) => _$CommunityFromJson(json);
