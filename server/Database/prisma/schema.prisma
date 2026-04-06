@@ -256,6 +256,7 @@ model UserProfile {
   profileImage   String?
   interests      String[]       @default([])
   networkCount   Int            @default(0)
+  isNetworkedBy  Boolean        @default(false)
 
   universityId   String?
   university     University?    @relation(fields: [universityId], references: [id])
