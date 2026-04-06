@@ -3,17 +3,17 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uniconnect/data/service/api/routes/api_routes.dart';
+import 'package:uniconnect/data/service/api/token_refresher.dart';
 import '../../../utils/result.dart';
 import '../local/secure_token_storage.dart';
 import 'models/create_account/create_account_response.dart';
 
 final authApiProvider = Provider((ref) {
-  return AuthApiClient();
+  final dio = ref.watch(dioProvider);
+  return AuthApiClient(client: dio);
 });
 
-// todo: integrate the baseUrl into the endpoints when using the real real backend
-
-final String baseUrl = 'http://localhost:3000/api';
 
 class AuthApiClient {
   final Dio _client;
@@ -47,38 +47,46 @@ class AuthApiClient {
     }
   }
 
-  Future<Result<Map<String,dynamic>>> verifyOtp(String email, String otp) async {
+  Future<Result<Map<String, dynamic>>> verifyOtp(
+    String email,
+    String otp,
+  ) async {
     try {
       final response = await _client.post(
-        '/verify-otp',
+        '/auth/verify-otp',
         data: {'email': email, 'otp': otp},
       );
       // { 'university': 'Jimma university' or 'university': 'general'} -> accessToken, refreshToken
       return Result.ok(response.data);
     } on DioException catch (e) {
       return Result.error(e);
-    }
-  }
-
-  Future<Result> verifyId(File front, File back) async {
-    try{
-      Map<String,dynamic> data = {};
-      data['documentFrontImage'] = await MultipartFile.fromFile(front.path, filename: front.path.split('/').last);
-      data['documentBackImage'] = await MultipartFile.fromFile(back.path, filename: back.path.split('/').last);
-      final formData = FormData.fromMap(data);
-      await _client.post('/auth/verify-id', data: formData);
-      return Result.ok('');
-    }on DioException catch(e){
+    } catch (e) {
       return Result.error(e);
     }
   }
 
-  //fixme: as the user this logics can run
+  Future<Result> verifyId(File front, File back) async {
+    try {
+      Map<String, dynamic> data = {};
+      data['documentFrontImage'] = await MultipartFile.fromFile(
+        front.path,
+        filename: front.path.split('/').last,
+      );
+      data['documentBackImage'] = await MultipartFile.fromFile(
+        back.path,
+        filename: back.path.split('/').last,
+      );
+      final formData = FormData.fromMap(data);
+      await _client.post('/auth/verify-id', data: formData);
+      return Result.ok('');
+    } on DioException catch (e) {
+      return Result.error(e);
+    }
+  }
+
   Future<Result> usernameChecker(String username) async {
     try {
-      await _client.get(
-        '/users/username/$username/available',
-      );
+      await _client.get('/users/username/$username/available');
       return Result.ok('');
     } on DioException catch (e) {
       return Result.error(e);
@@ -101,8 +109,8 @@ class AuthApiClient {
         'department': degree,
         'username': username,
         'yearOfStudy': currentYear,
-        'graduationYear': expectedGraduationYear.toIso8601String(),
-        'bio': ?bio,
+        'graduationYear': expectedGraduationYear.year,
+        'bio': bio,
         if (interests != null) 'interests': jsonEncode(interests),
       };
 
@@ -123,15 +131,14 @@ class AuthApiClient {
   }
 
   Future<Result<Map<String, dynamic>>> loginUser(
-    String username,
+    String email,
     String password,
   ) async {
     try {
       final response = await _client.post(
-        '/login/',
-        data: {'username': username, 'password': password},
+        '/auth/login',
+        data: {'email': email, 'password': password},
       );
-      // return user data
       return Result.ok(response.data);
     } on DioException catch (e) {
       return Result.error(e);
@@ -166,15 +173,18 @@ class AuthApiClient {
     String password,
   ) async {
     try {
+      // Note: Expert registration might need checking in backend
+      // Using /auth/register as a general registration point if experts register there
       final response = await _client.post(
-        '/register/expert/',
+        '/auth/register',
         data: {
-          'fistName': firstName,
+          'firstName': firstName,
           'lastName': lastName,
           'email': email,
           'university': university,
           'uniCode': uniCode,
           'password': password,
+          'role': 'expert',
         },
       );
       return Result.ok(response.data);
@@ -195,7 +205,7 @@ class AuthApiClient {
         'expertise': expertise,
         'honor': honor,
         'username': username,
-        'bio': ?bio,
+        'bio': bio,
       };
       if (profilePicture != null) {
         userData['profilePicture'] = await MultipartFile.fromFile(
@@ -204,10 +214,7 @@ class AuthApiClient {
         );
       }
       final formData = FormData.fromMap(userData);
-      final response = await _client.post(
-        '/createExpertProfile/',
-        data: formData,
-      );
+      final response = await _client.patch('/experts/profile', data: formData);
       // Response contains tokens plus profile picture url
       return Result.ok(response.data);
     } on DioException catch (e) {

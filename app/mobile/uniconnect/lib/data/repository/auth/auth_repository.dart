@@ -2,7 +2,6 @@ import 'dart:io';
 
 import '../../../domain/models/user/user.dart';
 import '../../../utils/result.dart';
-import '../../service/api/models/create_account/create_account_response.dart';
 
 abstract class AuthRepository {
   Future<bool> get isAuthenticated;
@@ -21,8 +20,7 @@ abstract class AuthRepository {
 
   Future<bool> isUsernameAvailable(String username);
 
-  Future<Result<String>> createUserProfile({
-    required String id,
+  Future<Result<User>> createUserProfile({
     required String username,
     required String university,
     required String degree,
@@ -51,4 +49,4 @@ abstract class AuthRepository {
     String? bio,
     File? profilePicture,
   );
-   }
+}
