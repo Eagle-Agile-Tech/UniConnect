@@ -61,9 +61,9 @@ class ExpertService {
     const passwordHash = await bcrypt.hash(parsed.password, 12);
     const existingUser = await prisma.user.findUnique({
       where: { email: invitation.email },
-      select: { id: true, role: true, verificationStatus: true },
+      select: { id: true, role: true },
     });
-    if (existingUser && (existingUser.verificationStatus !== 'PENDING' || existingUser.role !== 'EXPERT')) {
+    if (existingUser && existingUser.role !== 'EXPERT') {
       throw new ConflictError('Email already registered');
     }
 
@@ -75,7 +75,7 @@ class ExpertService {
             lastName: parsed.lastName,
             passwordHash,
             role: 'EXPERT',
-            verificationStatus: 'EMAIL_VERIFIED',
+            verificationStatus: 'APPROVED',
           },
           select: { id: true, role: true },
         })
@@ -86,7 +86,7 @@ class ExpertService {
             email: invitation.email,
             passwordHash,
             role: 'EXPERT',
-            verificationStatus: 'EMAIL_VERIFIED',
+            verificationStatus: 'APPROVED',
           },
           select: { id: true, role: true },
         });
@@ -226,9 +226,9 @@ class ExpertService {
 
       const existingUser = await tx.user.findUnique({
         where: { email },
-        select: { id: true, role: true, verificationStatus: true },
+        select: { id: true, role: true },
       });
-      if (existingUser && (existingUser.verificationStatus !== 'PENDING' || existingUser.role !== 'EXPERT')) {
+      if (existingUser && existingUser.role !== 'EXPERT') {
         throw new ConflictError('Email already registered');
       }
 
@@ -241,7 +241,7 @@ class ExpertService {
               lastName: parsed.lastName,
               passwordHash,
               role: 'EXPERT',
-              verificationStatus: 'EMAIL_VERIFIED',
+              verificationStatus: 'APPROVED',
             },
             select: { id: true },
           })
@@ -252,7 +252,7 @@ class ExpertService {
               email,
               passwordHash,
               role: 'EXPERT',
-              verificationStatus: 'EMAIL_VERIFIED',
+              verificationStatus: 'APPROVED',
             },
             select: { id: true },
           });
