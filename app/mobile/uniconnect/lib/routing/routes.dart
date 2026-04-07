@@ -21,6 +21,8 @@ abstract final class Routes {
 
 
   static const String addEvent = '/addEvent';
+  static const String exploreEvents = '/exploreEvents';
+  static const String exploreMentors = '/exploreMentorship';
 
   // Community
   static const String createCommunity = '/createCommunity';

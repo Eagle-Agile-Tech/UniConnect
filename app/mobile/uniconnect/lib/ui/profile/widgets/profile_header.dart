@@ -41,30 +41,32 @@ class ProfileHeader extends ConsumerWidget {
                   onPressed: () => context.push(Routes.events(userId: user.id)),
                   icon: const Icon(Icons.event_available_rounded),
                 ),
-                PopupMenuButton<TextButton>(
-                  //fixme: the pop menu looks terrible
-                  itemBuilder: (BuildContext context) {
-                    return [
-                      if (user.areWe)
-                        PopupMenuItem(
-                          child: TextButton(
-                            onPressed: null,
-                            child: Text('UnLink'),
-                          ),
-                        ),
+                PopupMenuButton(
+                  icon: Icon(Icons.more_vert),
+                  itemBuilder: (BuildContext context) => [
+                    if (user.areWe)
                       PopupMenuItem(
-                        child: TextButton(
-                          onPressed: null,
-                          child: Text('Block'),
-                        ),
+                        value: 'unlink',
+                        child: Text('Unlink'),
                       ),
-                      PopupMenuItem(
-                        child: TextButton(
-                          onPressed: null,
-                          child: Text('Report User 🚩'),
-                        ),
-                      ),
-                    ];
+                    PopupMenuItem(
+                      value: 'block',
+                      child: Text('Block'),
+                    ),
+                    PopupMenuItem(
+                      value: 'report',
+                      child: Text('Report User 🚩'),
+                    ),
+                  ],
+                  onSelected: (value) {
+                    switch (value) {
+                      case 'unlink':
+                        break;
+                      case 'block':
+                        break;
+                      case 'report':
+                        break;
+                    }
                   },
                 ),
               ]

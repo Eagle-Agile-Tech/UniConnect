@@ -46,9 +46,20 @@ class CommunityScreen extends ConsumerWidget {
                 pinned: true,
                 floating: true,
                 actions: [
-                  IconButton(
-                    icon: const Icon(Icons.more_vert),
-                    onPressed: () {},
+                  PopupMenuButton(
+                    icon: Icon(Icons.more_vert),
+                    itemBuilder: (BuildContext context) => [
+                      PopupMenuItem(value: 'post', child: Text('Create Post')),
+                      PopupMenuItem(value: 'leave', child: Text('Leave')),
+                    ],
+                    onSelected: (value) {
+                      switch (value) {
+                        case 'create':
+                          break;
+                        case 'leave':
+                          break;
+                      }
+                    },
                   ),
                 ],
               ),
@@ -60,7 +71,10 @@ class CommunityScreen extends ConsumerWidget {
                       data: (Community data) {
                         return Column(
                           children: [
-                            _buildHeaderImage(data.profilePicture, data.isMember),
+                            _buildHeaderImage(
+                              data.profilePicture,
+                              data.isMember,
+                            ),
                             const SizedBox(height: Dimens.spaceBtwItems),
                             _buildCommunityInfo(context, data),
                           ],
@@ -119,7 +133,8 @@ class CommunityScreen extends ConsumerWidget {
                         ),
                         title: Text(user[index].fullName),
                         subtitle: Text('@${user[index].username}'),
-                        trailing: communityAsync.value!.ownerId == user[index].id
+                        trailing:
+                            communityAsync.value!.ownerId == user[index].id
                             ? Container(
                                 padding: EdgeInsets.all(Dimens.sm),
                                 decoration: BoxDecoration(
@@ -184,15 +199,15 @@ class CommunityScreen extends ConsumerWidget {
           ),
         ),
         if (!isMember)
-        Positioned(
-          right: 15,
-          bottom: 0,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.purple),
-            onPressed: () {},
-            child: const Text('Join', style: TextStyle(color: Colors.white)),
+          Positioned(
+            right: 15,
+            bottom: 0,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.purple),
+              onPressed: () {},
+              child: const Text('Join', style: TextStyle(color: Colors.white)),
+            ),
           ),
-        ),
       ],
     );
   }
