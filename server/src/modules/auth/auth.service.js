@@ -304,10 +304,10 @@ class AuthService {
       throw new AuthError('Invalid OTP', 400);
     }
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { verificationStatus: 'EMAIL_VERIFIED', verificationMethod: 'UNIVERSITY_EMAIL' },
-    });
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { verificationStatus: 'APPROVED', verificationMethod: 'UNIVERSITY_EMAIL' },
+      });
     user.verificationStatus = 'EMAIL_VERIFIED';
     await redisClient.del(this.otpKey(email), this.otpAttemptsKey(email), this.otpResendKey(email));
 

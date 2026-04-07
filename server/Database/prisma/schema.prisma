@@ -23,7 +23,6 @@ enum VerificationStatus {
   PENDING
   APPROVED
   REJECTED
-  EMAIL_VERIFIED
 }
 enum InstitutionVerificationStatus {
   PENDING
@@ -252,6 +251,7 @@ model UserProfile {
   id             String         @id @default(uuid())
   userId         String         @unique
   username       String         @unique
+  fullName       String?
   bio            String?
   profileImage   String?
   interests      String[]       @default([])

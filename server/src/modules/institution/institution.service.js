@@ -101,10 +101,10 @@ class InstitutionService {
 
     const existingUser = await prisma.user.findUnique({
       where: { email },
-      select: { id: true, role: true, verificationStatus: true },
+      select: { id: true, role: true },
     });
     if (existingUser) {
-      if (existingUser.verificationStatus !== 'PENDING' || existingUser.role !== 'INSTITUTION') {
+      if (existingUser.role !== 'INSTITUTION') {
         throw new ConflictError('Email already registered. Please log in or reset your password.');
       }
 
