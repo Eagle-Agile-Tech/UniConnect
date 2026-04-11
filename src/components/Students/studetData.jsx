@@ -4,7 +4,7 @@ import AllStudents from './AllStudents';
 import Verified from './Verified';
 import Banned from './Banned';
 import Reported from './Reported';
-import UnVerified from './unVerified';
+import UnVerified from './UnVerified';
 
 export default function StudetData({ CurrentPage }) {  // 👈 Pass CurrentPage as prop
   return (

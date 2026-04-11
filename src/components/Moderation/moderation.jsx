@@ -113,7 +113,7 @@ export default function ModerationPage({ CurrentPage }) {
 
   return (
     <div className="flex-1  p-8 bg-slate-50 dark:bg-slate-900 min-h-screen">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl ">
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <ShieldAlert className="w-10 h-10 text-red-500" />
@@ -151,7 +151,7 @@ export default function ModerationPage({ CurrentPage }) {
         </div>
 
         {/* Tabs & Controls */}
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-8 gap-6">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-5 gap-6">
           <div className="flex border-b border-slate-200 dark:border-slate-700">
             {(['all', 'pending', 'approved', 'rejected'].map((tab) => (
               <button

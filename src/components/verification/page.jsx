@@ -100,9 +100,10 @@ export default function VerificationPage({ CurrentPage }) {
   };
 
   return (
-    <div className="flex-1  p-8 bg-slate-50 dark:bg-slate-900 min-h-screen">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
+    <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-b-2xl p-6 border
+         border-slate-200/50 dark:border-slate-700/50">
+      <div className="max-w-7xl ">
+        <div className="mb-5">
           <h1 className="text-4xl font-bold mb-1 text-slate-800 dark:text-white">
             Student Verifications
           </h1>
