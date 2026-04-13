@@ -25,6 +25,7 @@ const adminRoutes = require('./modules/admin/admin.route');
 const institutionRoutes = require('./modules/institution/institution.route');
 const expertRoutes = require('./modules/expert/expert.route');
 const chatRoutes = require('./modules/chat/chat.route');
+const eventRoutes = require('./modules/event/event.route');
 
 const errorHandler = require('./middlewares/errorhHandler');
 const initAdmin = require('./config/initAdmin');
@@ -66,6 +67,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/institutions', institutionRoutes);
 app.use('/api/experts', expertRoutes);
 app.use('/api/chats', chatRoutes);
+app.use('/api/events', eventRoutes);
 
 // Error handler
 app.use(errorHandler);

@@ -39,7 +39,7 @@ function buildUserResponse({
 
   const response = {
     id: normalizeString(user?.id),
-    role: normalizeString(toLowerRole(user?.role)),
+    role: normalizeString(user?.role),
     firstName: normalizeString(user?.firstName),
     lastName: normalizeString(user?.lastName),
     email: normalizeString(user?.email),
@@ -60,7 +60,7 @@ function buildUserResponse({
     typeof profile?.graduationYear === 'number' ? profile.graduationYear : null;
   
 
-  response.student = {
+  response.STUDENT = {
     degree: normalizeString(profile?.department ?? null),
     currentYear: normalizeString(currentYearValue),
     expectedGraduationYear: graduationYearValue,
@@ -75,7 +75,7 @@ function buildUserResponse({
   }
 
   if (expertProfile || user?.role === 'EXPERT') {
-    response.expert = {
+    response.EXPERT = {
       expertise: normalizeString(expertProfile?.expertise ?? null),
       honor: normalizeString(expertProfile?.honor ?? null),
     };
