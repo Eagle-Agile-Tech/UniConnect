@@ -39,7 +39,7 @@ function buildUserResponse({
 
   const response = {
     id: normalizeString(user?.id),
-    role: normalizeString(toLowerRole(user?.role)),
+    role: normalizeString(user?.role),
     firstName: normalizeString(user?.firstName),
     lastName: normalizeString(user?.lastName),
     email: normalizeString(user?.email),
@@ -58,14 +58,14 @@ function buildUserResponse({
         : null;
   const graduationYearValue =
     typeof profile?.graduationYear === 'number' ? profile.graduationYear : null;
-  
+
 
   response.student = {
     degree: normalizeString(profile?.department ?? null),
     currentYear: normalizeString(currentYearValue),
     expectedGraduationYear: graduationYearValue,
     interests: normalizeInterests(profile?.interests),
-    
+
   };
 
   if (accessToken !== undefined || refreshToken !== undefined || sessionId !== undefined) {

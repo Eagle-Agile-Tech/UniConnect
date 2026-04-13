@@ -23,7 +23,6 @@ class ChatService {
         config: ChatConfig(
           apiUrl: baseUrl,
           userId: userId,
-          token: 'token',
           enableTypingIndicators: true,
           enableReadReceipts: true,
           enableOnlineStatus: true,
@@ -62,7 +61,7 @@ class ChatService {
       },
       loadChatRoomsHandler: () async {
         try {
-          var url = "$baseUrl/chat/chat-room";
+          var url = "$baseUrl/chat";
           final response = await _client.get(url);
           if (response.statusCode == 200) {
             return response.data.map((room) => ChatRoom.fromMap(room)).toList();

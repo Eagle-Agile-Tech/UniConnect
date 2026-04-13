@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_nominatim/flutter_nominatim.dart';
+import 'package:google_places_autocomplete_text_field/google_places_autocomplete_text_field.dart';
 import 'package:intl/intl.dart';
 
 class EventFormPage extends StatefulWidget {
@@ -14,6 +16,7 @@ class _EventFormPageState extends State<EventFormPage> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _authorIdController = TextEditingController();
+  final TextEditingController _locationController = TextEditingController();
 
   DateTime? _eventDay;
   TimeOfDay? _startTime;
@@ -46,6 +49,31 @@ class _EventFormPageState extends State<EventFormPage> {
           _endTime = picked;
         }
       });
+    }
+  }
+
+  final Nominatim nominatim = Nominatim.instance;
+  List<Place> _locationSuggestions = [];
+  bool _isSearching = false;
+
+  // 2. Add this helper method for the search logic
+  void _onLocationChanged(String query) async {
+    if (query.length < 3) {
+      setState(() => _locationSuggestions = []);
+      return;
+    }
+
+    setState(() => _isSearching = true);
+
+    try {
+      final results = await nominatim.search(query);
+      setState(() {
+        _locationSuggestions = results;
+        _isSearching = false;
+      });
+    } catch (e) {
+      setState(() => _isSearching = false);
+      debugPrint("Nominatim Error: $e");
     }
   }
 
@@ -197,6 +225,67 @@ class _EventFormPageState extends State<EventFormPage> {
                     maxLines: 3,
                   ),
 
+                  TextFormField(
+                    controller: _locationController,
+                    onChanged: _onLocationChanged,
+                    decoration: InputDecoration(
+                      labelText: "Event Location",
+                      hintText: "Search places...",
+                      prefixIcon: const Icon(
+                        Icons.location_on,
+                        color: Colors.redAccent,
+                      ),
+                      suffixIcon: _isSearching
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : null,
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                  ),
+
+                  if (_locationSuggestions.isNotEmpty)
+                    Container(
+                      margin: const EdgeInsets.only(top: 4),
+                      constraints: const BoxConstraints(maxHeight: 200),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 8,
+                          ),
+                        ],
+                      ),
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: _locationSuggestions.length,
+                        itemBuilder: (context, index) {
+                          final place = _locationSuggestions[index];
+                          return ListTile(
+                            leading: const Icon(Icons.place_outlined, size: 20),
+                            title: Text(
+                              place.displayName,
+                              style: const TextStyle(fontSize: 13),
+                            ),
+                            onTap: () {
+                              setState(() {
+                                _locationController.text = place.displayName;
+                                _locationSuggestions = [];
+                              });
+                            },
+                          );
+                        },
+                      ),
+                    ),
+
                   _buildDateField(),
 
                   Row(
@@ -219,10 +308,7 @@ class _EventFormPageState extends State<EventFormPage> {
                     ],
                   ),
 
-                  _buildInput(
-                    label: "Author",
-                    controller: _authorIdController,
-                  ),
+                  _buildInput(label: "Author", controller: _authorIdController),
 
                   const SizedBox(height: 20),
 

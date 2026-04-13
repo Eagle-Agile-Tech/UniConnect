@@ -50,7 +50,8 @@ class UserRepositoryRemote implements UserRepository {
   Future<Result<User>> getCurrentUser() async {
     final result = await _client.fetchCurrentUser();
     return result.fold((data) {
-      return Result.ok(User.fromJson(data));
+      final user = User.fromJson(data);
+      return Result.ok(user);
     }, (error, _) => Result.error(error));
   }
 

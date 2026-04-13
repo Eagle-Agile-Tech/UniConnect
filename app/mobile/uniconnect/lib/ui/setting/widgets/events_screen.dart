@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:uniconnect/routing/routes.dart';
 import 'package:uniconnect/ui/auth/auth_state_provider.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
+import 'package:uniconnect/ui/events/events_provider.dart';
 import 'package:uniconnect/ui/setting/view_models/event_provider.dart';
 
 import '../../../domain/models/event/event.dart';
@@ -46,7 +47,7 @@ class EventScreen extends ConsumerWidget {
               physics: const NeverScrollableScrollPhysics(),
               itemCount: events.length,
               itemBuilder: (context, index) {
-                return _buildEventCard(events[index], context);
+                return _buildEventCard(events[index], context, ref);
               },
             );
           }, error: (error, stackTrace) => Center(child: Text(error.toString())), loading: () => Center(child: CircularProgressIndicator()),)
@@ -55,7 +56,7 @@ class EventScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEventCard(Event event, BuildContext context) {
+  Widget _buildEventCard(Event event, BuildContext context, WidgetRef ref) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -127,7 +128,10 @@ class EventScreen extends ConsumerWidget {
               ],
             ),
           ),
-          const Icon(Icons.chevron_right, color: Colors.grey),
+          IconButton(icon:Icon(Icons.chevron_right, color: Colors.grey), onPressed: (){
+            ref.read(selectedEventProvider.notifier).state = event;
+            context.push(Routes.detailEventsScreen);
+          },),
         ],
       ),
     );

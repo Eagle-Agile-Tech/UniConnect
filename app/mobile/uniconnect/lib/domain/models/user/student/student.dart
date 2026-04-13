@@ -8,7 +8,7 @@ part 'student.g.dart';
 @freezed
 abstract class Student with _$Student {
   const factory Student({
-    required String department,
+    required String degree,
     required String currentYear,
     required DateTime expectedGraduationYear,
     List<String>? interests,

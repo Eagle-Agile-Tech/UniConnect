@@ -119,7 +119,7 @@ class ProfileHeader extends ConsumerWidget {
                         const SizedBox(height: Dimens.xs),
                         Text(
                           user.role == UserRole.STUDENT
-                              ? user.student!.department
+                              ? user.student!.degree
                               : user.expert!.expertise,
                           style: Theme.of(context).textTheme.titleMedium,
                         ),

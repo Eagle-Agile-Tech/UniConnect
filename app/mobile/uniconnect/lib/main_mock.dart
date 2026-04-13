@@ -12,9 +12,7 @@ void main() async {
   final dio = Dio(BaseOptions(baseUrl: 'http://localhost:3000/api'));
   final dioAdapter = DioAdapter(dio: dio);
 
-  // =========================
-  // AUTHENTICATION MOCKS
-  // =========================
+
   dioAdapter.onPost(
     '/auth/register',
         (server) => server.reply(200, ''),
@@ -42,19 +40,27 @@ void main() async {
     '/auth/login',
         (server) =>
         server.reply(200, {
+          'accessToken': 'jka',
+          'refreshToken': 'jka',
           "id": "123",
-          'role': 'EXPERT',
-          "firstName": "Charlotte",
-          "lastName": "Anderson",
-          "email": "charlotte.a@example.com",
-          "username": "charlotte",
-          "networkCount": 0,
-          "university": "University of Edinburgh",
-          "bio": "Tech blogger.",
-          "profilePicture": "https://i.pravatar.cc/300?img=5",
-          "accessToken": 'hello',
-          "refreshToken": 'hello',
-          "expert": {'expertise': 'Psychology', 'honor': 'Professor'},
+          "firstName": "Daniel",
+          "lastName": "Tesfaye",
+          "role": "STUDENT",
+          "email": "daniel.tesfaye@example.com",
+          "username": "daniel_t",
+          "university": "Jimma University",
+          "networkCount": 101125,
+          "bio": "Passionate about mobile app development and AI.",
+          "profilePicture":
+          "https://images.unsplash.com/photo-1541698444083-023c97d3f4b6",
+          "areWe": true,
+          "student": {
+            "currentYear": "3",
+            "degree": "BSc Computer Science",
+            "expectedGraduationYear": "2027-07-10T00:00:00.000Z",
+            "interests": ["Flutter", "Machine Learning", "Open Source"],
+            "verificationStatus": "APPROVED",
+          },
         }),
     data: Matchers.any,
   );
@@ -65,7 +71,7 @@ void main() async {
     data: Matchers.any,
   );
 
-  dioAdapter.onGet(
+  dioAdapter.onPost(
     '/users/profile',
         (server) =>
         server.reply(200, {
@@ -104,7 +110,7 @@ void main() async {
           "areWe": true,
           "student": {
             "currentYear": "3",
-            "department": "BSc Computer Science",
+            "degree": "BSc Computer Science",
             "expectedGraduationYear": "2027-07-10T00:00:00.000Z",
             "interests": ["Flutter", "Machine Learning", "Open Source"],
             "verificationStatus": "APPROVED",
@@ -430,7 +436,8 @@ void main() async {
       "starts": "2026-04-10T09:00:00.000Z",
       "ends": "2026-04-10T12:00:00.000Z",
       "authorId": "user_101",
-      "eventDay": "2026-04-10T00:00:00.000Z"
+      "eventDay": "2026-04-10T00:00:00.000Z",
+      "location": "Addis Ababa University | Natural Sciences Campus"
     },
     {
       "title": "Startup Pitch Night",
@@ -438,7 +445,8 @@ void main() async {
       "starts": "2026-04-12T17:00:00.000Z",
       "ends": "2026-04-12T20:00:00.000Z",
       "authorId": "user_102",
-      "eventDay": "2026-04-12T00:00:00.000Z"
+      "eventDay": "2026-04-12T00:00:00.000Z",
+      "location": "Addis Ababa University | Natural Sciences Campus"
     },
     {
       "title": "UI/UX Workshop",
@@ -446,7 +454,8 @@ void main() async {
       "starts": "2026-04-15T13:00:00.000Z",
       "ends": "2026-04-15T16:00:00.000Z",
       "authorId": "user_103",
-      "eventDay": "2026-04-15T00:00:00.000Z"
+      "eventDay": "2026-04-15T00:00:00.000Z",
+      "location": "Addis Ababa University | Natural Sciences Campus"
     },
     {
       "title": "Hackathon 2026",
@@ -454,7 +463,9 @@ void main() async {
       "starts": "2026-04-20T08:00:00.000Z",
       "ends": "2026-04-21T08:00:00.000Z",
       "authorId": "user_104",
-      "eventDay": "2026-04-20T00:00:00.000Z"
+      "eventDay": "2026-04-20T00:00:00.000Z",
+      "location": "Addis Ababa University | Natural Sciences Campus"
+
     },
     {
       "title": "AI & Machine Learning Talk",
@@ -462,7 +473,8 @@ void main() async {
       "starts": "2026-04-25T10:00:00.000Z",
       "ends": "2026-04-25T12:30:00.000Z",
       "authorId": "user_105",
-      "eventDay": "2026-04-25T00:00:00.000Z"
+      "eventDay": "2026-04-25T00:00:00.000Z",
+      "location": "Addis Ababa University | Natural Sciences Campus"
     }
   ]));
 
@@ -473,7 +485,8 @@ void main() async {
       "starts": "2026-04-10T09:00:00.000Z",
       "ends": "2026-04-10T12:00:00.000Z",
       "authorId": "user_101",
-      "eventDay": "2026-04-10T00:00:00.000Z"
+      "eventDay": "2026-04-10T00:00:00.000Z",
+      "location": "Addis Ababa University | Natural Sciences Campus"
     },
     {
       "title": "Startup Pitch Night",
@@ -481,7 +494,8 @@ void main() async {
       "starts": "2026-04-12T17:00:00.000Z",
       "ends": "2026-04-12T20:00:00.000Z",
       "authorId": "user_102",
-      "eventDay": "2026-04-12T00:00:00.000Z"
+      "eventDay": "2026-04-12T00:00:00.000Z",
+      "location": "Addis Ababa University | Natural Sciences Campus"
     },
     {
       "title": "UI/UX Workshop",
@@ -489,7 +503,8 @@ void main() async {
       "starts": "2026-04-15T13:00:00.000Z",
       "ends": "2026-04-15T16:00:00.000Z",
       "authorId": "user_103",
-      "eventDay": "2026-04-15T00:00:00.000Z"
+      "eventDay": "2026-04-15T00:00:00.000Z",
+      "location": "Addis Ababa University | Natural Sciences Campus"
     },
     {
       "title": "Hackathon 2026",
@@ -497,7 +512,9 @@ void main() async {
       "starts": "2026-04-20T08:00:00.000Z",
       "ends": "2026-04-21T08:00:00.000Z",
       "authorId": "user_104",
-      "eventDay": "2026-04-20T00:00:00.000Z"
+      "eventDay": "2026-04-20T00:00:00.000Z",
+      "location": "Addis Ababa University | Natural Sciences Campus"
+
     },
     {
       "title": "AI & Machine Learning Talk",
@@ -505,7 +522,8 @@ void main() async {
       "starts": "2026-04-25T10:00:00.000Z",
       "ends": "2026-04-25T12:30:00.000Z",
       "authorId": "user_105",
-      "eventDay": "2026-04-25T00:00:00.000Z"
+      "eventDay": "2026-04-25T00:00:00.000Z",
+      "location": "Addis Ababa University | Natural Sciences Campus"
     }
   ]));
 
