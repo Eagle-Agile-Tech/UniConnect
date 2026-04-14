@@ -183,6 +183,7 @@ posts                Post[]
   networksA            Network[]           @relation("UserNetworkA")
   networksB            Network[]           @relation("UserNetworkB")
   originalPosts        Post[]              @relation("PostRepostAuthor")
+  events               Event[]
   auditlogs            AuditLog[]
   sessions             Session[]
 
@@ -191,6 +192,7 @@ posts                Post[]
   @@index([email])
   @@index([verificationStatus])
   messageReceipts MessageReceipt[]
+  eventRegistrations EventRegistration[]
 }
 
 model Institution {
@@ -331,6 +333,51 @@ model ExpertInvitation {
   @@index([institutionId])
 }
 
+// =========================
+// EVENTS
+// =========================
+model Event {
+  id            String   @id @default(uuid())
+  title         String
+  description   String?
+  starts        DateTime
+  ends          DateTime
+  eventDay      DateTime
+  authorId      String
+  university    String
+  location      String?
+  views         Int      @default(0)
+  registrations Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  author User @relation(fields: [authorId], references: [id])
+
+  @@index([authorId])
+  @@index([eventDay])
+  @@index([createdAt])
+  eventRegistrations EventRegistration[]
+}
+model EventView {
+  id       String @id @default(uuid())
+  eventId  String
+  userId   String
+
+  @@unique([eventId, userId])
+}
+
+model EventRegistration {
+  id          String   @id @default(uuid())
+  eventId     String
+  userId      String
+  createdAt   DateTime @default(now())
+
+  event       Event    @relation(fields: [eventId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@unique([eventId, userId])
+  @@index([userId])
+}
 // =========================
 // POSTS & COMMENTS
 // =========================
