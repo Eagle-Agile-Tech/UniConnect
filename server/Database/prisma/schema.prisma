@@ -384,6 +384,7 @@ model EventRegistration {
 model Post {
   id               String   @id @default(uuid())
   authorId         String
+  communityId      String?
   content          String
   visibility       Visibility @default(PUBLIC)
   tags             String[]   @default([])
@@ -399,6 +400,7 @@ model Post {
   updatedAt        DateTime @updatedAt
 
   author      User @relation(fields: [authorId], references: [id])
+  community   Community? @relation(fields: [communityId], references: [id])
   moderator   User? @relation("PostModeratedBy", fields: [moderatedById], references: [id])
   comments    PostComment[]
   media       Media[] @relation("MediaPost") // structured relation
@@ -415,6 +417,7 @@ model Post {
   @@index([moderationStatus])
   @@index([authorId, visibility, createdAt])
   @@index([authorId, createdAt])
+  @@index([communityId])
 }
 
 model PostComment {
@@ -505,7 +508,7 @@ model Community {
   id          String @id @default(uuid())
   name        String
   description String?
-  type        GroupType @default(PUBLIC)
+  profileImage String?
   createdById String
   isDeleted   Boolean @default(false)
   createdAt   DateTime @default(now())
@@ -513,6 +516,7 @@ model Community {
 
   createdBy   User @relation(fields: [createdById], references: [id])
   members     CommunityMember[]
+  posts       Post[]
   media       Media[] @relation("MediaCommunity") // structured relation
 }
 
@@ -521,9 +525,10 @@ model CommunityMember {
   communityId String
   userId      String
   role        GroupMemberRole @default(MEMBER)
-  status      MembershipStatus @default(PENDING)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+
 
   community   Community @relation(fields: [communityId], references: [id])
   user        User @relation(fields: [userId], references: [id])
