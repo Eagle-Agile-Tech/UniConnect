@@ -8,7 +8,7 @@ class PostCreateService {
    * Create post with media IDs (OpenAPI compliant)
    */
   async createPost(userId, data) {
-    const { content, visibility, tags, category, mediaIds } = data;
+    const { content, visibility, tags, category, mediaIds, communityId } = data;
 
     if (!content && (!mediaIds || mediaIds.length === 0)) {
       throw new Error("Post must have either content or media");
@@ -58,6 +58,7 @@ class PostCreateService {
       const createdPost = await tx.post.create({
         data: {
           authorId: userId,
+          communityId: communityId || null,
           content,
           visibility: visibility || "PUBLIC",
           tags: tags || [],
