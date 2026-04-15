@@ -14,19 +14,14 @@ const communityIdParamSchema = zod.object({
 
 const postToCommunityBaseSchema = zod.object({
   communityId: zod.string().uuid(),
-  content: zod.string().trim().max(5000).optional(),
+  content: zod.string().trim().max(5000).optional().default(""),
   visibility: zod.enum(["PUBLIC", "PRIVATE"]).default("PUBLIC"),
   tags: zod.array(zod.string().max(50)).max(10).optional().default([]),
   category: zod.string().max(100).nullable().optional(),
   mediaIds: zod.array(zod.string().uuid()).max(10).optional().default([]),
 });
 
-const postToCommunitySchema = postToCommunityBaseSchema.refine(
-  (data) => data.content || (data.mediaIds && data.mediaIds.length > 0),
-  {
-  message: "Post must have content or media",
-  },
-);
+const postToCommunitySchema = postToCommunityBaseSchema;
 
 const updatePostInCommunitySchema = postToCommunityBaseSchema.partial();
 

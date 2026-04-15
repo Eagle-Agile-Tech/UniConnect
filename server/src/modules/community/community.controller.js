@@ -41,7 +41,11 @@ class CommunityController {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
-      const result = await communityService.postToCommunity(req.body, userId);
+      const result = await communityService.postToCommunity(
+        req.body,
+        userId,
+        req.files || [],
+      );
 
       res.status(201).json({
         status: "success",
