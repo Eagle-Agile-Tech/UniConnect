@@ -86,6 +86,8 @@ enum NotificationType {
   MESSAGE 
   SYSTEM
    REPOST 
+   EVENT
+   COMMUNITY
    }
 enum NotificationReferenceType { 
   POST 
@@ -186,6 +188,10 @@ posts                Post[]
   events               Event[]
   auditlogs            AuditLog[]
   sessions             Session[]
+  // ===== Courses =====
+  coursesCreated Course[]
+  savedCourses   SavedCourse[]
+  purchases      Purchase[]
 
   
 
@@ -607,23 +613,30 @@ model MessageReceipt {
 // NOTIFICATIONS 
 // =========================
 model Notification {
-  id            String @id @default(uuid())
+  id            String   @id @default(uuid())
   recipientId   String
   actorId       String?
+  
   type          NotificationType
   referenceId   String?
   referenceType NotificationReferenceType?
-  isRead        Boolean @default(false)
+
+  title         String
+  body          String
+  data          Json?
+
+  isRead        Boolean  @default(false)
+  isDelivered   Boolean  @default(false)
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  recipient     User @relation("NotificationRecipient", fields: [recipientId], references: [id])
+  recipient     User  @relation("NotificationRecipient", fields: [recipientId], references: [id])
   actor         User? @relation("NotificationActor", fields: [actorId], references: [id])
 
-@@index([recipientId, isRead])
-@@index([recipientId, createdAt])
+  @@index([recipientId, isRead])
+  @@index([recipientId, createdAt])
 }
-
 // =========================
 // MEDIA 
 // =========================
@@ -727,4 +740,50 @@ model AuditLog {
   @@index([createdAt])
   @@index([isArchived])
   @@map("audit_logs")
+}
+
+model Course {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  videoId     String   // YouTube video ID
+  price       Float
+
+  expertId    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  expert      User     @relation(fields: [expertId], references: [id])
+  savedBy     SavedCourse[]
+  purchases   Purchase[]
+
+  @@index([expertId])
+}
+model SavedCourse {
+  id        String   @id @default(uuid())
+  userId    String
+  courseId  String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+  course    Course   @relation(fields: [courseId], references: [id])
+
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
+}
+model Purchase {
+  id        String   @id @default(uuid())
+  userId    String
+  courseId  String
+  paid      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+  course    Course   @relation(fields: [courseId], references: [id])
+
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
 }
