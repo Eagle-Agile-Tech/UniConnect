@@ -3,10 +3,43 @@ const communityController = require("./community.controller");
 const authMiddleware = require("../../middlewares/auth");
 const validateRequest = require("../../middlewares/validateRequest");
 const communitySchema = require("./community.schema");
+const upload = require("../../config/multer");
 const {
   uploadProfileImage,
   attachUploadedCommunityImage,
 } = require("../../middlewares/profileImageUpload");
+
+function normalizeCommunityPostPayload(req, _res, next) {
+  const { body } = req;
+
+  if (typeof body.tags === "string") {
+    try {
+      body.tags = JSON.parse(body.tags);
+    } catch (_err) {
+      body.tags = body.tags
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean);
+    }
+  }
+
+  if (typeof body.mediaIds === "string") {
+    try {
+      body.mediaIds = JSON.parse(body.mediaIds);
+    } catch (_err) {
+      body.mediaIds = body.mediaIds
+        .split(",")
+        .map((id) => id.trim())
+        .filter(Boolean);
+    }
+  }
+
+  if (body.category === "") {
+    body.category = null;
+  }
+
+  next();
+}
 
 router.use(authMiddleware.authenticate);
 
@@ -35,6 +68,8 @@ router.delete(
 
 router.post(
   "/posts",
+  upload.array("media", 10),
+  normalizeCommunityPostPayload,
   validateRequest(communitySchema.postToCommunitySchema),
   communityController.postToCommunity,
 );

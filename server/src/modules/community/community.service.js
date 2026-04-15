@@ -3,6 +3,9 @@ const communitySchema = require('./community.schema')
 const postCreateService =
     require("../post/services/post-create.service").default ||
     require("../post/services/post-create.service");
+const supabaseStorage =
+    require("../media/services/supabase-storage.service").default ||
+    require("../media/services/supabase-storage.service");
 const {
     BadRequestError,
     ConflictError,
@@ -43,7 +46,13 @@ const createCommunity = async (data , userId) => {
     return community;
 }
 
-const postToCommunity = async (data , userId) => {
+function resolveMediaType(mimetype) {
+    if (typeof mimetype === "string" && mimetype.startsWith("video/")) return "VIDEO";
+    if (typeof mimetype === "string" && mimetype.startsWith("image/")) return "IMAGE";
+    return "DOCUMENT";
+}
+
+const postToCommunity = async (data , userId, files = []) => {
     const { communityId } = data;
 
     if (!communityId) {
@@ -70,21 +79,71 @@ const postToCommunity = async (data , userId) => {
         throw new BadRequestError("Only admins can post");
     }
 
+    let uploadedMediaIds = [];
+    let uploadedPaths = [];
+
+    if (files.length > 0) {
+        const uploadedFiles = await supabaseStorage.uploadMultipleFiles(files, userId);
+        uploadedPaths = uploadedFiles.map((file) => file.path).filter(Boolean);
+
+        const createdMedia = await prisma.$transaction(
+            uploadedFiles.map((uploadedFile, index) =>
+                prisma.media.create({
+                    data: {
+                        uploaderId: userId,
+                        communityId,
+                        fileUrl: uploadedFile.url,
+                        fileType: resolveMediaType(files[index]?.mimetype),
+                    },
+                    select: { id: true },
+                }),
+            ),
+        );
+
+        uploadedMediaIds = createdMedia.map((media) => media.id);
+    }
+
     const postPayload = {
         content: data.content,
         visibility: data.visibility,
         tags: data.tags,
         category: data.category,
-        mediaIds: data.mediaIds,
+        mediaIds: [...(data.mediaIds || []), ...uploadedMediaIds],
         communityId,
     };
 
-    const { post, moderationResult } = await postCreateService.createPost(
-        userId,
-        postPayload,
-    );
+    if (postPayload.mediaIds.length > 10) {
+        throw new BadRequestError("A post can have up to 10 media files");
+    }
 
-    return { post, moderationResult };
+    try {
+        const { post, moderationResult } = await postCreateService.createPost(
+            userId,
+            postPayload,
+        );
+
+        return { post, moderationResult };
+    } catch (error) {
+        if (uploadedMediaIds.length > 0) {
+            await prisma.media.deleteMany({
+                where: { id: { in: uploadedMediaIds }, postId: null },
+            });
+        }
+
+        if (uploadedPaths.length > 0) {
+            await Promise.all(
+                uploadedPaths.map(async (path) => {
+                    try {
+                        await supabaseStorage.deleteFile(path);
+                    } catch (_cleanupError) {
+                        // Best-effort cleanup.
+                    }
+                }),
+            );
+        }
+
+        throw error;
+    }
 }
 
 const updateCommunity = async (communityId, data, userId) => {
