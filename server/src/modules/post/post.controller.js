@@ -4,6 +4,9 @@ const postCreateService =
   require("./services/post-create.service");
 const postFeedService = require("./services/post-feed.service");
 const postCacheService = require("./services/post-cache.service");
+const {
+  interactionService,
+} = require("../ai-recommendation-service/interaction.service");
 
 class PostController {
   // ===== CREATE =====
@@ -107,7 +110,15 @@ class PostController {
       const userId = req.user?.id;
 
       const cachedPost = await postCacheService.getCachedPost(postId);
-      if (cachedPost) return res.json({ data: cachedPost });
+      if (cachedPost) {
+        if (userId) {
+          await interactionService.logPostView(userId, postId, {
+            source: "post_detail",
+            cached: true,
+          });
+        }
+        return res.json({ data: cachedPost });
+      }
 
       const post = await postFeedService.getPostById(postId, userId);
       if (!post)
@@ -116,6 +127,12 @@ class PostController {
           .json({ error: "Post not found", code: "ERR_NOT_FOUND" });
 
       await postCacheService.cachePost(postId, post);
+      if (userId) {
+        await interactionService.logPostView(userId, postId, {
+          source: "post_detail",
+          cached: false,
+        });
+      }
       res.json({ data: post });
     } catch (error) {
       next(error);

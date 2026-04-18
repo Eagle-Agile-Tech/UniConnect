@@ -6,6 +6,7 @@ const postCreateService =
 const supabaseStorage =
     require("../media/services/supabase-storage.service").default ||
     require("../media/services/supabase-storage.service");
+const notificationService = require('../notification/notification.service');
 const {
     BadRequestError,
     ConflictError,
@@ -290,6 +291,24 @@ const addCommunityMember = async (data, userId) => {
             role: role || "MEMBER",
         },
     });
+
+    if (targetUserId !== userId) {
+        await notificationService.createAndSendNotification({
+            recipientId: targetUserId,
+            actorId: userId,
+            type: 'COMMUNITY',
+            referenceId: communityId,
+            referenceType: 'COMMUNITY',
+            title: 'Added to community',
+            body: `You've been added to ${community.name}`,
+            data: {
+                communityId,
+                role: role || 'MEMBER',
+            },
+            io: null,
+            onlineUsers: null,
+        });
+    }
 
     return member;
 };

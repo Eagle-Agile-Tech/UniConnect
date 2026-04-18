@@ -2,7 +2,10 @@
 const prisma = require("../../../lib/prisma");
 const likeRepository = require("../repositories/like.repository");
 const engagementCache = require("./engagement-cache.service");
-const notificationHelper = require("../utils/notification.helper");
+const notificationService = require("../../notification/notification.service");
+const {
+  interactionService,
+} = require("../../ai-recommendation-service/interaction.service");
 
 class LikeService {
   /**
@@ -33,14 +36,32 @@ class LikeService {
         // Like
         const like = await likeRepository.createLike(userId, postId, type);
 
+        await interactionService.logPostLike(
+          userId,
+          postId,
+          {
+            reactionType: type,
+            source: "post_like_toggle",
+          },
+          tx,
+        );
+
         // Create notification for post author (if not self-like)
         if (post.authorId !== userId) {
-          await notificationHelper.createNotification({
+          await notificationService.createAndSendNotification({
             recipientId: post.authorId,
             actorId: userId,
             type: "REACTION",
             referenceId: postId,
             referenceType: "POST",
+            title: "New reaction",
+            body: `${type.toLowerCase()}d your post`,
+            data: {
+              postId,
+              reactionType: type,
+            },
+            io: null,
+            onlineUsers: null,
             tx,
           });
         }

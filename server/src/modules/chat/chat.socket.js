@@ -2,6 +2,7 @@ const zod = require('zod');
 const prisma = require('../../lib/prisma');
 const redisClient = require('../../config/redis');
 const chatService = require('./chat.service');
+const notificationService = require('../notification/notification.service');
 const {
   createSendMessageSchema,
   deleteMessageSchema,
@@ -275,6 +276,38 @@ function parseOrThrow(schema, payload) {
   return result.data;
 }
 
+function normalizePayloadOrThrow(payload, { allowMessageAlias = false } = {}) {
+  let normalizedPayload = payload;
+
+  if (typeof normalizedPayload === 'string') {
+    try {
+      normalizedPayload = JSON.parse(normalizedPayload);
+    } catch (err) {
+      const parseErr = new Error('Invalid payload');
+      parseErr.code = 'BAD_REQUEST';
+      parseErr.type = 'VALIDATION';
+      parseErr.details = [{ path: '', message: 'Payload must be valid JSON' }];
+      throw parseErr;
+    }
+  }
+
+  if (
+    allowMessageAlias &&
+    normalizedPayload &&
+    typeof normalizedPayload === 'object' &&
+    normalizedPayload.message &&
+    !normalizedPayload.content
+  ) {
+    const { message, ...rest } = normalizedPayload;
+    normalizedPayload = {
+      ...rest,
+      content: message,
+    };
+  }
+
+  return normalizedPayload;
+}
+
 function logEvent(event, userId, payload) {
   console.log(`[socket] ${event}`, { userId, payload });
 }
@@ -397,15 +430,26 @@ async function notifyOfflineParticipants(chatId, senderId, message) {
 
   if (resolvedRecipients.length === 0) return;
 
-  await prisma.notification.createMany({
-    data: resolvedRecipients.map((recipientId) => ({
-      recipientId,
-      actorId: senderId,
-      type: 'MESSAGE',
-      referenceId: message.id,
-      referenceType: 'MESSAGE',
-    })),
-  });
+  await Promise.all(
+    resolvedRecipients.map((recipientId) =>
+      notificationService.createAndSendNotification({
+        recipientId,
+        actorId: senderId,
+        type: 'MESSAGE',
+        referenceId: message.id,
+        referenceType: 'MESSAGE',
+        title: 'New message',
+        body: 'You have a new chat message',
+        data: {
+          chatId,
+          messageId: message.id,
+          senderId,
+        },
+        io,
+        onlineUsers: null,
+      }),
+    ),
+  );
 }
 
 function registerChatHandlers(io, socket) {
@@ -436,7 +480,7 @@ function registerChatHandlers(io, socket) {
   socket.on('chat:join', async (payload) => {
     try {
       logEvent('chat:join', userId, payload);
-      const data = parseOrThrow(joinLeaveSchema, payload);
+      const data = parseOrThrow(joinLeaveSchema, normalizePayloadOrThrow(payload));
       await ensureParticipant(data.chatId, userId);
       socket.join(`chat:${data.chatId}`);
       socket.emit('chat:joined', { chatId: data.chatId });
@@ -475,7 +519,7 @@ function registerChatHandlers(io, socket) {
   socket.on('chat:leave', async (payload) => {
     try {
       logEvent('chat:leave', userId, payload);
-      const data = parseOrThrow(joinLeaveSchema, payload);
+      const data = parseOrThrow(joinLeaveSchema, normalizePayloadOrThrow(payload));
       socket.leave(`chat:${data.chatId}`);
       socket.emit('chat:left', { chatId: data.chatId });
       const presence = await getPresence(userId);
@@ -499,7 +543,7 @@ function registerChatHandlers(io, socket) {
         throw makeError('Typing rate limit exceeded', 'RATE_LIMITED', 'RATE_LIMIT');
       }
       logEvent('chat:typing', userId, payload);
-      const data = parseOrThrow(typingSchema, payload);
+      const data = parseOrThrow(typingSchema, normalizePayloadOrThrow(payload));
       await ensureParticipant(data.chatId, userId);
       await setTypingState(data.chatId, userId, data.isTyping);
       socket.to(`chat:${data.chatId}`).emit('chat:typing', {
@@ -518,21 +562,9 @@ function registerChatHandlers(io, socket) {
         throw makeError('Message rate limit exceeded', 'RATE_LIMITED', 'RATE_LIMIT');
       }
       logEvent('chat:send', userId, payload);
-      let normalizedPayload = payload;
-      if (typeof normalizedPayload === 'string') {
-        try {
-          normalizedPayload = JSON.parse(normalizedPayload);
-        } catch (err) {
-          const parseErr = new Error('Invalid payload');
-          parseErr.code = 'BAD_REQUEST';
-          parseErr.type = 'VALIDATION';
-          parseErr.details = [{ path: '', message: 'Payload must be valid JSON' }];
-          throw parseErr;
-        }
-      }
-      if (normalizedPayload?.message && !normalizedPayload?.content) {
-        normalizedPayload = { ...normalizedPayload, content: normalizedPayload.message };
-      }
+      const normalizedPayload = normalizePayloadOrThrow(payload, {
+        allowMessageAlias: true,
+      });
       const data = parseOrThrow(createSendMessageSchema, normalizedPayload);
       const message = await chatService.sendMessage(userId, data);
 
@@ -568,7 +600,7 @@ function registerChatHandlers(io, socket) {
   socket.on('chat:message:update', async (payload) => {
     try {
       logEvent('chat:message:update', userId, payload);
-      const data = parseOrThrow(updateMessageSchema, payload);
+      const data = parseOrThrow(updateMessageSchema, normalizePayloadOrThrow(payload));
       const message = await chatService.updateMessage(userId, data);
 
       io.to(`chat:${message.chatId}`).emit('chat:message:updated', message);
@@ -581,7 +613,7 @@ function registerChatHandlers(io, socket) {
   socket.on('chat:message:delete', async (payload) => {
     try {
       logEvent('chat:message:delete', userId, payload);
-      const data = parseOrThrow(deleteMessageSchema, payload);
+      const data = parseOrThrow(deleteMessageSchema, normalizePayloadOrThrow(payload));
       const chatId = await getChatIdForMessage(data.messageId);
       if (!chatId) throw makeError('Message not found', 'NOT_FOUND', 'NOT_FOUND');
 
@@ -601,7 +633,7 @@ function registerChatHandlers(io, socket) {
   socket.on('chat:read', async (payload) => {
     try {
       logEvent('chat:read', userId, payload);
-      const data = parseOrThrow(markAsReadSchema, payload);
+      const data = parseOrThrow(markAsReadSchema, normalizePayloadOrThrow(payload));
       await chatService.markAsRead(userId, data);
 
       socket.to(`chat:${data.chatId}`).emit('chat:read', {
@@ -622,7 +654,7 @@ function registerChatHandlers(io, socket) {
   socket.on('chat:delivered', async (payload) => {
     try {
       logEvent('chat:delivered', userId, payload);
-      const data = parseOrThrow(markAsDeliveredSchema, payload);
+      const data = parseOrThrow(markAsDeliveredSchema, normalizePayloadOrThrow(payload));
       const delivered = await chatService.markAsDelivered(userId, data);
       if (delivered.messageIds.length === 0) return;
       const deliveryPayload = {
@@ -649,7 +681,7 @@ function registerChatHandlers(io, socket) {
         throw makeError('Reaction rate limit exceeded', 'RATE_LIMITED', 'RATE_LIMIT');
       }
       logEvent('chat:reaction', userId, payload);
-      const data = parseOrThrow(reactToMessageSchema, payload);
+      const data = parseOrThrow(reactToMessageSchema, normalizePayloadOrThrow(payload));
       const chatId = await getChatIdForMessage(data.messageId);
       if (!chatId) throw makeError('Message not found', 'NOT_FOUND', 'NOT_FOUND');
 
@@ -665,7 +697,7 @@ function registerChatHandlers(io, socket) {
   socket.on('chat:history', async (payload) => {
     try {
       logEvent('chat:history', userId, payload);
-      const data = parseOrThrow(historySchema, payload);
+      const data = parseOrThrow(historySchema, normalizePayloadOrThrow(payload));
       await ensureParticipant(data.chatId, userId);
       const result = await chatService.listMessages(userId, data);
       socket.emit('chat:history', { chatId: data.chatId, ...result });
@@ -677,7 +709,7 @@ function registerChatHandlers(io, socket) {
   socket.on('chat:participants:add', async (payload) => {
     try {
       logEvent('chat:participants:add', userId, payload);
-      const data = parseOrThrow(addParticipantSchema, payload);
+      const data = parseOrThrow(addParticipantSchema, normalizePayloadOrThrow(payload));
       const chat = await chatService.addParticipant(userId, data);
       io.to(`chat:${data.chatId}`).emit('chat:participants:updated', chat);
       await emitToChatParticipants(
@@ -697,7 +729,7 @@ function registerChatHandlers(io, socket) {
   socket.on('chat:participants:remove', async (payload) => {
     try {
       logEvent('chat:participants:remove', userId, payload);
-      const data = parseOrThrow(removeParticipantSchema, payload);
+      const data = parseOrThrow(removeParticipantSchema, normalizePayloadOrThrow(payload));
       const result = await chatService.removeParticipant(userId, data);
       io.to(`chat:${data.chatId}`).emit('chat:participants:removed', {
         chatId: data.chatId,
@@ -713,6 +745,7 @@ function registerChatHandlers(io, socket) {
         chatId: data.chatId,
       });
       socket.emit('chat:participants:remove:ok', result);
+      io.to(`user:${data.userId}`).socketsLeave(`chat:${data.chatId}`);
     } catch (error) {
       emitError(socket, 'chat:participants:remove', error);
     }
@@ -721,7 +754,7 @@ function registerChatHandlers(io, socket) {
   socket.on('chat:group:update', async (payload) => {
     try {
       logEvent('chat:group:update', userId, payload);
-      const data = parseOrThrow(updateGroupChatSchema, payload);
+      const data = parseOrThrow(updateGroupChatSchema, normalizePayloadOrThrow(payload));
       const chat = await chatService.updateGroupChat(userId, data);
       io.to(`chat:${data.chatId}`).emit('chat:updated', chat);
       await emitToChatParticipants(io, data.chatId, 'chat:updated', chat);
@@ -733,7 +766,7 @@ function registerChatHandlers(io, socket) {
   socket.on('chat:presence:query', async (payload) => {
     try {
       logEvent('chat:presence:query', userId, payload);
-      const data = parseOrThrow(presenceSchema, payload);
+      const data = parseOrThrow(presenceSchema, normalizePayloadOrThrow(payload));
       if (data.chatId) {
         await ensureParticipant(data.chatId, userId);
         const participants = await prisma.chatParticipant.findMany({
@@ -765,7 +798,7 @@ function registerChatHandlers(io, socket) {
   socket.on('chat:typing:query', async (payload) => {
     try {
       logEvent('chat:typing:query', userId, payload);
-      const data = parseOrThrow(typingStateSchema, payload);
+      const data = parseOrThrow(typingStateSchema, normalizePayloadOrThrow(payload));
       await ensureParticipant(data.chatId, userId);
       const participants = await prisma.chatParticipant.findMany({
         where: { chatId: data.chatId },

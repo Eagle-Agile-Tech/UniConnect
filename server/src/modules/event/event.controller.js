@@ -167,8 +167,14 @@ class EventController {
     try {
       const page = Number(req.query.page) || 1;
       const limit = Number(req.query.limit) || 10;
+      const { search, university, eventDay, authorId } = req.query;
 
-      const events = await eventService.getAllEvents(page, limit);
+      const events = await eventService.getAllEvents(page, limit, {
+        search,
+        university,
+        eventDay,
+        authorId,
+      });
 
       res.status(200).json({
         status: "success",

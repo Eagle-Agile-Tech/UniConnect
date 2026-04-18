@@ -2,6 +2,7 @@
 import prisma from "../../../lib/prisma.js";
 import supabaseStorage from "../../media/services/supabase-storage.service.js";
 import aiModerationService from "../../ai/ai-moderation.service.js";
+import notificationService from "../../notification/notification.service.js";
 
 class PostCreateService {
   /**
@@ -112,6 +113,10 @@ class PostCreateService {
       return completePost;
     });
 
+    if (initialModerationStatus === "APPROVED") {
+      await this.notifyNetworkedUsers(userId, post);
+    }
+
     // Perform moderation (synchronous)
     if (shouldModerate) {
       moderationResult = await aiModerationService.enqueuePostModeration({
@@ -143,6 +148,53 @@ class PostCreateService {
     }
 
     return { post, moderationResult };
+  }
+
+  async notifyNetworkedUsers(userId, post) {
+    const connections = await prisma.network.findMany({
+      where: {
+        status: "CONNECTED",
+        OR: [{ userAId: userId }, { userBId: userId }],
+      },
+      select: { userAId: true, userBId: true },
+    });
+
+    const recipientIds = [...new Set(
+      connections
+        .map((connection) =>
+          connection.userAId === userId ? connection.userBId : connection.userAId,
+        )
+        .filter(Boolean),
+    )];
+
+    if (recipientIds.length === 0) {
+      return;
+    }
+
+    const title = `${post.author?.profile?.username || post.author?.firstName || 'Someone'} posted a new update`;
+    const body = post.content
+      ? post.content.slice(0, 120)
+      : 'A network connection shared a new post.';
+
+    await Promise.all(
+      recipientIds.map((recipientId) =>
+        notificationService.createAndSendNotification({
+          recipientId,
+          actorId: userId,
+          type: 'SYSTEM',
+          referenceId: post.id,
+          referenceType: 'POST',
+          title,
+          body,
+          data: {
+            postId: post.id,
+            authorId: userId,
+          },
+          io: null,
+          onlineUsers: null,
+        }),
+      ),
+    );
   }
 
   /**
@@ -240,6 +292,10 @@ class PostCreateService {
 
       return completePost;
     });
+
+    if (initialModerationStatus === "APPROVED") {
+      await this.notifyNetworkedUsers(userId, post);
+    }
 
     if (shouldModerate) {
       moderationResult = await aiModerationService.enqueuePostModeration({

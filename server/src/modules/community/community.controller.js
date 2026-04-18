@@ -11,7 +11,7 @@ class CommunityController {
   async createCommunity(req, res, next) {
     let userId;
     try {
-      userId = req.user?.id;
+      userId = req.user?.sub || req.user?.id;
       if (!userId) {
         return res.status(401).json({ message: "Unauthorized" });
       }
@@ -36,7 +36,7 @@ class CommunityController {
   async postToCommunity(req, res, next) {
     let userId;
     try {
-      userId = req.user?.id;
+      userId = req.user?.sub || req.user?.id;
       if (!userId) {
         return res.status(401).json({ message: "Unauthorized" });
       }
@@ -65,7 +65,7 @@ class CommunityController {
   async addCommunityMember(req, res, next) {
     let userId;
     try {
-      userId = req.user?.id;
+      userId = req.user?.sub || req.user?.id;
       if (!userId) {
         return res.status(401).json({ message: "Unauthorized" });
       }
@@ -91,7 +91,7 @@ class CommunityController {
   async updateCommunity(req, res, next) {
     let userId;
     try {
-      userId = req.user?.id;
+      userId = req.user?.sub || req.user?.id;
       if (!userId) {
         return res.status(401).json({ message: "Unauthorized" });
       }
@@ -120,7 +120,7 @@ class CommunityController {
   async deleteCommunity(req, res, next) {
     let userId;
     try {
-      userId = req.user?.id;
+      userId = req.user?.sub || req.user?.id;
       if (!userId) {
         return res.status(401).json({ message: "Unauthorized" });
       }
@@ -148,7 +148,7 @@ class CommunityController {
   async leaveCommunity(req, res, next) {
     let userId;
     try {
-      userId = req.user?.id;
+      userId = req.user?.sub || req.user?.id;
       if (!userId) {
         return res.status(401).json({ message: "Unauthorized" });
       }

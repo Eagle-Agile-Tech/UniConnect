@@ -95,6 +95,7 @@ enum NotificationReferenceType {
   USER 
   MESSAGE 
   COMMUNITY 
+  EVENT
   }
 enum MediaType { 
   IMAGE 
@@ -150,6 +151,7 @@ model User {
 
   verificationStatus VerificationStatus  @default(PENDING)
   verificationMethod VerificationMethod?
+  fcmToken           String?
   
 
   isDeleted          Boolean             @default(false)
@@ -199,6 +201,8 @@ posts                Post[]
   @@index([verificationStatus])
   messageReceipts MessageReceipt[]
   eventRegistrations EventRegistration[]
+  userInteractions UserInteraction[]
+  userProfileMLs UserProfileML[]
 }
 
 model Institution {
@@ -786,4 +790,52 @@ model Purchase {
   @@unique([userId, courseId])
   @@index([userId])
   @@index([courseId])
+}
+
+model UserInteraction {
+  id              String   @id @default(uuid())
+
+  userId          String
+  targetType      String   // POST, EVENT, USER, COURSE
+  targetId        String
+
+  interactionType String   // VIEW, LIKE, COMMENT, SHARE, CLICK, SAVE
+  value           Float    @default(1.0)
+
+  metadata        Json?
+  createdAt       DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([targetType, targetId])
+  @@index([interactionType])
+}
+
+model UserProfileML {
+  userId String @id
+
+  interests           String[]
+  skills              String[]
+  preferredCategories String[]
+
+  embedding Unsupported("vector(1536)")?
+
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+
+model ContentEmbedding {
+  id String @id @default(uuid())
+
+  contentType String   // POST, EVENT, COURSE
+  contentId   String
+
+  embedding Unsupported("vector(1536)")?
+
+  createdAt DateTime @default(now())
+
+  @@index([contentType, contentId])
 }

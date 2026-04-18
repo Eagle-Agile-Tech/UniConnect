@@ -1,6 +1,6 @@
 // server/src/modules/engagement/engagement.routes.js
 const router = require("express").Router();
-const { authenticate } = require("../../middlewares/auth");
+const authenticate = require("../../middlewares/authMiddleware");
 
 // Import controllers
 const likeController = require("./controllers/like.controller");

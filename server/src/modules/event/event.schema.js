@@ -61,6 +61,7 @@ const updateEventSchema = zod.object({
 });
 
 const getEventsQuerySchema = zod.object({
+  search: zod.string().trim().min(1).max(100).optional(),
   university: zod.string().optional(),
   eventDay: zDate.optional(),
   authorId: zod.string().optional(),

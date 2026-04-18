@@ -1,5 +1,5 @@
 -- AlterEnum
-ALTER TYPE "NotificationType" ADD VALUE 'REPOST';
+ALTER TYPE "NotificationType" ADD VALUE IF NOT EXISTS 'REPOST';
 
 -- DropIndex
 DROP INDEX "Post_visibility_moderationStatus_createdAt_idx";

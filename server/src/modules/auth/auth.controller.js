@@ -141,7 +141,7 @@ class AuthController {
   async googleLogin(req, res, next) {
     try {
 
-      const { idToken } = req.body;
+      const { idToken, fcmToken } = req.body;
 
       const result = await authService.googleAuth(
         idToken,
@@ -149,7 +149,8 @@ class AuthController {
           ip: req.ip,
           userAgent: req.headers["user-agent"],
           device: req.headers['sec-ch-ua-platform'] || "Unknown"
-        }
+        },
+        fcmToken
       );
 
       res.status(200).json(result);
