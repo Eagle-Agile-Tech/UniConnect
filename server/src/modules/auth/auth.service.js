@@ -29,6 +29,12 @@ class AuthService {
     return email.trim().toLowerCase();
   }
 
+  normalizeFcmToken(token) {
+    if (typeof token !== 'string') return null;
+    const normalized = token.trim();
+    return normalized.length > 0 ? normalized : null;
+  }
+
 
   hashToken(token) {
     return crypto.createHash('sha256').update(token).digest('hex');
@@ -211,6 +217,7 @@ class AuthService {
   // ==========================
   async register(data) {
     const email = this.normalizeEmail(data.email);
+    const fcmToken = this.normalizeFcmToken(data.fcmToken);
 
     const existingUser = await prisma.user.findUnique({
       where: { email },
@@ -229,6 +236,7 @@ class AuthService {
           firstName: data.firstName,
           lastName: data.lastName,
           passwordHash: hashedPassword,
+          ...(fcmToken ? { fcmToken } : {}),
         },
       });
 
@@ -258,8 +266,7 @@ class AuthService {
         passwordHash: hashedPassword,
         role: 'STUDENT',
         verificationStatus: 'PENDING',
-        
-        
+        ...(fcmToken ? { fcmToken } : {}),
       },
     });
 
@@ -560,12 +567,13 @@ const university = detectedUniversity?.name || 'general';
   // ==========================
   // GOOGLE AUTH
   // ==========================
-  async googleAuth(idToken, deviceInfo) {
+  async googleAuth(idToken, deviceInfo, rawFcmToken) {
     let googleUser;
     try { googleUser = await verifyGoogleToken(idToken); } catch { throw new AuthError('Invalid Google ID token'); }
     if (!googleUser.emailVerified) throw new AuthError('Google email not verified');
 
     const email = this.normalizeEmail(googleUser.email);
+    const fcmToken = this.normalizeFcmToken(rawFcmToken);
     const university = this.detectUniversity(email);
     if (!university) throw new AuthError('Only university emails allowed for Google login', 403);
 
@@ -583,6 +591,7 @@ const university = detectedUniversity?.name || 'general';
             googleId: googleUser.googleId,
             verificationStatus: 'EMAIL_VERIFIED',
             verificationMethod: 'UNIVERSITY_EMAIL',
+            ...(fcmToken ? { fcmToken } : {}),
           },
         });
 
@@ -606,7 +615,18 @@ const university = detectedUniversity?.name || 'general';
     if (user.googleId && user.googleId !== googleUser.googleId) throw new AuthError('Google account does not match this user', 403);
 
     if (!user.googleId) {
-      user = await prisma.user.update({ where: { id: user.id }, data: { googleId: googleUser.googleId } });
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          googleId: googleUser.googleId,
+          ...(fcmToken ? { fcmToken } : {}),
+        },
+      });
+    } else if (fcmToken && user.fcmToken !== fcmToken) {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { fcmToken },
+      });
     }
 
     const sessionId = crypto.randomUUID();

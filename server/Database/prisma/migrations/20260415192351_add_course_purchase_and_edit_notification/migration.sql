@@ -48,23 +48,23 @@ CREATE TABLE IF NOT EXISTS "Purchase" (
 );
 
 ALTER TABLE "Course"
-  ADD CONSTRAINT IF NOT EXISTS "Course_expertId_fkey"
+  ADD CONSTRAINT "Course_expertId_fkey"
   FOREIGN KEY ("expertId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 ALTER TABLE "SavedCourse"
-  ADD CONSTRAINT IF NOT EXISTS "SavedCourse_userId_fkey"
+  ADD CONSTRAINT "SavedCourse_userId_fkey"
   FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 ALTER TABLE "SavedCourse"
-  ADD CONSTRAINT IF NOT EXISTS "SavedCourse_courseId_fkey"
+  ADD CONSTRAINT "SavedCourse_courseId_fkey"
   FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 ALTER TABLE "Purchase"
-  ADD CONSTRAINT IF NOT EXISTS "Purchase_userId_fkey"
+  ADD CONSTRAINT "Purchase_userId_fkey"
   FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 ALTER TABLE "Purchase"
-  ADD CONSTRAINT IF NOT EXISTS "Purchase_courseId_fkey"
+  ADD CONSTRAINT "Purchase_courseId_fkey"
   FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 CREATE INDEX IF NOT EXISTS "Course_expertId_idx" ON "Course"("expertId");

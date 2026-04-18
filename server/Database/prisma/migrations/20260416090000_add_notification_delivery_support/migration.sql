@@ -1,0 +1,4 @@
+ALTER TYPE "NotificationReferenceType" ADD VALUE IF NOT EXISTS 'EVENT';
+
+ALTER TABLE "User"
+ADD COLUMN IF NOT EXISTS "fcmToken" TEXT;

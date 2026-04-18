@@ -2,8 +2,11 @@
 const prisma = require("../../../lib/prisma");
 const commentRepository = require("../repositories/comment.repository");
 const engagementCache = require("./engagement-cache.service");
-const notificationHelper = require("../utils/notification.helper");
+const notificationService = require("../../notification/notification.service");
 const aiModerationService = require("../../ai/ai-moderation.service");
+const {
+  interactionService,
+} = require("../../ai-recommendation-service/interaction.service");
 
 class CommentService {
   /**
@@ -52,14 +55,33 @@ class CommentService {
         moderationStatus,
       });
 
+      await interactionService.logPostComment(
+        userId,
+        postId,
+        {
+          commentId: comment.id,
+          parentCommentId,
+          source: "post_comment_create",
+        },
+        tx,
+      );
+
       // Create notification for post author (if not self-comment)
       if (post.authorId !== userId) {
-        await notificationHelper.createNotification({
+        await notificationService.createAndSendNotification({
           recipientId: post.authorId,
           actorId: userId,
           type: "COMMENT",
           referenceId: postId,
           referenceType: "POST",
+          title: "New comment",
+          body: "Someone commented on your post",
+          data: {
+            postId,
+            commentId: comment.id,
+          },
+          io: null,
+          onlineUsers: null,
           tx,
         });
       }

@@ -5,6 +5,7 @@ const registerSchema = zod
     firstName: zod.string().min(1, 'First name is required'),
     lastName: zod.string().min(1, 'Last name is required'),
     email: zod.string().email('Invalid email address'),
+    fcmToken: zod.string().trim().min(1, 'FCM token cannot be empty').max(4096).optional(),
     password: zod
       .string()
       .min(8, 'Password must be at least 8 characters long')
@@ -70,6 +71,7 @@ const refreshTokenSchema = zod.object({
 
 const googleLoginSchema = zod.object({
   idToken: zod.string().min(1, 'ID token is required'),
+  fcmToken: zod.string().trim().min(1, 'FCM token cannot be empty').max(4096).optional(),
 });
 
 const submitIdVerificationSchema = zod.object({

@@ -27,6 +27,8 @@ const expertRoutes = require('./modules/expert/expert.route');
 const chatRoutes = require('./modules/chat/chat.route');
 const eventRoutes = require('./modules/event/event.route');
 const communityRoutes = require('./modules/community/community.route');
+const notificationRoutes = require('./modules/notification/notification.route');
+const trainingDatasetRoutes = require('./modules/ai-recommendation-service/training-dataset.route');
 const errorHandler = require('./middlewares/errorhHandler');
 const initAdmin = require('./config/initAdmin');
 
@@ -69,6 +71,8 @@ app.use('/api/experts', expertRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/communities', communityRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/admin/recommendations', trainingDatasetRoutes);
 
 // Error handler
 app.use(errorHandler);

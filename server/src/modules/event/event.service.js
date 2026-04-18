@@ -1,6 +1,10 @@
 const prisma = require('../../lib/prisma');
-const { ForbiddenError } = require('../../errors');
+const notificationService = require('../notification/notification.service');
+const { ForbiddenError, BadRequestError, ConflictError } = require('../../errors');
 const { createEventSchema, updateEventSchema } = require('./event.schema');
+const {
+  interactionService,
+} = require("../ai-recommendation-service/interaction.service");
 
 class EventService {
   //  Utility
@@ -57,28 +61,43 @@ class EventService {
         },
       });
 
-      if (!existing) {
-        await prisma.$transaction([
-          prisma.event.update({
-            where: { id: eventId },
-            data: {
-              views: { increment: 1 },
-            },
-          }),
-          prisma.eventView.create({
-            data: { eventId, userId },
-          }),
-        ]);
-      }
-    } else {
-      // anonymous view
-      await prisma.event.update({
+     
+  if (!existing) {
+    await prisma.$transaction([
+      prisma.event.update({
         where: { id: eventId },
-        data: {
-          views: { increment: 1 },
-        },
-      });
-    }
+        data: { views: { increment: 1 } },
+      }),
+      prisma.eventView.create({
+        data: { eventId, userId },
+      }),
+    ]);
+
+    await interactionService.logEventView(userId, eventId, {
+      source: "event_view",
+      uniqueView: true,
+      viewCountSignal: true,
+    });
+  } else {
+    // 🔥 THIS WAS MISSING
+    await prisma.event.update({
+      where: { id: eventId },
+      data: { views: { increment: 1 } },
+    });
+
+    await interactionService.logEventView(userId, eventId, {
+      source: "event_view",
+      uniqueView: false,
+      viewCountSignal: true,
+    });
+  }
+} else {
+  // anonymous view
+  await prisma.event.update({
+    where: { id: eventId },
+    data: { views: { increment: 1 } },
+  });
+}
 
     return this.getEventOrThrow(eventId);
   }
@@ -142,16 +161,41 @@ class EventService {
 
   //  Get All Events
   
-  async getAllEvents(page = 1, limit = 10) {
+  async getAllEvents(page = 1, limit = 10, filters = {}) {
     const skip = (page - 1) * limit;
+
+    const where = {};
+
+    if (filters.search) {
+      const query = filters.search.trim();
+      where.OR = [
+        { title: { contains: query, mode: 'insensitive' } },
+        { description: { contains: query, mode: 'insensitive' } },
+        { university: { contains: query, mode: 'insensitive' } },
+        { location: { contains: query, mode: 'insensitive' } },
+      ];
+    }
+
+    if (filters.university) {
+      where.university = { contains: filters.university, mode: 'insensitive' };
+    }
+
+    if (filters.eventDay) {
+      where.eventDay = filters.eventDay;
+    }
+
+    if (filters.authorId) {
+      where.authorId = filters.authorId;
+    }
 
     const [events, total] = await Promise.all([
       prisma.event.findMany({
+        where,
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
       }),
-      prisma.event.count(),
+      prisma.event.count({ where }),
     ]);
 
     return {
@@ -261,7 +305,11 @@ class EventService {
   // Register for Event (Atomic + Safe)
  
   async registerForEvent(eventId, userId) {
-    await this.getEventOrThrow(eventId);
+    const event = await this.getEventOrThrow(eventId);
+
+    if (event.authorId === userId) {
+      throw new BadRequestError('Event creators cannot register for their own event');
+    }
 
     const existing = await prisma.eventRegistration.findUnique({
       where: {
@@ -273,7 +321,7 @@ class EventService {
     });
 
     if (existing) {
-      throw new Error('User already registered for this event');
+      throw new ConflictError('User already registered for this event');
     }
 
     // 🧠 transaction = no partial updates
@@ -290,6 +338,27 @@ class EventService {
         },
       }),
     ]);
+
+    await notificationService.createAndSendNotification({
+      recipientId: event.authorId,
+      actorId: userId,
+      type: 'EVENT',
+      referenceId: eventId,
+      referenceType: 'EVENT',
+      title: 'New event registration',
+      body: 'Someone registered for your event',
+      data: {
+        eventId,
+        registrationId: registration.id,
+      },
+      io: null,
+      onlineUsers: null,
+    });
+
+    await interactionService.logEventRegistration(userId, eventId, {
+      registrationId: registration.id,
+      source: 'event_registration',
+    });
 
     return registration;
   }

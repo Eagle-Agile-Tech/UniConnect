@@ -1,7 +1,7 @@
 // server/src/modules/post/post.routes.js
 const router = require("express").Router();
 const postController = require("./post.controller"); // ← NO .default here
-const authMiddleware = require("../../middlewares/auth");
+const authenticate = require("../../middlewares/authMiddleware");
 const upload = require("../../config/multer");
 
 // ===== PUBLIC ROUTES =====
@@ -13,7 +13,7 @@ router.get("/:postId/comments", postController.getComments);
 router.get("/feed/:userId", postController.getFeed);
 
 // Protected routes
-router.use(authMiddleware.authenticate);
+router.use(authenticate);
 
 // Create routes
 router.post("/", postController.createPost);

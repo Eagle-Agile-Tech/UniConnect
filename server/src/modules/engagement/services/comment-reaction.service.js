@@ -1,7 +1,10 @@
 // server/src/modules/engagement/services/comment-reaction.service.js
 const prisma = require("../../../lib/prisma");
 const engagementCache = require("./engagement-cache.service");
-const notificationHelper = require("../utils/notification.helper");
+const notificationService = require("../../notification/notification.service");
+const {
+  interactionService,
+} = require("../../ai-recommendation-service/interaction.service");
 
 class CommentReactionService {
   /**
@@ -52,18 +55,34 @@ class CommentReactionService {
           },
         });
 
+        await interactionService.logPostLike(
+          userId,
+          comment.post.id,
+          {
+            reactionType: type,
+            commentId,
+            source: "comment_reaction_toggle",
+          },
+          tx,
+        );
+
         // Create notification for comment author (if not self-reaction)
         if (comment.commenterId !== userId) {
-          await notificationHelper.createNotification({
+          await notificationService.createAndSendNotification({
             recipientId: comment.commenterId,
             actorId: userId,
             type: "REACTION",
             referenceId: comment.post.id,
             referenceType: "COMMENT",
-            metadata: {
+            title: "New comment reaction",
+            body: "Someone reacted to your comment",
+            data: {
               reactionType: type,
               commentId: comment.id,
+              postId: comment.post.id,
             },
+            io: null,
+            onlineUsers: null,
             tx,
           });
         }

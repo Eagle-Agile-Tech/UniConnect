@@ -2,6 +2,9 @@
 const prisma = require("../../../lib/prisma");
 const bookmarkRepository = require("../repositories/bookmark.repository");
 const engagementCache = require("./engagement-cache.service");
+const {
+  interactionService,
+} = require("../../ai-recommendation-service/interaction.service");
 
 class BookmarkService {
   /**
@@ -35,6 +38,15 @@ class BookmarkService {
         const bookmark = await bookmarkRepository.createBookmark(
           userId,
           postId,
+        );
+        await interactionService.logPostSave(
+          userId,
+          postId,
+          {
+            bookmarkId: bookmark.id,
+            source: "post_bookmark_toggle",
+          },
+          tx,
         );
         result = { bookmarked: true, action: "added", bookmark };
       }
