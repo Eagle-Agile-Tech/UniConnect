@@ -19,7 +19,7 @@ class SecureTokenStorage extends TokenStorage<OAuth2Token>{
     final token = jsonDecode(tokenJson);
     return OAuth2Token(
       accessToken: token['accessToken'],
-      refreshToken: token['refreshToken']
+      refreshToken: token['refreshToken'],
     );
   }
 

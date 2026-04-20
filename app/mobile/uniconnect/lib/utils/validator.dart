@@ -1,4 +1,3 @@
-import 'package:flutter/src/widgets/framework.dart';
 import 'package:uniconnect/config/dummy_data.dart';
 import 'package:uniconnect/utils/enums.dart';
 
@@ -85,7 +84,7 @@ abstract final class UCValidator {
 
   static String? validateInterest(List<InterestRecord>? interest) {
     if (interest == null || interest.isEmpty) {
-      return 'Please select an interest.';
+      return null;
     }
     if (interest.toSet().length > 5) {
       return 'You can not select up to 5  interests.';

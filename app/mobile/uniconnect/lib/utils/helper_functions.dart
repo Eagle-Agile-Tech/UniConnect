@@ -45,4 +45,24 @@ abstract final class UCHelperFunctions {
       return false;
     }
   }
+
+  static String formatMembers(int members) {
+    if (members < 1000) {
+      return '$members';
+    } else if (members < 1000000) {
+      double value = members / 1000;
+      return '${_format(value)}k';
+    } else {
+      double value = members / 1000000;
+      return '${_format(value)}m';
+    }
+  }
+
+  static String _format(double value) {
+    if (value % 1 == 0) {
+      return value.toInt().toString();
+    } else {
+      return value.toStringAsFixed(1);
+    }
+  }
 }

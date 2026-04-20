@@ -26,28 +26,36 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   late final AuthRepositoryRemote _repo;
   late final UserRepositoryRemote _userRepo;
   late final ChatService _chat;
-  late final OnboardingViewmodel _onborader;
   late final ExpertOnboardingViewModel _onBoardExpert;
+
 
   @override
   Future<AuthState> build() async {
-    _userRepo = ref.read(userRepoProvider);
-    _repo = ref.watch(authProvider);
-    final isAuth = await _repo.isAuthenticated;
-    if (!isAuth) return const AuthState(user: null);
-    _chat = ref.watch(chatServiceProvider);
-    final result = await _userRepo.getCurrentUser();
+    try {
+      _userRepo = ref.read(userRepoProvider);
+      _repo = ref.read(authProvider);
 
-    return result.fold((user) {
-      _chat.initializeChatPlugin(user.id);
-      return AuthState(user: user);
-    }, (_, _) => const AuthState(user: null));
+      final isAuth = await _repo.isAuthenticated;
+      if (!isAuth) return const AuthState(user: null);
+
+      _chat = ref.watch(chatServiceProvider);
+
+      final result = await _userRepo.getCurrentUser();
+
+      return result.fold((user) {
+        _chat.initializeChatPlugin(user.id);
+        return AuthState(user: user);
+      }, (_, _) => const AuthState(user: null));
+
+    } catch (e) {
+      return const AuthState(user: null);
+    }
   }
 
-  Future<void> login(String username, String password) async {
+  Future<void> login(String email, String password) async {
     state = const AsyncLoading();
 
-    final result = await _repo.login(username, password);
+    final result = await _repo.login(email, password);
 
     result.fold(
       (user) => state = AsyncData(AuthState(user: user)),
@@ -64,8 +72,8 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   }
 
   Future<Err?> registerStudent() async {
-    _onborader = ref.read(onboardingProvider.notifier);
-    final result = await _onborader.completeOnboarding();
+    final onborader = ref.read(onboardingProvider.notifier);
+    final result = await onborader.completeOnboarding();
     return result.fold((user) {
       state = AsyncData(AuthState(user: user));
       return null;

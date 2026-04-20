@@ -33,7 +33,7 @@ class SettingScreen extends ConsumerWidget {
                 padding: const EdgeInsets.only(top: Dimens.sm),
                 child: Text('See information about your account '),
               ),
-              onTap: () => context.push(Routes.manageProfile)
+              onTap: () => context.push(Routes.manageProfile),
             ),
             // Heading
             SizedBox(
@@ -58,30 +58,36 @@ class SettingScreen extends ConsumerWidget {
               trailing: Icon(Icons.keyboard_arrow_right_outlined),
               onTap: () => context.push(Routes.saved),
             ),
-            if(user.isExpert)
-            SizedBox(
-              width: double.infinity,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: Dimens.defaultSpace,
-                  vertical: Dimens.sm,
-                ),
-                child: Text(
-                  'Monetize',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.headlineSmall!.copyWith(color: Colors.grey),
+            ListTile(
+              leading: Icon(Icons.bookmark_border_outlined),
+              title: Text('Events'),
+              trailing: Icon(Icons.keyboard_arrow_right_outlined),
+              onTap: () => context.push(Routes.events()),
+            ),
+            if (user.isExpert)
+              SizedBox(
+                width: double.infinity,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: Dimens.defaultSpace,
+                    vertical: Dimens.sm,
+                  ),
+                  child: Text(
+                    'Monetize',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.headlineSmall!.copyWith(color: Colors.grey),
+                  ),
                 ),
               ),
-            ),
             // Activity
-            if(user.isExpert)
-            ListTile(
-              leading: Icon(Icons.school_outlined),
-              title: Text('Add Course'),
-              trailing: Icon(Icons.keyboard_arrow_right_outlined),
-              onTap: () => context.push(Routes.addCourse),
-            ),
+            if (user.isExpert)
+              ListTile(
+                leading: Icon(Icons.school_outlined),
+                title: Text('Add Course'),
+                trailing: Icon(Icons.keyboard_arrow_right_outlined),
+                onTap: () => context.push(Routes.addCourse),
+              ),
           ],
         ),
       ),

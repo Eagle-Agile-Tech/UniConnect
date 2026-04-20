@@ -9,25 +9,27 @@ import 'package:uniconnect/ui/core/theme/dimens.dart';
 
 import '../view_models/onboarding_viewmodel_provider.dart';
 
-class VerifyEmailScreen extends ConsumerWidget {
+class VerifyEmailScreen extends ConsumerStatefulWidget {
   const VerifyEmailScreen({super.key});
-
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    var otp = '';
-    final onboardingState = ref.watch(onboardingProvider);
+  ConsumerState<VerifyEmailScreen> createState() => _VerifyEmailScreen();
+}
+class _VerifyEmailScreen extends ConsumerState<VerifyEmailScreen>{
+  var otp = '';
+  @override
+  Widget build(BuildContext context) {
+    final onboard = ref.watch(onboardingProvider);
     return Scaffold(
-      appBar: UCAppBar('Verify Email', showBack: false, centerTitle: true),
+      appBar: UCAppBar('Verify Email', showBack: true, centerTitle: true),
       body: SingleChildScrollView(
         child: Padding(
           padding: UCSpacingStyle.paddingWithAppBarHeight,
           child: Column(
             children: [
               Text(
-                'Verify Your Identity',
+                'Verify Your Email',
                 style: Theme.of(context).textTheme.headlineMedium,
               ),
-              // Instead of the divider, Implement animation
               Divider(
                 thickness: 1,
                 color: Theme.of(context).primaryColor,
@@ -36,30 +38,53 @@ class VerifyEmailScreen extends ConsumerWidget {
               ),
               SizedBox(height: Dimens.spaceBtwItems),
               Text('We have sent an email with with your code to:'),
-              Text(onboardingState.email),
+              Text(onboard.email),
               SizedBox(height: Dimens.spaceBtwSections),
-              OtpForm(onOtpChanged: (otpEntered){
-                otp = otpEntered;
-              },),
+              OtpForm(
+                onOtpChanged: (otpEntered) {
+                  otp = otpEntered;
+                },
+              ),
               SizedBox(height: Dimens.spaceBtwSections),
               ElevatedButton(
-                onPressed: () async{
-                  final status = await ref.read(onboardingProvider.notifier).verifyOtp(otp);
-                  if (status != null){
-                    ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(status.toString()))
-                    );
+                onPressed: () async {
+                  if(otp.length < 4) {
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text('Invalid Otp.')));
+                    return;
+                  }
+                  final status = await ref
+                      .read(onboardingProvider.notifier)
+                      .verifyOtp(otp);
+                  if (status != null) {
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text(status.toString())));
                   } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Email Verified.'))
-                    );
-                    context.go(Routes.onboardingAcademic);
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text('Email Verified.')));
+                    final updatedState = ref.read(onboardingProvider);
+                    if (updatedState.university.toLowerCase() == 'General'.toLowerCase()) {
+                      context.go(Routes.verifyIdentity);
+                    } else {
+                      context.go(Routes.onboardingAcademic);
+                    }
                   }
                 },
                 style: ElevatedButton.styleFrom(
                   minimumSize: Size(double.infinity, 48),
+                  side: BorderSide(color: onboard.isLoading ? Colors.grey : Theme.of(context).primaryColor)
                 ),
-                child: Text('Verify'),
+                child: onboard.isLoading ? SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Theme.of(context).primaryColor,
+                  )
+                ) : Text('Verify'),
               ),
               SizedBox(height: Dimens.spaceBtwItems),
               Text.rich(

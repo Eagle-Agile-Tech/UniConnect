@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
+import 'package:uniconnect/ui/profile/view_models/course_viewmodel_provider.dart';
 import 'package:uniconnect/ui/profile/view_models/profile_viewmodel_provider.dart';
 import 'package:uniconnect/ui/profile/view_models/user_provider.dart';
 import 'package:uniconnect/ui/profile/widgets/profile_header.dart';
 
+import '../../domain/models/course/course.dart';
 import '../../domain/models/user/user.dart';
+import '../../utils/result.dart';
 import '../auth/auth_state_provider.dart';
 import '../core/common/widgets/post_card/post_card.dart';
 
@@ -37,6 +40,7 @@ class ProfileScreen extends ConsumerWidget {
         final postAsync = userId == null
             ? ref.watch(profileViewModelProvider(currentUser.id))
             : ref.watch(profileViewModelProvider(userId!));
+        final courseAsync = ref.read(courseProvider(currentUser.id));
 
         return DefaultTabController(
           length: 2,
@@ -67,7 +71,7 @@ class ProfileScreen extends ConsumerWidget {
                                   ),
                           ),
                         ),
-                        if (currentUser.isExpert)
+                        if (user.value!.isExpert)
                           SliverPersistentHeader(
                             pinned: true,
                             delegate: _HeaderDelegate(
@@ -109,7 +113,108 @@ class ProfileScreen extends ConsumerWidget {
                               child: CircularProgressIndicator(),
                             ),
                           ),
-                          Text('hello'),
+                          courseAsync.when(
+                            data: (Result<List<Course>> data) {
+                              return data.fold(
+                                (courses) => GridView.builder(
+                                  padding: EdgeInsets.all(Dimens.sm),
+                                  itemCount: courses.length,
+                                  itemBuilder: (BuildContext context, int index) {
+                                    return Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(16),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(
+                                              0.05,
+                                            ),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            courses[index].title,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+
+                                          const SizedBox(height: 8),
+
+                                          Text(
+                                            courses[index].description,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey[600],
+                                            ),
+                                          ),
+
+                                          const Spacer(),
+
+                                          Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(
+                                                "\$${courses[index].price}",
+                                                style: const TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.blue,
+                                                ),
+                                              ),
+                                              Row(
+                                                children: [
+                                                  const Icon(
+                                                    Icons.people,
+                                                    size: 14,
+                                                    color: Colors.grey,
+                                                  ),
+                                                  const SizedBox(width: 4),
+                                                  Text(
+                                                    "${courses[index].enrolled}",
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                      color: Colors.grey[700],
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                  gridDelegate:
+                                      SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 2,
+                                        crossAxisSpacing: Dimens.sm,
+                                        mainAxisSpacing: Dimens.sm,
+                                      ),
+                                ),
+                                (error, _) =>
+                                    Center(child: Text('Error: $error')),
+                              );
+                            },
+                            error: (err, stack) =>
+                                Center(child: Text('Error: $err')),
+                            loading: () => const Center(
+                              child: CircularProgressIndicator(),
+                            ),
+                          ),
                         ],
                       )
                     : postAsync.when(

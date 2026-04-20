@@ -67,12 +67,16 @@ function buildUserResponse({
       graduationYearValue = new Date(profile.graduationYear, 5, 1).toISOString();
     }
   }
+  const graduationYearValue =
+    typeof profile?.graduationYear === 'number' ? profile.graduationYear : null;
+
 
   response.STUDENT = {
     degree: normalizeString(profile?.department ?? null),
     currentYear: normalizeString(currentYearValue),
     expectedGraduationYear: graduationYearValue,
     interests: normalizeInterests(profile?.interests),
+
   };
 
   if (accessToken !== undefined || refreshToken !== undefined || sessionId !== undefined) {

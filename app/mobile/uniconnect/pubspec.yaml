@@ -24,6 +24,9 @@ dependencies:
   fresh_dio: ^0.6.0
   http_mock_adapter: ^0.6.1
   chat_plugin: ^1.0.0
+  url_launcher: ^6.3.2
+  google_places_autocomplete_text_field: ^4.0.0
+  flutter_nominatim: ^0.0.1+2
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -1,10 +1,12 @@
 import 'package:chat_plugin/chat_plugin.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uniconnect/data/service/api/token_refresher.dart';
+import 'package:uniconnect/ui/chat/viewmodels/chat_provider.dart';
 
 import '../../../ui/auth/auth_state_provider.dart';
-import '../api/auth_api_client.dart';
+import '../api/routes/api_routes.dart';
 
 final chatServiceProvider = Provider((ref) {
   final dio = ref.watch(dioProvider);
@@ -23,7 +25,6 @@ class ChatService {
         config: ChatConfig(
           apiUrl: baseUrl,
           userId: userId,
-          token: 'token',
           enableTypingIndicators: true,
           enableReadReceipts: true,
           enableOnlineStatus: true,
@@ -32,26 +33,34 @@ class ChatService {
           debugMode: true,
         ),
       );
-      await _setUpChatApiHandlers(userId, 'token');
+
+      await _setUpChatApiHandlers(userId);
       await ChatPlugin.chatService.initialize();
       await ChatPlugin.chatService.loadChatRooms();
-    } catch (e) {}
+    } catch (e) {
+      debugPrint("Chat Initialization Error: $e");
+    }
   }
 
-  Future<void> _setUpChatApiHandlers(String userId, String token) async {
+  Future<void> _setUpChatApiHandlers(String userId) async {
     final apiHandlers = ChatApiHandlers(
       loadMessagesHandler: ({page = 1, limit = 20, searchText = ""}) async {
-        final receiverId = ChatPlugin.chatService.receiverId;
-        if (receiverId.isEmpty) return [];
+        final chatId = _ref.read(activeRoomProvider.notifier).state;
+        if (chatId == null || chatId.isEmpty) return [];
         try {
-          var url =
-              "$baseUrl/chat/messages?senderId=$userId&receiverId=$receiverId&page=$page&limit=$limit";
-          if (searchText.isNotEmpty) {
-            url += '&searchText=${Uri.encodeComponent(searchText)}';
-          }
-          final response = await _client.get(url);
+          final offset = (page - 1) * limit;
+
+          final response = await _client.get(
+            "$baseUrl/chats/messages",
+            queryParameters: {
+              'chatId': chatId,
+              'offset': offset,
+              'limit': limit,
+            },
+          );
           if (response.statusCode == 200) {
-            return response.data
+            final List messages = response.data['messages'];
+            return messages
                 .map((msg) => ChatMessage.fromMap(msg, userId))
                 .toList();
           }
@@ -62,16 +71,52 @@ class ChatService {
       },
       loadChatRoomsHandler: () async {
         try {
-          var url = "$baseUrl/chat/chat-room";
-          final response = await _client.get(url);
+          final response = await _client.get("$baseUrl/chats/");
           if (response.statusCode == 200) {
-            return response.data.map((room) => ChatRoom.fromMap(room)).toList();
+            final roomsList = response.data['chats'] as List;
+            final Map<String, int> initialCounts = {};
+
+            final chatIds = <String>[];
+
+            final chatRooms = roomsList.map((room) {
+              chatIds.add(room['id']);
+
+              final participants = room['participants'] as List;
+              final otherParticipant = participants.firstWhere(
+                    (p) => p['userId'] != userId,
+                orElse: () => participants.first,
+              );
+
+              // todo: message count isn't right
+              final count = room['_count']?['messages'] ?? 0;
+              initialCounts[otherParticipant['user']['id']] = count;
+
+              //todo: messages are sent
+
+              return ChatRoom(
+                userId: otherParticipant['user']['id'],
+                username: otherParticipant['user']['name'],
+                avatarUrl: otherParticipant['user']['avatarUrl'],
+                latestMessage: room['messages']?.isNotEmpty == true
+                    ? room['messages'][0]['content']
+                    : 'No messages yet',
+                latestMessageTime: room['messages']?.isNotEmpty == true
+                    ? DateTime.parse(room['messages'][0]['createdAt'])
+                    : DateTime.now(),
+                unreadCount: room['_count']?['messages'] ?? 0,
+              );
+            }).toList();
+
+            _ref.read(chatIdProvider.notifier).state = chatIds;
+            _ref.read(unreadCountProvider.notifier).state = initialCounts;
+            return chatRooms;
           }
           return [];
         } catch (e) {
           return [];
         }
       },
+      //todo: api handler to handle users chatUsers
     );
     ChatPlugin.chatService.setApiHandlers(apiHandlers);
   }

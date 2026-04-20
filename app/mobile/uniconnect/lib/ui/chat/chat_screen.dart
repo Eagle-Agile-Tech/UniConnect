@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:uniconnect/ui/chat/widgets/group_messages.dart';
-import 'package:uniconnect/ui/chat/widgets/personal_messages.dart';
+import 'package:uniconnect/ui/chat/widgets/direct_chats.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
 
 
@@ -34,7 +34,7 @@ class ChatScreen extends StatelessWidget {
             ],
           ),
         ),
-        body: TabBarView(children: [Messages(), GroupMessages()]),
+        body: TabBarView(children: [DirectChatScreen(), GroupMessages()]),
       ),
     );
   }

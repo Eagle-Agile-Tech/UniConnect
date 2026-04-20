@@ -23,7 +23,7 @@ class CommunityScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final communityAsync = ref.watch(communityProvider(communityId));
+    final communityAsync = ref.watch(singleCommunityProvider(communityId));
     final postAsync = ref.watch(communityPostsProvider(communityId));
     final memberAsync = ref.watch(communityMembersProvider(communityId));
     return DefaultTabController(
@@ -37,7 +37,7 @@ class CommunityScreen extends ConsumerWidget {
                   icon: Icon(Icons.arrow_back),
                   onPressed: isCreated
                       ? () => context.go(Routes.home)
-                      : context.pop,
+                      : () => context.pop(),
                 ),
                 title: const Text(
                   'Community',
@@ -46,9 +46,20 @@ class CommunityScreen extends ConsumerWidget {
                 pinned: true,
                 floating: true,
                 actions: [
-                  IconButton(
-                    icon: const Icon(Icons.more_vert),
-                    onPressed: () {},
+                  PopupMenuButton(
+                    icon: Icon(Icons.more_vert),
+                    itemBuilder: (BuildContext context) => [
+                      PopupMenuItem(value: 'post', child: Text('Create Post')),
+                      PopupMenuItem(value: 'leave', child: Text('Leave')),
+                    ],
+                    onSelected: (value) {
+                      switch (value) {
+                        case 'create':
+                          break;
+                        case 'leave':
+                          break;
+                      }
+                    },
                   ),
                 ],
               ),
@@ -60,7 +71,10 @@ class CommunityScreen extends ConsumerWidget {
                       data: (Community data) {
                         return Column(
                           children: [
-                            _buildHeaderImage(data.profilePicture),
+                            _buildHeaderImage(
+                              data.profilePicture,
+                              data.isMember,
+                            ),
                             const SizedBox(height: Dimens.spaceBtwItems),
                             _buildCommunityInfo(context, data),
                           ],
@@ -119,7 +133,8 @@ class CommunityScreen extends ConsumerWidget {
                         ),
                         title: Text(user[index].fullName),
                         subtitle: Text('@${user[index].username}'),
-                        trailing: index == 0
+                        trailing:
+                            communityAsync.value!.ownerId == user[index].id
                             ? Container(
                                 padding: EdgeInsets.all(Dimens.sm),
                                 decoration: BoxDecoration(
@@ -146,7 +161,7 @@ class CommunityScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeaderImage(String? profileUrl) {
+  Widget _buildHeaderImage(String? profileUrl, bool isMember) {
     return Stack(
       children: [
         Container(
@@ -183,16 +198,16 @@ class CommunityScreen extends ConsumerWidget {
             ),
           ),
         ),
-        Positioned(
-          right: 15,
-          bottom: 0,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.purple),
-            onPressed: () {},
-            //fixme: join and joined
-            child: const Text('Join', style: TextStyle(color: Colors.white)),
+        if (!isMember)
+          Positioned(
+            right: 15,
+            bottom: 0,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.purple),
+              onPressed: () {},
+              child: const Text('Join', style: TextStyle(color: Colors.white)),
+            ),
           ),
-        ),
       ],
     );
   }
@@ -209,7 +224,7 @@ class CommunityScreen extends ConsumerWidget {
               context,
             ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
           ),
-          Text('${community.members.length} members'),
+          Text('${community.members} members'),
           const SizedBox(height: Dimens.md),
           Text(community.description),
           const SizedBox(height: Dimens.spaceBtwItems),

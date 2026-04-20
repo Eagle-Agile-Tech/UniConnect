@@ -149,13 +149,19 @@ class _SignupScreenState extends ConsumerState<ExpertSignupScreen> {
                 ElevatedButton(
                   onPressed: () async {
                     if (!_signupFormKey.currentState!.validate()) return;
-                    onboarding.updateAccount(
-                      _firstNameController.text.trim(),
-                      _lastNameController.text.trim(),
-                      _emailController.text.trim(),
-                      _passwordController.text.trim(),
+                    // onboarding.updateAccount(
+                    //   _firstNameController.text.trim(),
+                    //   _lastNameController.text.trim(),
+                    //   _emailController.text.trim(),
+                    //   _passwordController.text.trim(),
+                    // );
+                    final status = await onboarding.submitAccount(
+                        _firstNameController.text.trim(),
+                          _lastNameController.text.trim(),
+                          _emailController.text.trim(),
+                          _passwordController.text.trim(),
+                      _confirmPasswordController.text.trim()
                     );
-                    final status = await onboarding.submitAccount();
                     // Todo: make this navigation more robust by listening to the state changes
                     if (status != null) {
                       ScaffoldMessenger.of(context).showSnackBar(

@@ -2,16 +2,11 @@ import 'dart:io';
 
 import 'package:chat_plugin/chat_plugin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:fresh_dio/fresh_dio.dart';
-import 'package:uniconnect/data/service/api/models/create_account/create_account_response.dart';
 import 'package:uniconnect/data/service/socket/chat_service.dart' as Chat;
-import 'package:uniconnect/utils/enums.dart';
 
 import 'package:uniconnect/utils/result.dart';
 
-import '../../../domain/models/user/expert/expert.dart';
-import '../../../domain/models/user/student/student.dart';
 import '../../../domain/models/user/user.dart';
 import '../../service/api/auth_api_client.dart';
 import '../../service/api/token_refresher.dart';
@@ -35,30 +30,56 @@ class AuthRepositoryRemote implements AuthRepository {
   Future<bool> get isAuthenticated => _authClient.isLoggedIn();
 
   @override
-  Future<Result<CreateAccountResponse>> createUserAccount({
+  Future<Result> createUserAccount({
     required String firstName,
     required String lastName,
     required String email,
     required String password,
+    required String confirmPassword,
   }) async {
     final result = await _authClient.createUserAccount(
       firstName: firstName,
       lastName: lastName,
       email: email,
       password: password,
+      confirmPassword: confirmPassword,
     );
     return result;
   }
 
   @override
-  Future<bool> verifyOtp(String email, String otp) async {
+  Future<Result<String>> verifyOtp(String email, String otp) async {
     final result = await _authClient.verifyOtp(email, otp);
+    return result.fold(
+      (data) async {
+        final token = OAuth2Token(
+          accessToken: data['accessToken'],
+          refreshToken: data['refreshToken'],
+        );
+        await _fresh.setToken(token);
+        return Result.ok(data['university'] as String);
+      },
+      (error, stackTrace) => Result.error(error),
+    );
+  }
+
+  @override
+  Future<Result> verifyId(File front, File back) async {
+    final result = await _authClient.verifyId(front, back);
+    return result.fold(
+      (data) => Result.ok(''),
+      (error, stackTrace) => Result.error(error),
+    );
+  }
+
+  @override
+  Future<bool> isUsernameAvailable(String username) async {
+    final result = await _authClient.usernameChecker(username);
     return result.fold((data) => true, (error, stackTrace) => false);
   }
 
   @override
-  Future<Result<String>> createUserProfile({
-    required String id,
+  Future<Result<User>> createUserProfile({
     required String username,
     required String university,
     required String degree,
@@ -69,7 +90,6 @@ class AuthRepositoryRemote implements AuthRepository {
     File? profilePicture,
   }) async {
     final result = await _authClient.createUserProfile(
-      id: id,
       username: username,
       university: university,
       degree: degree,
@@ -81,15 +101,9 @@ class AuthRepositoryRemote implements AuthRepository {
     );
     return result.fold(
       (data) async {
-        final token = OAuth2Token(
-          accessToken: data['accessToken'],
-          refreshToken: data['refreshToken'],
-        );
-        await _fresh.setToken(token);
-        // todo: token
-        await _chatService.initializeChatPlugin(id);
-        await Future.delayed(Duration(milliseconds: 500));
-        return Result.ok(data['profilePicture']);
+        await _chatService.initializeChatPlugin(data['id']);
+        await Future.delayed(const Duration(milliseconds: 500));
+        return Result.ok(User.fromJson(data));
       },
       (error, _) {
         return Result.error(error);
@@ -98,14 +112,8 @@ class AuthRepositoryRemote implements AuthRepository {
   }
 
   @override
-  Future<bool> isUsernameAvailable(String username) async {
-    final result = await _authClient.usernameChecker(username);
-    return result.fold((data) => true, (error, stackTrace) => false);
-  }
-
-  @override
-  Future<Result<User>> login(String username, String password) async {
-    final result = await _authClient.loginUser(username, password);
+  Future<Result<User>> login(String email, String password) async {
+    final result = await _authClient.loginUser(email, password);
     return result.fold(
       (data) async {
         final token = OAuth2Token(
@@ -113,38 +121,12 @@ class AuthRepositoryRemote implements AuthRepository {
           refreshToken: data['refreshToken'],
         );
         await _fresh.setToken(token);
-        final role = UserRole.values.firstWhere((e) => e.name == data['role']);
-        final user = switch (role) {
-          UserRole.student => User(
-            id: data['id'],
-            firstName: data['firstName'],
-            lastName: data['lastName'],
-            email: data['email'],
-            username: data['username'],
-            university: data['university'],
-            role: role,
-            bio: data['bio'],
-            profilePicture: data['profilePicture'],
-            student: Student(
-              degree: data['degree'],
-              currentYear: data['currentYear'],
-              expectedGraduationYear: DateTime.parse(
-                data['expectedGraduationYear'],
-              ),
-              interests: (data['interests'] as List)
-                  .map((e) => e as String)
-                  .toList(),
-              isVerified: bool.parse(data['isVerified']),
-            ),
-          ),
 
-          UserRole.expert => User.fromJson(data),
-        };
         // todo: token
         await _chatService.initializeChatPlugin(data['id']);
-        await Future.delayed(Duration(milliseconds: 500));
+        await Future.delayed(const Duration(milliseconds: 500));
 
-        return Result.ok(user);
+        return Result.ok(User.fromJson(data));
       },
       (error, _) {
         return Result.error(error);
@@ -179,7 +161,7 @@ class AuthRepositoryRemote implements AuthRepository {
       password,
     );
     return result.fold(
-      (data) => Result.ok(data['userId']),
+      (data) => Result.ok(data['userId'] as String),
       (error, stackTrace) => Result.error(error),
     );
   }
@@ -208,8 +190,8 @@ class AuthRepositoryRemote implements AuthRepository {
         await _fresh.setToken(token);
         // todo: token
         await _chatService.initializeChatPlugin(data['id']);
-        await Future.delayed(Duration(milliseconds: 500));
-        return Result.ok(data['profilePicture']);
+        await Future.delayed(const Duration(milliseconds: 500));
+        return Result.ok(data['profilePicture'] as String);
       },
       (error, _) {
         return Result.error(error);

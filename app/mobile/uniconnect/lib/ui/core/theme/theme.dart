@@ -24,7 +24,6 @@ abstract final class UCTheme {
     colorScheme: UCColorScheme.lightScheme,
     inputDecorationTheme: UCTextFormFieldTheme.lightInputDecorationThemeData,
     elevatedButtonTheme: UCElevatedButtonTheme.lightElevatedButtonThemeData,
-    //bottomSheetTheme:
   );
 
   static ThemeData darkTheme = ThemeData(
@@ -41,6 +40,5 @@ abstract final class UCTheme {
     textTheme: GoogleFonts.interTextTheme(UCTextTheme.lightTextTheme),
     inputDecorationTheme: UCTextFormFieldTheme.darkInputDecorationThemeData,
     colorScheme: UCColorScheme.darkScheme,
-    // elevatedButtonTheme: UCElevatedButtonTheme.darkElevatedButtonThemeData,
   );
 }

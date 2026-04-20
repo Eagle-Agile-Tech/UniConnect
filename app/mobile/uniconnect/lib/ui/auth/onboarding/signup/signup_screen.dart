@@ -22,7 +22,7 @@ class SignupScreen extends ConsumerStatefulWidget {
 class _SignupScreenState extends ConsumerState<SignupScreen> {
   final GlobalKey<FormState> _signupFormKey = GlobalKey<FormState>();
   final _firstNameController = TextEditingController(text: 'Feysel');
-  final _lastNameController = TextEditingController(text: 'Feysel');
+  final _lastNameController = TextEditingController(text: 'Teshome');
   final _emailController = TextEditingController(
     text: 'feysleteshome05@gmail.com',
   );
@@ -42,6 +42,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     final onboarding = ref.read(onboardingProvider.notifier);
+    final onboard = ref.watch(onboardingProvider);
     return Form(
       key: _signupFormKey,
       child: SingleChildScrollView(
@@ -110,16 +111,15 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               ),
               SizedBox(height: Dimens.spaceBtwSections),
               ElevatedButton(
-                onPressed: () async {
+                onPressed: onboard.isLoading ? null : () async {
                   if (!_signupFormKey.currentState!.validate()) return;
-                  onboarding.updateAccount(
+                  final status = await onboarding.submitAccount(
+                    _confirmPasswordController.text.trim(),
                     _firstNameController.text.trim(),
                     _lastNameController.text.trim(),
                     _emailController.text.trim(),
                     _passwordController.text.trim(),
                   );
-                  final status = await onboarding.submitAccount();
-                  // Todo: make this navigation more robust by listening to the state changes
                   if (status != null){
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text(status.toString()))
@@ -128,13 +128,21 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('Account created successfully! Please verify your email.'))
                     );
-                    context.go(Routes.verifyEmail);
+                    context.push(Routes.verifyEmail);
                   }
                 },
                 style: ElevatedButton.styleFrom(
                   minimumSize: Size(double.infinity, 48),
+                  side: BorderSide(color: onboard.isLoading ? Colors.grey : Theme.of(context).primaryColor),
                 ),
-                child: Text('Submit'),
+                child: onboard.isLoading ? SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Theme.of(context).primaryColor,
+                  ),
+                ) : Text('Submit'),
               ),
               SizedBox(height: Dimens.spaceBtwSections),
               FormDivider(),
