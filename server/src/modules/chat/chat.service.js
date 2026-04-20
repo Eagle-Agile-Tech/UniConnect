@@ -44,6 +44,24 @@ const chatInclude = {
   },
 };
 
+function normalizePagination(data, defaults = { limit: 50, offset: 0 }) {
+  const limit = Number.isInteger(data.limit)
+    ? data.limit
+    : Number(data.limit ?? defaults.limit);
+  const offset = Number.isInteger(data.offset)
+    ? data.offset
+    : Number(data.offset ?? defaults.offset);
+
+  if (!Number.isInteger(limit) || limit < 1) {
+    throw new BadRequestError('Invalid pagination limit');
+  }
+  if (!Number.isInteger(offset) || offset < 0) {
+    throw new BadRequestError('Invalid pagination offset');
+  }
+
+  return { limit, offset };
+}
+
 async function ensureParticipant(chatId, userId) {
   const participant = await prisma.chatParticipant.findUnique({
     where: {
@@ -150,10 +168,12 @@ class ChatService {
       where.type = query.type;
     }
 
+    const { limit, offset } = normalizePagination(query, { limit: 20, offset: 0 });
+
     const chats = await prisma.chat.findMany({
       where,
-      skip: query.offset,
-      take: query.limit,
+      skip: offset,
+      take: limit,
       orderBy: { updatedAt: 'desc' },
       include: chatInclude,
     });
@@ -271,6 +291,8 @@ class ChatService {
   async listMessages(userId, data) {
     await ensureParticipant(data.chatId, userId);
 
+    const { limit, offset } = normalizePagination(data, { limit: 50, offset: 0 });
+
     const messages = await prisma.message.findMany({
       where: {
         chatId: data.chatId,
@@ -284,8 +306,8 @@ class ChatService {
           : {}),
       },
       orderBy: { createdAt: 'desc' },
-      skip: data.offset,
-      take: data.limit,
+      skip: offset,
+      take: limit,
       include: {
         sender: { select: userSelect },
         media: true,

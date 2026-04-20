@@ -500,9 +500,7 @@ const university = detectedUniversity?.name || 'general';
     const valid = await bcrypt.compare(data.password, user.passwordHash);
     if (!valid) throw new AuthError('Invalid email or password');
     if (user.verificationMethod === 'ID_DOCUMENT_ADMIN') {
-      if (user.verificationStatus === 'PENDING') {
-        throw new AuthError('ID verification pending', 403);
-      }
+  
       if (user.verificationStatus === 'REJECTED') {
         throw new AuthError('ID verification rejected', 403);
       }
