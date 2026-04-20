@@ -2,6 +2,28 @@ const prisma = require("./../../lib/prisma");
 const { createUserSchema } = require("./user.schema");
 const crypto = require("crypto");
 const buildUserResponse = require("../../lib/userResponse");
+
+function normalizeFullName(profile) {
+    const directFullName =
+        typeof profile?.fullName === "string" ? profile.fullName.trim() : "";
+    if (directFullName) return directFullName;
+
+    const firstName =
+        typeof profile?.user?.firstName === "string" ? profile.user.firstName.trim() : "";
+    const lastName =
+        typeof profile?.user?.lastName === "string" ? profile.user.lastName.trim() : "";
+    const combined = `${firstName} ${lastName}`.trim();
+    return combined || null;
+}
+
+function mapSearchProfile(profile) {
+    return {
+        userId: profile.userId,
+        username: profile.username,
+        profileImage: profile.profileImage,
+        fullName: normalizeFullName(profile),
+    };
+}
 const {
     BadRequestError,
     ConflictError,
@@ -396,7 +418,14 @@ class userService {
         select: {
             userId: true,
             username: true,
-            profileImage: true
+            profileImage: true,
+            fullName: true,
+            user: {
+                select: {
+                    firstName: true,
+                    lastName: true,
+                }
+            }
         },
         take: 5
     });
@@ -418,7 +447,14 @@ class userService {
         select: {
             userId: true,
             username: true,
-            profileImage: true
+            profileImage: true,
+            fullName: true,
+            user: {
+                select: {
+                    firstName: true,
+                    lastName: true,
+                }
+            }
         },
         take: 5
     });
@@ -441,7 +477,14 @@ class userService {
         select: {
             userId: true,
             username: true,
-            profileImage: true
+            profileImage: true,
+            fullName: true,
+            user: {
+                select: {
+                    firstName: true,
+                    lastName: true,
+                }
+            }
         },
         take: 5
     });
@@ -450,7 +493,7 @@ class userService {
         ...exactMatches,
         ...startsWithMatches,
         ...containsMatches
-    ].slice(0, 8);
+    ].slice(0, 8).map(mapSearchProfile);
 }
 
 
