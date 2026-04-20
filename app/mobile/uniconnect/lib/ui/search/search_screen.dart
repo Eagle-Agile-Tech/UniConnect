@@ -7,6 +7,51 @@ import 'package:uniconnect/ui/core/common/widgets/post_card/post_card.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
 import 'package:uniconnect/ui/search/viewmodels/search_viewmodel_provider.dart';
 
+enum SearchTab {
+  users,
+  posts,
+  hashtags,
+  jobs,
+  hackathons,
+  scholarships,
+}
+
+extension SearchTabExtension on SearchTab {
+  String get title {
+    switch (this) {
+      case SearchTab.users:
+        return 'Users';
+      case SearchTab.posts:
+        return 'Posts';
+      case SearchTab.hashtags:
+        return 'Hashtags';
+      case SearchTab.jobs:
+        return 'Jobs';
+      case SearchTab.hackathons:
+        return 'Hackathons';
+      case SearchTab.scholarships:
+        return 'Scholarships';
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case SearchTab.users:
+        return Icons.people;
+      case SearchTab.posts:
+        return Icons.article;
+      case SearchTab.hashtags:
+        return Icons.tag;
+      case SearchTab.jobs:
+        return Icons.work;
+      case SearchTab.hackathons:
+        return Icons.code;
+      case SearchTab.scholarships:
+        return Icons.school;
+    }
+  }
+}
+
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
 
@@ -17,18 +62,58 @@ class SearchScreen extends ConsumerStatefulWidget {
 class _SearchScreenState extends ConsumerState<SearchScreen> {
   final TextEditingController _controller = TextEditingController();
   Timer? debounce;
-  bool showSearchTile = true;
+  SearchTab _selectedTab = SearchTab.users;
 
   @override
   void dispose() {
     super.dispose();
     _controller.dispose();
+    debounce?.cancel();
+  }
+
+  void _onSearchChanged(String value) {
+    if (debounce?.isActive ?? false) {
+      debounce!.cancel();
+    }
+    debounce = Timer(const Duration(milliseconds: 700), () {
+      _performSearch(value);
+    });
+  }
+
+  void _performSearch(String value) {
+    switch (_selectedTab) {
+      case SearchTab.users:
+        ref.read(userSearchProvider.notifier).searchUser(value);
+        break;
+      case SearchTab.posts:
+        ref.read(postSearchProvider.notifier).searchPost(value);
+        break;
+      case SearchTab.hashtags:
+        ref.read(userSearchProvider.notifier).searchUser(value);
+        break;
+      case SearchTab.jobs:
+        ref.read(userSearchProvider.notifier).searchUser(value);
+        break;
+      case SearchTab.hackathons:
+        ref.read(userSearchProvider.notifier).searchUser(value);
+        break;
+      case SearchTab.scholarships:
+        ref.read(userSearchProvider.notifier).searchUser(value);
+        break;
+    }
+  }
+
+  void _onTabChanged(SearchTab tab) {
+    setState(() {
+      _selectedTab = tab;
+    });
+    if (_controller.text.trim().isNotEmpty) {
+      _performSearch(_controller.text.trim());
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final searchedPost = ref.watch(postSearchProvider);
-    final searchedUser = ref.watch(userSearchProvider);
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: true,
@@ -48,133 +133,390 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             shape: WidgetStateProperty.all(
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
-            hintText: "Search...",
+            hintText: "Search ${_selectedTab.title.toLowerCase()}...",
             textStyle: const WidgetStatePropertyAll(TextStyle(fontSize: 14)),
-            onChanged: (value) {
-              if (debounce?.isActive ?? false) {
-                debounce!.cancel();
-              }
-              debounce = Timer(const Duration(milliseconds: 500), () {
-                ref.read(userSearchProvider.notifier).searchUser(value);
-              });
-            },
+            onChanged: _onSearchChanged,
           ),
         ),
       ),
-      body: Padding(
-        padding: EdgeInsets.symmetric(horizontal: Dimens.md),
-        child: Column(
+      body: Column(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: Colors.grey.shade300,
+                  width: 1,
+                ),
+              ),
+            ),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: Dimens.md),
+              child: Row(
+                children: SearchTab.values.map((tab) {
+                  final isSelected = _selectedTab == tab;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                    child: _buildTabButton(tab, isSelected),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: Dimens.md),
+              child: _buildContent(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabButton(SearchTab tab, bool isSelected) {
+    return GestureDetector(
+      onTap: () => _onTabChanged(tab),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: isSelected ? Theme.of(context).primaryColor : Colors.transparent,
+              width: 2,
+            ),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // When this is tapped it leads to search posts
-            Expanded(
-              child: ListView(
-                children: [
-                  if (_controller.text.trim().isNotEmpty && showSearchTile)
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Row(
-                        children: [
-                          GestureDetector(
-                            onTap: () {
-                              ref
-                                  .watch(postSearchProvider.notifier)
-                                  .searchPost(_controller.text.trim());
-                              setState(() => showSearchTile = false);
-                            },
-                            child: Container(
-                              width: 58,
-                              height: 58,
-                              decoration: BoxDecoration(
-                                color: Colors.grey[200],
-                                borderRadius: BorderRadius.circular(29),
-                              ),
-                              child: const Icon(Icons.search),
-                            ),
-                          ),
-                          const SizedBox(width: Dimens.sm),
-                          Text(
-                            _controller.text,
-                            style: TextStyle(
-                              fontSize: Dimens.fontLg,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  // Users Section
-                  searchedUser.when(
-                    data: (data) => Column(
-                      children: data.map((user) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8.0,
-                            vertical: 15,
-                          ),
-                          child: Row(
-                            children: [
-                              CircleAvatar(
-                                radius: Dimens.avatarXs,
-                                backgroundImage: user.profilePicture != null
-                                    ? NetworkImage(user.profilePicture!)
-                                    : AssetImage(Assets.defaultAvatar)
-                                          as ImageProvider,
-                              ),
-                              const SizedBox(width: 12),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    user.username,
-                                    style: TextStyle(
-                                      fontSize: Dimens.fontLg,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  Text(
-                                    user.fullName,
-                                    style: TextStyle(
-                                      color: Colors.black.withOpacity(0.6),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                    loading: () =>
-                        const Center(child: CircularProgressIndicator()),
-                    error: (err, st) => Center(child: Text(err.toString())),
-                  ),
-                  // Posts Section
-                  if(!showSearchTile)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: Text(
-                      'Posts',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                  ),
-                  if(!showSearchTile)
-                  Divider(thickness: 1),
-                  searchedPost.when(
-                    data: (data) => Column(
-                      children: data.map((post) {
-                        return UCPostCard( post: post);
-                      }).toList(),
-                    ),
-                    loading: () =>
-                        const Center(child: CircularProgressIndicator()),
-                    error: (err, st) => Center(child: Text(err.toString())),
-                  ),
-                ],
+            Text(
+              tab.title,
+              style: TextStyle(
+                fontSize: Dimens.fontMd,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                color: isSelected ? Theme.of(context).primaryColor : Colors.grey.shade600,
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildContent() {
+    switch (_selectedTab) {
+      case SearchTab.users:
+        return _buildUsersContent();
+      case SearchTab.posts:
+        return _buildPostsContent();
+      case SearchTab.hashtags:
+        return _buildHashtagsContent();
+      case SearchTab.jobs:
+        return _buildJobsContent();
+      case SearchTab.hackathons:
+        return _buildHackathonsContent();
+      case SearchTab.scholarships:
+        return _buildScholarshipsContent();
+    }
+  }
+
+  Widget _buildUsersContent() {
+    final searchedUser = ref.watch(userSearchProvider);
+
+    return searchedUser.when(
+      data: (data) {
+        if (data.isEmpty && _controller.text.trim().isNotEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.person_off, size: 64, color: Colors.grey.shade400),
+                const SizedBox(height: 16),
+                Text(
+                  'No users found',
+                  style: TextStyle(fontSize: Dimens.fontLg, color: Colors.grey.shade600),
+                ),
+              ],
+            ),
+          );
+        }
+        return ListView(
+          children: data.map((user) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 15),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: Dimens.avatarXs,
+                    backgroundImage: user.profilePicture != null
+                        ? NetworkImage(user.profilePicture!)
+                        : AssetImage(Assets.defaultAvatar) as ImageProvider,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          user.username,
+                          style: TextStyle(
+                            fontSize: Dimens.fontLg,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          user.fullName,
+                          style: TextStyle(
+                            color: Colors.black.withOpacity(0.6),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (err, st) => Center(child: Text(err.toString())),
+    );
+  }
+
+  Widget _buildPostsContent() {
+    final searchedPost = ref.watch(postSearchProvider);
+
+    return searchedPost.when(
+      data: (data) {
+        if (data.isEmpty && _controller.text.trim().isNotEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.art_track, size: 64, color: Colors.grey.shade400),
+                const SizedBox(height: 16),
+                Text(
+                  'No posts found',
+                  style: TextStyle(fontSize: Dimens.fontLg, color: Colors.grey.shade600),
+                ),
+              ],
+            ),
+          );
+        }
+        return ListView(
+          children: data.map((post) {
+            return UCPostCard(post: post);
+          }).toList(),
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (err, st) => Center(child: Text(err.toString())),
+    );
+  }
+
+  Widget _buildHashtagsContent() {
+    final searchedHashtags = ref.read(userSearchProvider);
+
+    return searchedHashtags.when(
+      data: (data) {
+        if (data.isEmpty && _controller.text.trim().isNotEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.tag, size: 64, color: Colors.grey.shade400),
+                const SizedBox(height: 16),
+                Text(
+                  'No hashtags found',
+                  style: TextStyle(fontSize: Dimens.fontLg, color: Colors.grey.shade600),
+                ),
+              ],
+            ),
+          );
+        }
+        return ListView(
+          children: data.map((hashtag) {
+            return Card(
+              margin: const EdgeInsets.symmetric(vertical: 8),
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+                  child: Icon(Icons.tag, color: Theme.of(context).primaryColor),
+                ),
+                title: Text("hashtag.name"),
+                subtitle: Text('${"hashtag.postCount"} posts'),
+                trailing: Chip(
+                  label: Text('${"hashtag.followers"} followers'),
+                  backgroundColor: Colors.grey.shade200,
+                ),
+              ),
+            );
+          }).toList(),
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (err, st) => Center(child: Text(err.toString())),
+    );
+  }
+
+  Widget _buildJobsContent() {
+    final searchedJobs =  ref.watch(userSearchProvider);
+    ;
+
+    return searchedJobs.when(
+      data: (data) {
+        if (data.isEmpty && _controller.text.trim().isNotEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.work_off, size: 64, color: Colors.grey.shade400),
+                const SizedBox(height: 16),
+                Text(
+                  'No jobs found',
+                  style: TextStyle(fontSize: Dimens.fontLg, color: Colors.grey.shade600),
+                ),
+              ],
+            ),
+          );
+        }
+        return ListView(
+          children: data.map((job) {
+            return Card(
+              margin: const EdgeInsets.symmetric(vertical: 8),
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+                  child: Icon(Icons.work, color: Theme.of(context).primaryColor),
+                ),
+                title: Text("job.title"),
+                subtitle: Text('job.company'),
+                trailing: Chip(
+                  label: Text("job.type"),
+                  backgroundColor: Colors.grey.shade200,
+                ),
+              ),
+            );
+          }).toList(),
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (err, st) => Center(child: Text(err.toString())),
+    );
+  }
+
+  Widget _buildHackathonsContent() {
+    final searchedHackathons = ref.watch(userSearchProvider);
+
+    return searchedHackathons.when(
+      data: (data) {
+        if (data.isEmpty && _controller.text.trim().isNotEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.code_off, size: 64, color: Colors.grey.shade400),
+                const SizedBox(height: 16),
+                Text(
+                  'No hackathons found',
+                  style: TextStyle(fontSize: Dimens.fontLg, color: Colors.grey.shade600),
+                ),
+              ],
+            ),
+          );
+        }
+        return ListView(
+          children: data.map((hackathon) {
+            return Card(
+              margin: const EdgeInsets.symmetric(vertical: 8),
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+                  child: Icon(Icons.code, color: Theme.of(context).primaryColor),
+                ),
+                title: Text("hackathon.name"),
+                subtitle: Text("hackathon.organizer"),
+                trailing: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "hackathon.date",
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                    ),
+                    const SizedBox(height: 4),
+                    Chip(
+                      label: Text("hackathon.mode"),
+                      backgroundColor: Colors.grey.shade200,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (err, st) => Center(child: Text(err.toString())),
+    );
+  }
+
+  Widget _buildScholarshipsContent() {
+    final searchedScholarships = ref.read(userSearchProvider);;
+    return searchedScholarships.when(
+      data: (data) {
+        if (data.isEmpty && _controller.text.trim().isNotEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.school, size: 64, color: Colors.grey.shade400),
+                const SizedBox(height: 16),
+                Text(
+                  'No scholarships found',
+                  style: TextStyle(fontSize: Dimens.fontLg, color: Colors.grey.shade600),
+                ),
+              ],
+            ),
+          );
+        }
+        return ListView(
+          children: data.map((scholarship) {
+            return Card(
+              margin: const EdgeInsets.symmetric(vertical: 8),
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+                  child: Icon(Icons.school, color: Theme.of(context).primaryColor),
+                ),
+                title: Text("scholarship.name"),
+                subtitle: Text("scholarship.provider"),
+                trailing: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "amount",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).primaryColor,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Chip(
+                      label: Text("scholarship.deadline"),
+                      backgroundColor: Colors.grey.shade200,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (err, st) => Center(child: Text(err.toString())),
     );
   }
 }

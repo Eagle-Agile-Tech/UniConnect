@@ -4,12 +4,13 @@ part 'post.freezed.dart';
 part 'post.g.dart';
 
 @freezed
+@JsonSerializable(checked: true, anyMap: true)
 abstract class Post with _$Post {
   factory Post({
     required String id,
     required String content,
     required String authorId,
-    String? authorProfilePicture,
+    final String? authorProfilePicture,
     required String authorName,
     final List<String>? mediaUrls,
     required DateTime createdAt,
