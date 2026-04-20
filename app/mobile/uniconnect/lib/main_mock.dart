@@ -2,9 +2,11 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http_mock_adapter/http_mock_adapter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uniconnect/routing/router.dart';
 import 'package:uniconnect/ui/core/theme/theme.dart';
 
+import 'config/theme_provider.dart';
 import 'data/service/api/api_client.dart';
 import 'data/service/api/auth_api_client.dart';
 
@@ -757,9 +759,11 @@ void main() async {
     data: Matchers.any,
   );
 
+  final prefs = await SharedPreferences.getInstance();
   runApp(
     ProviderScope(
       overrides: [
+        sharedPrefsProvider.overrideWithValue(prefs),
         apiClientProvider.overrideWithValue(ApiClient(client: dio)),
         authApiProvider.overrideWithValue(AuthApiClient(client: dio)),
       ],
@@ -774,11 +778,13 @@ class UniConnectMock extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
+    final themeState = ref.watch(themeProvider);
     return MaterialApp.router(
       routerConfig: router,
       debugShowCheckedModeBanner: false,
       theme: UCTheme.lightTheme,
       darkTheme: UCTheme.darkTheme,
+      themeMode: themeState.value ?? ThemeMode.system,
     );
   }
 }
