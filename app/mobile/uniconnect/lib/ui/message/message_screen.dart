@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:chat_plugin/chat_plugin.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,16 +7,18 @@ import 'package:go_router/go_router.dart';
 import 'package:uniconnect/config/assets.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
 
+import '../chat/viewmodels/chat_provider.dart';
+
 class MessageScreen extends ConsumerStatefulWidget {
   const MessageScreen({
     super.key,
     required this.receiverId,
-    required this.receiverName,
+    required this.receiverName, required this.chatId,
   });
 
   final String receiverId;
   final String receiverName;
-
+  final String chatId;
   @override
   ConsumerState<MessageScreen> createState() => _MessageScreenState();
 }
@@ -24,18 +28,19 @@ class _MessageScreenState extends ConsumerState<MessageScreen>
   final TextEditingController _textMessage = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final ChatService _chatService = ChatPlugin.chatService;
-  final String listenerId = 'chat_screen_page';
+  final String listenerId = 'chat:';
   bool _isLoading = true;
   bool _isTyping = false;
   bool _isLoadingMore = false;
   bool _hasMoreMessages = true;
+  Timer? _typingTimer;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _registerEventListener();
     _chatInit();
+    _registerEventListener();
     _textMessage.addListener(_onTextChanged);
   }
 
@@ -58,10 +63,11 @@ class _MessageScreenState extends ConsumerState<MessageScreen>
     });
     try {
       _chatService.initChat(widget.receiverId);
+      ref.read(activeRoomProvider.notifier).state = widget.chatId;
       await _chatService.loadMessages();
-      _chatService.updateUserStatus(true);
-      _chatService.emitCustomEvent('get_user_status', {
-        'userId': widget.receiverId,
+
+      _chatService.addEventListener(ChatEventType.custom, 'chat:presence', (data){
+
       });
       setState(() {
         _isLoading = false;
@@ -77,11 +83,16 @@ class _MessageScreenState extends ConsumerState<MessageScreen>
   }
 
   void _onTextChanged() {
-    bool isCurrentlyTyping = _textMessage.text.isNotEmpty;
-    if (_isTyping != isCurrentlyTyping) {
-      _isTyping = isCurrentlyTyping;
-      _chatService.sendTypingIndicator(_isTyping);
+    if (!_isTyping) {
+      _isTyping = true;
+      _chatService.sendTypingIndicator(true);
     }
+
+    _typingTimer?.cancel();
+    _typingTimer = Timer(const Duration(milliseconds: 2000), () {
+      _isTyping = false;
+      _chatService.sendTypingIndicator(false);
+    });
   }
 
   void _registerEventListener() {
@@ -90,6 +101,15 @@ class _MessageScreenState extends ConsumerState<MessageScreen>
       '$listenerId-messages',
       (_) {
         if (mounted) {
+          if (_chatService.messages.isNotEmpty) {
+            final lastMsg = _chatService.messages.last;
+            if (!lastMsg.isMine && lastMsg.status != 'read') {
+              _chatService.emitCustomEvent('chat:read', {
+                'chatId': widget.chatId,
+                'messageId': lastMsg.messageId
+              });
+            }
+          }
           setState(() {
             _isLoading = false;
           });
@@ -100,9 +120,10 @@ class _MessageScreenState extends ConsumerState<MessageScreen>
       },
     );
 
+
     _chatService.addEventListener(
       ChatEventType.typingStatusChanged,
-      '$listenerId-typing',
+      '$listenerId:typing',
       (isTyping) {
         if (mounted) {
           setState(() {

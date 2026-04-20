@@ -111,8 +111,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final data = state.extra as Map<String, String>;
           return MessageScreen(
-            receiverId: data['userId']!,
+            receiverId: data['receiverId']!,
             receiverName: data['username']!,
+            chatId: data['chatId']!,
           );
         },
       ),
