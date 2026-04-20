@@ -7,8 +7,8 @@ import 'routes/api_routes.dart';
 import 'token_refresher.dart';
 
 final apiClientProvider = Provider<ApiClient>((ref) {
-
-  return ApiClient(client: ref.watch(dioProvider));
+  final dio = ref.watch(dioProvider);
+  return ApiClient(client: dio);
 });
 
 class ApiClient {
@@ -209,8 +209,7 @@ class ApiClient {
 
   Future<Result<List<Map<String, dynamic>>>> searchUsers(String keyWord) async {
     try {
-      final response = await _client.get('/searchUsers/$keyWord');
-      List data = response.data;
+      final response = await _client.get('/users/profiles/username/$keyWord');      List data = response.data;
       return Result.ok(data.cast<Map<String, dynamic>>());
     } on DioException catch (e) {
       return Result.error(e);

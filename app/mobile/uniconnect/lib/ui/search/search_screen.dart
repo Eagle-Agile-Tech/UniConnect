@@ -250,8 +250,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 children: [
                   CircleAvatar(
                     radius: Dimens.avatarXs,
-                    backgroundImage: user.profilePicture != null
-                        ? NetworkImage(user.profilePicture!)
+                    backgroundImage: user.$3 != null
+                        ? NetworkImage(user.$3!)
                         : AssetImage(Assets.defaultAvatar) as ImageProvider,
                   ),
                   const SizedBox(width: 12),
@@ -260,14 +260,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          user.username,
+                          user.$2,
                           style: TextStyle(
                             fontSize: Dimens.fontLg,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                         Text(
-                          user.fullName,
+                          user.$1,
                           style: TextStyle(
                             color: Colors.black.withOpacity(0.6),
                           ),

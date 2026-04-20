@@ -24,7 +24,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _firstNameController = TextEditingController(text: 'Feysel');
   final _lastNameController = TextEditingController(text: 'Teshome');
   final _emailController = TextEditingController(
-    text: 'feysleteshome05@gmail.com',
+    text: 'feyteshome@ju2.edu.et',
   );
   final _passwordController = TextEditingController(text: '!@Fffds1ff');
   final _confirmPasswordController = TextEditingController(text: '!@Fffds1ff');

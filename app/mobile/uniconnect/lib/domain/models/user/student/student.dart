@@ -10,7 +10,7 @@ abstract class Student with _$Student {
   const factory Student({
     required String degree,
     required String currentYear,
-    required DateTime expectedGraduationYear,
+    required int expectedGraduationYear,
     List<String>? interests,
     @Default(VerificationStatus.PENDING) VerificationStatus verificationStatus,
   }) = _Student;

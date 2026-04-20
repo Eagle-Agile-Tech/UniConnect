@@ -4,7 +4,6 @@ part 'post.freezed.dart';
 part 'post.g.dart';
 
 @freezed
-@JsonSerializable(checked: true, anyMap: true)
 abstract class Post with _$Post {
   factory Post({
     required String id,

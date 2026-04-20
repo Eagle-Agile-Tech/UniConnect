@@ -33,37 +33,36 @@ final routerProvider = Provider<GoRouter>((ref) {
   final authAsync = ref.watch(authNotifierProvider);
 
   return GoRouter(
-    initialLocation: Routes.home,
+    initialLocation: Routes.loginOrSignup,
 
     redirect: (context, state) {
-      if (authAsync.isLoading) return null;
+      return authAsync.when(
+        loading: () => null,
+        error: (err, stack) => Routes.loginOrSignup,
+        data: (auth) {
+          final isLoggedIn = auth.isAuthenticated;
 
-      if (authAsync.hasError) {
-        return Routes.loginOrSignup;
-      }
+          final publicRoutes = [
+            Routes.loginOrSignup,
+            Routes.verifyEmail,
+            Routes.verifyIdentity,
+            Routes.onboardingAcademic,
+            Routes.onBoardingProfile,
+          ];
 
-      final auth = authAsync.value!;
-      final isLoggedIn = auth.isAuthenticated;
+          final isPublicRoute = publicRoutes.contains(state.matchedLocation);
 
-      final publicRoutes = [
-        Routes.loginOrSignup,
-        Routes.verifyEmail,
-        Routes.verifyIdentity,
-        Routes.onboardingAcademic,
-        Routes.onBoardingProfile,
-      ];
+          if (!isLoggedIn && !isPublicRoute) {
+            return Routes.loginOrSignup;
+          }
 
-      final isPublicRoute = publicRoutes.contains(state.matchedLocation);
+          if (isLoggedIn && isPublicRoute) {
+            return Routes.home;
+          }
 
-
-      if (!isLoggedIn && !isPublicRoute) {
-        return Routes.loginOrSignup;
-      }
-
-      if (isLoggedIn && isPublicRoute) {
-        return Routes.home;
-      }
-      return null;
+          return null;
+        },
+      );
     },
     routes: [
       GoRoute(
