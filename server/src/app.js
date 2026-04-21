@@ -46,7 +46,22 @@ app.use(morgan(isProduction ? 'combined' : 'dev'));
 
 app.use(
   cors({
-    origin: ['http://localhost:3000', 'http://localhost:5173'],
+    origin(origin, callback) {
+      const allowedOrigins = new Set([
+        'http://localhost:3000',
+        'http://localhost:5173',
+        'http://localhost:5175',
+      ]);
+
+      const isLocalhostDevOrigin = typeof origin === 'string'
+        && /^http:\/\/localhost:\d+$/.test(origin);
+
+      if (!origin || allowedOrigins.has(origin) || isLocalhostDevOrigin) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
     credentials: true,
   })
 );

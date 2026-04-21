@@ -47,25 +47,71 @@ CREATE TABLE IF NOT EXISTS "Purchase" (
   CONSTRAINT "Purchase_pkey" PRIMARY KEY ("id")
 );
 
-ALTER TABLE "Course"
-  ADD CONSTRAINT "Course_expertId_fkey"
-  FOREIGN KEY ("expertId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'Course_expertId_fkey'
+  ) THEN
+    ALTER TABLE "Course"
+      ADD CONSTRAINT "Course_expertId_fkey"
+      FOREIGN KEY ("expertId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+  END IF;
+END $$;
 
-ALTER TABLE "SavedCourse"
-  ADD CONSTRAINT "SavedCourse_userId_fkey"
-  FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'SavedCourse_userId_fkey'
+  ) THEN
+    ALTER TABLE "SavedCourse"
+      ADD CONSTRAINT "SavedCourse_userId_fkey"
+      FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+  END IF;
+END $$;
 
-ALTER TABLE "SavedCourse"
-  ADD CONSTRAINT "SavedCourse_courseId_fkey"
-  FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'SavedCourse_courseId_fkey'
+  ) THEN
+    ALTER TABLE "SavedCourse"
+      ADD CONSTRAINT "SavedCourse_courseId_fkey"
+      FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+  END IF;
+END $$;
 
-ALTER TABLE "Purchase"
-  ADD CONSTRAINT "Purchase_userId_fkey"
-  FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'Purchase_userId_fkey'
+  ) THEN
+    ALTER TABLE "Purchase"
+      ADD CONSTRAINT "Purchase_userId_fkey"
+      FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+  END IF;
+END $$;
 
-ALTER TABLE "Purchase"
-  ADD CONSTRAINT "Purchase_courseId_fkey"
-  FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'Purchase_courseId_fkey'
+  ) THEN
+    ALTER TABLE "Purchase"
+      ADD CONSTRAINT "Purchase_courseId_fkey"
+      FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+  END IF;
+END $$;
+
 
 CREATE INDEX IF NOT EXISTS "Course_expertId_idx" ON "Course"("expertId");
 CREATE INDEX IF NOT EXISTS "SavedCourse_userId_idx" ON "SavedCourse"("userId");
