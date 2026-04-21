@@ -28,20 +28,27 @@ const chatInclude = {
     },
   },
   messages: {
-    orderBy: { createdAt: 'desc' },
-    take: 1,
-    include: {
-      sender: { select: userSelect },
-      media: true,
-      receipts: {
-        select: {
-          userId: true,
-          deliveredAt: true,
-          readAt: true,
-        },
+  orderBy: { createdAt: 'asc' },
+  include: {
+    sender: { select: userSelect },
+    media: true,
+    receipts: {
+      select: {
+        userId: true,
+        deliveredAt: true,
+        readAt: true,
       },
     },
   },
+  select: {
+    id: true,
+    content: true,   
+    createdAt: true,
+    senderId: true,
+    media: true,
+    receipts: true,
+  },
+}
 };
 
 function normalizePagination(data, defaults = { limit: 50, offset: 0 }) {
