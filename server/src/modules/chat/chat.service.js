@@ -79,12 +79,27 @@ async function ensureParticipant(chatId, userId) {
   return participant;
 }
 
+async function ensureUserExists(userId) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true },
+  });
+
+  if (!user) {
+    throw new NotFoundError('User not found');
+  }
+
+  return user;
+}
+
 class ChatService {
   async createChat(userId, data) {
     if (data.type === 'DIRECT') {
       if (data.participantId === userId) {
         throw new BadRequestError('Cannot start a direct chat with yourself');
       }
+
+      await ensureUserExists(data.participantId);
 
       const [a, b] = [userId, data.participantId].sort();
       const uniqueKey = `direct:${a}:${b}`;
@@ -155,6 +170,41 @@ class ChatService {
     }
 
     throw new BadRequestError('Invalid chat type');
+  }
+
+  async getChatIdFromUserIds(userId, otherUserId) {
+    if (!otherUserId) {
+      throw new BadRequestError('otherUserId is required');
+    }
+    if (otherUserId === userId) {
+      throw new BadRequestError('Cannot create or fetch a direct chat with yourself');
+    }
+
+    await ensureUserExists(otherUserId);
+
+    const [a, b] = [userId, otherUserId].sort();
+    const uniqueKey = `direct:${a}:${b}`;
+
+    let chat = await prisma.chat.findUnique({
+      where: { uniqueKey },
+      include: chatInclude,
+    });
+
+    if (!chat) {
+      chat = await this.createChat(userId, {
+        type: 'DIRECT',
+        participantId: otherUserId,
+      });
+    }
+
+    return {
+      chatId: chat.id,
+      messages: chat.messages || [],
+    };
+  }
+
+  async getChatIdFromUserId(userId, otherUserId) {
+    return this.getChatIdFromUserIds(userId, otherUserId);
   }
 
   async listChats(userId, query) {
