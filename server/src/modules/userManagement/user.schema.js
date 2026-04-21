@@ -14,7 +14,7 @@ const createUserSchema = zod.object({
   universityId: zod.string().uuid('University id must be a valid UUID').optional(),
   universityName: zod.string().min(2, 'University name must be at least 2 characters').max(120).optional(),
   yearOfStudy: zod.coerce.number().int().min(1).max(10).optional(),
-  graduationYear: zod.coerce.number().int().min(1900).max(2100).optional(),
+  expectedGraduationYear: zod.coerce.date().optional(),
 });
 
 const updateUserSchema = createUserSchema.partial();

@@ -58,23 +58,15 @@ function buildUserResponse({
         : null;
   let graduationYearValue = null;
   if (profile?.graduationYear) {
-    if (typeof profile.graduationYear === 'string' || profile.graduationYear instanceof Date) {
-      // Already ISO string or Date
-      const dateObj = new Date(profile.graduationYear);
-      graduationYearValue = isNaN(dateObj.getTime()) ? null : dateObj.toISOString();
-    } else if (typeof profile.graduationYear === 'number') {
-      // If just a year, convert to ISO string (June 1st of that year)
-      graduationYearValue = new Date(profile.graduationYear, 5, 1).toISOString();
-    }
+    const dateObj = new Date(profile.graduationYear);
+    graduationYearValue = isNaN(dateObj.getTime()) ? null : dateObj.toISOString();
   }
-  const resolvedGraduationYearValue =
-    typeof profile?.graduationYear === 'number' ? profile.graduationYear : null;
 
 
   response.STUDENT = {
     degree: normalizeString(profile?.department ?? null),
     currentYear: normalizeString(currentYearValue),
-    expectedGraduationYear: resolvedGraduationYearValue,
+    expectedGraduationYear: graduationYearValue,
     interests: normalizeInterests(profile?.interests),
 
   };

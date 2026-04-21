@@ -276,7 +276,7 @@ model UserProfile {
   department     String?
   level          EducationLevel?
   yearOfStudy    Int?
-  graduationYear Int?
+  graduationYear DateTime?
 
   user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
