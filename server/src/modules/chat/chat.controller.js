@@ -21,6 +21,20 @@ class ChatController {
     }
   }
 
+  async getChatIdFromUserIds(req, res, next) {
+    try {
+      const userId = req.user?.sub || req.user?.id;
+      const otherUserId =
+        req.params?.otherUserId ||
+        req.params?.chatId ||
+        req.query?.otherUserId;
+      const chat = await chatService.getChatIdFromUserIds(userId, otherUserId);
+      res.status(200).json(chat);
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async updateGroupChat(req, res, next) {
     try {
       const userId = req.user?.sub || req.user?.id;
