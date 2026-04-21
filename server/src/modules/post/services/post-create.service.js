@@ -1,4 +1,3 @@
-// server/src/modules/post/services/post-create.service.js
 import prisma from "../../../lib/prisma.js";
 import supabaseStorage from "../../media/services/supabase-storage.service.js";
 import aiModerationService from "../../ai/ai-moderation.service.js";
@@ -6,12 +5,37 @@ import notificationService from "../../notification/notification.service.js";
 
 class PostCreateService {
   /**
-   * Create post with media IDs (OpenAPI compliant)
+   * Format post response (STANDARDIZED)
    */
-  async createPost(userId, data) {
-    const { content, visibility, tags, category, mediaIds, communityId } = data;
+  formatPost(post, currentUserId) {
+    return {
+      id: post.id,
+      content: post.content,
+      authorId: post.authorId,
+      authorProfilePicture: post.author?.profile?.profileImage || null,
+      authorName: `${post.author?.firstName || ""} ${post.author?.lastName || ""}`.trim(),
+      mediaUrls: post.media?.map((m) => m.fileUrl) || [],
+      createdAt: post.createdAt,
+      tags: post.tags || [],
+      likeCount: post._count?.postReactions || 0,
+      commentCount: post._count?.comments || 0,
+      isLikedByMe: post.postReactions?.some(
+        (r) => r.userId === currentUserId
+      ) || false,
+      isBookmarkedByMe: post.favorites?.some(
+        (f) => f.userId === currentUserId
+      ) || false,
+    };
+  }
 
-    if (!content && (!mediaIds || mediaIds.length === 0)) {
+  /**
+   * CREATE POST (TOKEN BASED USER)
+   * endpoint: /posts/createPost
+   */
+  async createPost(userId, data, files = []) {
+    const { content, tags, createdAt } = data;
+
+    if (!content && files.length === 0) {
       throw new Error("Post must have either content or media");
     }
 
@@ -26,42 +50,10 @@ class PostCreateService {
     };
 
     const post = await prisma.$transaction(async (tx) => {
-      // Verify media ownership if mediaIds provided
-      if (mediaIds && mediaIds.length > 0) {
-        const media = await tx.media.findMany({
-          where: {
-            id: { in: mediaIds },
-            uploaderId: userId,
-          },
-        });
-
-        if (media.length !== mediaIds.length) {
-          throw new Error(
-            "Some media files don't exist or don't belong to you",
-          );
-        }
-
-        const attachedMedia = await tx.media.findMany({
-          where: {
-            id: { in: mediaIds },
-            postId: { not: null },
-          },
-        });
-
-        if (attachedMedia.length > 0) {
-          throw new Error(
-            "Some media files are already attached to another post",
-          );
-        }
-      }
-
-      // Create post
       const createdPost = await tx.post.create({
         data: {
           authorId: userId,
-          communityId: communityId || null,
           content,
-          visibility: visibility || "PUBLIC",
           tags: tags || [],
           category,
           moderationStatus: initialModerationStatus,
@@ -238,55 +230,37 @@ class PostCreateService {
         },
       });
 
+      // Upload media
       if (files.length > 0) {
         const uploadedFiles = await supabaseStorage.uploadMultipleFiles(
           files,
-          userId,
+          userId
         );
 
-        for (const uploadedFile of uploadedFiles) {
+        for (const file of uploadedFiles) {
           await tx.media.create({
             data: {
               uploaderId: userId,
               postId: createdPost.id,
-              fileUrl: uploadedFile.url,
+              fileUrl: file.url,
               fileType: "IMAGE",
             },
           });
         }
       }
 
-      await tx.auditLog.create({
-        data: {
-          userId,
-          actionType: "CREATE",
-          entityType: "Post",
-          entityId: createdPost.id,
-          metadata: {
-            moderationStatus: initialModerationStatus,
-            contentLength: content?.length || 0,
-            mediaCount: files.length,
-            source: "flutter",
-            moderationQueued: shouldModerate,
-          },
-        },
-      });
-
       const completePost = await tx.post.findUnique({
         where: { id: createdPost.id },
         include: {
-          media: { orderBy: { createdAt: "asc" } },
+          media: true,
           author: {
-            select: {
-              id: true,
-              email: true,
-              role: true,
-              firstName: true,
-              lastName: true,
-              profile: { select: { username: true, profileImage: true } },
-            },
+            include: { profile: true },
           },
-          _count: { select: { comments: true } },
+          postReactions: true,
+          favorites: true,
+          _count: {
+            select: { comments: true, postReactions: true },
+          },
         },
       });
 
@@ -297,40 +271,144 @@ class PostCreateService {
       await this.notifyNetworkedUsers(userId, post);
     }
 
+    // 🔥 AI MODERATION (unchanged logic)
     if (shouldModerate) {
       moderationResult = await aiModerationService.enqueuePostModeration({
         postId: post.id,
         userId,
         content: content || "",
-        tags,
+        tags: tags || [],
       });
+
+      // ❗ HANDLE REJECTED CASE
+      if (moderationResult.moderationStatus === "REJECTED") {
+        await prisma.post.update({
+          where: { id: post.id },
+          data: {
+            isDeleted: true,
+            moderationStatus: "REJECTED",
+          },
+        });
+
+        return {
+          message: "Post rejected due to content policy",
+          rejected: true,
+        };
+      }
 
       const refreshedPost = await prisma.post.findUnique({
         where: { id: post.id },
         include: {
-          media: { orderBy: { createdAt: "asc" } },
-          author: {
-            select: {
-              id: true,
-              email: true,
-              role: true,
-              firstName: true,
-              lastName: true,
-              profile: { select: { username: true, profileImage: true } },
-            },
+          media: true,
+          author: { include: { profile: true } },
+          postReactions: true,
+          favorites: true,
+          _count: {
+            select: { comments: true, postReactions: true },
           },
-          _count: { select: { comments: true } },
         },
       });
 
-      return { post: refreshedPost || post, moderationResult };
+      return {
+        post: this.formatPost(refreshedPost, userId),
+        moderationResult,
+      };
     }
 
-    return { post, moderationResult };
+    return {
+      post: this.formatPost(post, userId),
+      moderationResult,
+    };
   }
 
   /**
-   * Delete post with media
+   * GET SINGLE POST
+   */
+  async getSinglePost(postId, currentUserId) {
+    const post = await prisma.post.findFirst({
+      where: {
+        id: postId,
+        isDeleted: false,
+        moderationStatus: "APPROVED",
+      },
+      include: {
+        media: true,
+        author: { include: { profile: true } },
+        postReactions: true,
+        favorites: true,
+        _count: {
+          select: { comments: true, postReactions: true },
+        },
+      },
+    });
+
+    if (!post) throw new Error("Post not found");
+
+    return this.formatPost(post, currentUserId);
+  }
+
+  /**
+   * FEED (PAGINATION)
+   */
+  async getFeed(currentUserId, page = 1, limit = 10) {
+    const posts = await prisma.post.findMany({
+      where: {
+        isDeleted: false,
+        moderationStatus: "APPROVED",
+      },
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * limit,
+      take: limit,
+      include: {
+        media: true,
+        author: { include: { profile: true } },
+        postReactions: true,
+        favorites: true,
+        _count: {
+          select: { comments: true, postReactions: true },
+        },
+      },
+    });
+
+    return posts.map((p) => this.formatPost(p, currentUserId));
+  }
+
+  /**
+   * GET USER POSTS
+   * endpoint: /posts/fetch/:userId
+   */
+  async getUserPosts(targetUserId, currentUserId, page = 1, limit = 10) {
+    const isOwner = targetUserId === currentUserId;
+
+    const posts = await prisma.post.findMany({
+      where: {
+        authorId: targetUserId,
+        ...(isOwner
+          ? {}
+          : {
+              isDeleted: false,
+              moderationStatus: "APPROVED",
+            }),
+      },
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * limit,
+      take: limit,
+      include: {
+        media: true,
+        author: { include: { profile: true } },
+        postReactions: true,
+        favorites: true,
+        _count: {
+          select: { comments: true, postReactions: true },
+        },
+      },
+    });
+
+    return posts.map((p) => this.formatPost(p, currentUserId));
+  }
+
+  /**
+   * DELETE (SOFT)
    */
   async deletePostWithMedia(postId, userId) {
     return await prisma.$transaction(async (tx) => {
@@ -339,7 +417,7 @@ class PostCreateService {
         include: { media: true },
       });
 
-      if (!post) throw new Error("Post not found or you don't have permission");
+      if (!post) throw new Error("Post not found or no permission");
 
       const deletedPost = await tx.post.update({
         where: { id: postId },
@@ -349,45 +427,17 @@ class PostCreateService {
       for (const media of post.media) {
         try {
           const filePath = supabaseStorage.extractFilePathFromUrl(
-            media.fileUrl,
+            media.fileUrl
           );
           if (filePath) await supabaseStorage.deleteFile(filePath);
-        } catch (error) {
-          console.error(`Failed to delete media ${media.id}:`, error);
+        } catch (err) {
+          console.error("Media delete failed:", err);
         }
       }
 
       return deletedPost;
     });
   }
-
-  /**
-   * Restore soft-deleted post
-   */
-  async restorePost(postId, userId) {
-    const post = await prisma.post.updateMany({
-      where: { id: postId, authorId: userId, isDeleted: true },
-      data: { isDeleted: false },
-    });
-
-    if (post.count === 0) throw new Error("Post not found or already restored");
-
-    return await prisma.post.findUnique({
-      where: { id: postId },
-      include: {
-        media: true,
-        author: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            profile: { select: { username: true, profileImage: true } },
-          },
-        },
-      },
-    });
-  }
 }
 
-// NEW ESM
 export default new PostCreateService();
