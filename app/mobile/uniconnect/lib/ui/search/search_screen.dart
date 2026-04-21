@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:uniconnect/config/assets.dart';
+import 'package:uniconnect/routing/routes.dart';
 import 'package:uniconnect/ui/core/common/widgets/post_card/post_card.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
 import 'package:uniconnect/ui/search/viewmodels/search_viewmodel_provider.dart';
@@ -246,36 +248,39 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           children: data.map((user) {
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 15),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: Dimens.avatarXs,
-                    backgroundImage: user.$3 != null
-                        ? NetworkImage(user.$3!)
-                        : AssetImage(Assets.defaultAvatar) as ImageProvider,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          user.$2,
-                          style: TextStyle(
-                            fontSize: Dimens.fontLg,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        Text(
-                          user.$1,
-                          style: TextStyle(
-                            color: Colors.black.withOpacity(0.6),
-                          ),
-                        ),
-                      ],
+              child: GestureDetector(
+                onTap: () => context.push(Routes.userProfile(user.$1)),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: Dimens.avatarXs,
+                      backgroundImage: user.$3 != null
+                          ? NetworkImage(user.$3!)
+                          : AssetImage(Assets.defaultAvatar) as ImageProvider,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            user.$4,
+                            style: TextStyle(
+                              fontSize: Dimens.fontLg,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            user.$2,
+                            style: TextStyle(
+                              color: Colors.black.withOpacity(0.6),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           }).toList(),

@@ -13,18 +13,17 @@ final apiClientProvider = Provider<ApiClient>((ref) {
 
 class ApiClient {
   final Dio _client;
-  // final String _userId;
-
   ApiClient({Dio? client})
     :
-      _client = client ?? Dio();
+      _client = client ?? Dio(BaseOptions(baseUrl: baseUrl));
+
 
   Future<Result<List<Map<String, dynamic>>>> fetchUserPost(
     String userId,
   ) async {
     try {
       //todo: pagination
-      final response = await _client.get('/${ApiRoutes.posts}/$userId');
+      final response = await _client.get('/posts/fetch/$userId');
       final List data = response.data;
       return Result.ok(data.cast<Map<String, dynamic>>());
     } on DioException catch (e) {
@@ -48,7 +47,7 @@ class ApiClient {
 
   Future<Result<Map<String, dynamic>>> fetchUser(String userId) async {
     try {
-      final response = await _client.get('/getUser/$userId');
+      final response = await _client.get('/users/profile/$userId');
       final Map<String, dynamic> data = response.data;
       return Result.ok(data);
     } on DioException catch (e) {
@@ -91,7 +90,7 @@ class ApiClient {
       final Map<String, dynamic> postData = {
         'content': content,
         'createdAt': createdAt.toIso8601String(),
-        'hashtags': ?hashtags,
+        'tags': ?hashtags,
       };
 
       if (media != null && media.isNotEmpty) {
@@ -107,12 +106,13 @@ class ApiClient {
 
       final formData = FormData.fromMap(postData);
       final response = await _client.post(
-        ApiRoutes.posts,
+        '/posts/createPost',
         data: formData,
       );
 
       return Result.ok(response.data);
     } on DioException catch (e) {
+      // todo: staus code rejected
       return Result.error(e);
     }
   }
@@ -130,13 +130,15 @@ class ApiClient {
   Future<Result> likePost(String postId) async {
     //todo: reaction type
     try {
-      await _client.post('/likePost/$postId',);
+      await _client.post('/v1/posts/likePost/:$postId',);
+      //todo: like count is returned
       return Result.ok(null);
     } on DioException catch (e) {
       return Result.error(e);
     }
   }
 
+  //todo: handle replies
   Future<Result> commentOnPost({
     required String postId,
     required String comment,
@@ -144,9 +146,8 @@ class ApiClient {
   }) async {
     try {
       await _client.post(
-        '/commentPost/$postId',
+        'v1/posts/commentPost/:$postId',
         data: {
-          'postId': postId,
           'comment': comment,
           'createdAt': createdAt.toIso8601String(),
         },
@@ -159,7 +160,7 @@ class ApiClient {
 
   Future<Result<dynamic>> fetchComments(String postId) async {
     try {
-      final response = await _client.get('/comments/$postId');
+      final response = await _client.get('/v1/posts/comments/:$postId');
       return Result.ok(response.data);
     } on DioException catch (e) {
       return Result.error(e);
@@ -191,7 +192,7 @@ class ApiClient {
 
   Future<Result> bookmarkPost(String postId) async {
     try {
-      await _client.post('/bookmarkPost/$postId');
+      await _client.post('/v1/posts/bookmarkPost/:$postId');
       return Result.ok(null);
     } on DioException catch (e) {
       return Result.error(e);

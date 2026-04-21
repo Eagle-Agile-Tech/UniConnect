@@ -10,15 +10,15 @@ import '../../../domain/models/post/post.dart';
 import '../../../domain/models/user/user.dart';
 
 final userSearchProvider =
-    AsyncNotifierProvider<SearchUserViewModel, List<(String id, String username, String? profileImage)>>(
+    AsyncNotifierProvider<SearchUserViewModel, List<(String id, String username, String? profileImage, String fullName)>>(
       SearchUserViewModel.new,
     );
 
-class SearchUserViewModel extends AsyncNotifier<List<(String id, String username, String? profileImage)>> {
+class SearchUserViewModel extends AsyncNotifier<List<(String id, String username, String? profileImage, String fullName)>> {
   late UserRepository _userRepo;
 
   @override
-  FutureOr<List<(String id, String username, String profileImage)>> build() {
+  FutureOr<List<(String id, String username, String profileImage, String fullName)>> build() {
     _userRepo = ref.watch(userRepoProvider);
     return [];
   }

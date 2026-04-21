@@ -38,14 +38,15 @@ class UserRepositoryRemote implements UserRepository {
   }
 
   @override
-  Future<Result<List<(String id, String username, String? profileImage)>>> searchUsers(String keyWord) async {
+  Future<Result<List<(String id, String username, String? profileImage, String fullName)>>> searchUsers(String keyWord) async {
     final result = await _client.searchUsers(keyWord);
     return result.fold(
             (data) {
           final users = data.map((user) => (
           user['userId'] as String,
           user['username'] as String,
-          user['profileImage'] as String?
+          user['profileImage'] as String?,
+          user['fullName'] as String
           )).toList();
           return Result.ok(users);
         },
