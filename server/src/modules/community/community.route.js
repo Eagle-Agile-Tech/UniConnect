@@ -1,6 +1,6 @@
 const router = require("express").Router();
 const communityController = require("./community.controller");
-const authMiddleware = require("../../middlewares/auth");
+const authenticate = require("../../middlewares/authMiddleware");
 const validateRequest = require("../../middlewares/validateRequest");
 const communitySchema = require("./community.schema");
 const upload = require("../../config/multer");
@@ -41,7 +41,7 @@ function normalizeCommunityPostPayload(req, _res, next) {
   next();
 }
 
-router.use(authMiddleware.authenticate);
+router.use(authenticate);
 
 router.post(
   "/",

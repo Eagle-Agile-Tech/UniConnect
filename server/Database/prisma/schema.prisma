@@ -107,8 +107,8 @@ enum MediaType {
   GRADUATED
 }
 enum NetworkStatus {
-  CONNECTED
   PENDING
+  CONNECTED
 }
 enum AuditAction {
   CREATE
@@ -182,8 +182,10 @@ posts                Post[]
   createdCommunities   Community[]
   mediaUploads         Media[]
   favorites            Favorite[]
-  networksA            Network[]           @relation("UserNetworkA")
-  networksB            Network[]           @relation("UserNetworkB")
+ networkRequestsSent     NetworkRequest[] @relation("SentNetworkRequests")
+networkRequestsReceived NetworkRequest[] @relation("ReceivedNetworkRequests")
+networksA Network[] @relation("NetworkA")
+networksB Network[] @relation("NetworkB")
   originalPosts        Post[]              @relation("PostRepostAuthor")
   events               Event[]
   auditlogs            AuditLog[]
@@ -666,21 +668,36 @@ model Media {
 // =========================
 // NETWORKING
 // ========================
-model Network {
-  id          String @id @default(uuid())
-  userAId   String
-  userBId  String
-  status NetworkStatus @default(PENDING)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
 
-  userA    User @relation("UserNetworkA", fields: [userAId], references: [id])
-  userB   User @relation("UserNetworkB", fields: [userBId], references: [id])
+model NetworkRequest {
+  id          String   @id @default(uuid())
+
+  senderId    String
+  receiverId  String
+
+  createdAt   DateTime @default(now())
+
+  sender      User @relation("SentNetworkRequests", fields: [senderId], references: [id])
+  receiver    User @relation("ReceivedNetworkRequests", fields: [receiverId], references: [id])
+
+  @@unique([senderId, receiverId])
+  @@index([receiverId])
+  @@index([senderId])
+}
+model Network {
+  id        String   @id @default(uuid())
+
+  userAId   String
+  userBId   String
+
+  createdAt DateTime @default(now())
+
+  userA     User @relation("NetworkA", fields: [userAId], references: [id])
+  userB     User @relation("NetworkB", fields: [userBId], references: [id])
 
   @@unique([userAId, userBId])
-  @@index([userBId , status])
-  @@index([userAId, status])
- 
+  @@index([userAId])
+  @@index([userBId])
 }
 
 // =========================
