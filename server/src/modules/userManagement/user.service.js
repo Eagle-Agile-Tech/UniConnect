@@ -35,20 +35,20 @@ const usernameOnlySchema = createUserSchema.pick({ username: true });
 
 function parseGraduationYear(value) {
     if (value === null || value === undefined || value === "") return undefined;
-    if (typeof value === "number" && Number.isInteger(value)) return value;
+    if (typeof value === "number" && Number.isInteger(value)) {
+        return new Date(Date.UTC(value, 0, 1));
+    }
     if (typeof value === "string") {
         const trimmed = value.trim();
         if (/^\d{4}$/.test(trimmed)) {
-            return Number(trimmed);
+            return new Date(Date.UTC(Number(trimmed), 0, 1));
         }
         const parsedDate = new Date(trimmed);
         if (!Number.isNaN(parsedDate.getTime())) {
-            return parsedDate.getUTCFullYear();
+            return parsedDate;
         }
     }
-    if (value instanceof Date && !Number.isNaN(value.getTime())) {
-        return value.getUTCFullYear();
-    }
+    if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
     return null;
 }
 
@@ -79,7 +79,11 @@ function mapStudentFields(input) {
     const student = input?.student || {};
     const degree = input?.degree ?? student?.degree;
     const currentYear = input?.currentYear ?? student?.currentYear;
-    const expectedGraduationYear = input?.expectedGraduationYear ?? student?.expectedGraduationYear;
+    const expectedGraduationYear =
+        input?.expectedGraduationYear ??
+        input?.graduationYear ??
+        student?.expectedGraduationYear ??
+        student?.graduationYear;
     const interests = input?.interests ?? student?.interests;
 
     const mapped = {};
@@ -100,7 +104,7 @@ function mapStudentFields(input) {
         err.source = "body";
         throw err;
     }
-    if (graduationYear !== undefined) mapped.graduationYear = graduationYear;
+    if (graduationYear !== undefined) mapped.expectedGraduationYear = graduationYear;
 
     if (interests !== undefined) mapped.interests = interests;
 
@@ -233,7 +237,7 @@ class userService {
             universityId,
             universityName,
             yearOfStudy,
-            graduationYear,
+            expectedGraduationYear,
         } = data;
 
         const user = await prisma.user.findUnique({
@@ -295,7 +299,7 @@ class userService {
                     level,
                     universityId: resolvedUniversityId,
                     yearOfStudy,
-                    graduationYear,
+                    graduationYear: expectedGraduationYear,
                 },
             });
             const freshUser = await prisma.user.findUnique({
@@ -340,7 +344,7 @@ class userService {
                 level,
                 universityId: resolvedUniversityId,
                 yearOfStudy,
-                graduationYear,
+                graduationYear: expectedGraduationYear,
             },
         });
         const freshUser = await prisma.user.findUnique({
@@ -514,7 +518,7 @@ class userService {
             universityId,
             universityName,
             yearOfStudy,
-            graduationYear,
+            expectedGraduationYear,
         } = data;
 
         if (data.username) {
@@ -544,7 +548,14 @@ class userService {
         await prisma.userProfile.update({
             where: { userId },
             data: {
-                ...data,
+                username: data.username,
+                bio,
+                profileImage,
+                interests,
+                department,
+                level,
+                yearOfStudy,
+                graduationYear: expectedGraduationYear,
                 universityId: resolvedUniversityId,
             }
         });
