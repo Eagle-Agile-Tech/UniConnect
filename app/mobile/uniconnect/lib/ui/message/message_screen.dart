@@ -7,18 +7,23 @@ import 'package:go_router/go_router.dart';
 import 'package:uniconnect/config/assets.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
 
+import '../../data/repository/chat/chat_repository_remote.dart';
+import '../auth/auth_state_provider.dart';
 import '../chat/viewmodels/chat_provider.dart';
 
 class MessageScreen extends ConsumerStatefulWidget {
   const MessageScreen({
     super.key,
     required this.receiverId,
-    required this.receiverName, required this.chatId,
+    required this.receiverName,
+    this.profileImage,
+    this.chatId,
   });
 
   final String receiverId;
   final String receiverName;
-  final String chatId;
+  final String? profileImage;
+  final String? chatId;
   @override
   ConsumerState<MessageScreen> createState() => _MessageScreenState();
 }
@@ -34,12 +39,14 @@ class _MessageScreenState extends ConsumerState<MessageScreen>
   bool _isLoadingMore = false;
   bool _hasMoreMessages = true;
   Timer? _typingTimer;
+  bool _isInitializing = true;
+  String? _chatId;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _chatInit();
+    _initializeChat();
     _registerEventListener();
     _textMessage.addListener(_onTextChanged);
   }
@@ -57,40 +64,68 @@ class _MessageScreenState extends ConsumerState<MessageScreen>
     super.dispose();
   }
 
-  Future<void> _chatInit() async {
+  Future<void> _initializeChat() async {
     setState(() {
-      _isLoading = true;
+      _isInitializing = true;
     });
     try {
-      _chatService.initChat(widget.receiverId);
-      ref.read(activeRoomProvider.notifier).state = widget.chatId;
+      String effectiveChatId;
+      if (widget.chatId != null) {
+        effectiveChatId = widget.chatId!;
+      }
+      else {
+        final result = await ref.read(chatRepoProvider).getChatId(
+            widget.receiverId,
+            ref.read(authNotifierProvider).value!.user!.id
+        );
+
+        effectiveChatId = result.fold(
+              (data) => data['chatId'] as String,
+              (error, stackTrace) => throw error,
+        );
+      }
+
+      _chatId = effectiveChatId;
+
+      await _chatService.initChat(widget.receiverId);
+
+      ref.read(activeRoomProvider.notifier).state = _chatId;
+
       await _chatService.loadMessages();
 
-      _chatService.addEventListener(ChatEventType.custom, 'chat:presence', (data){
-
-      });
-      setState(() {
-        _isLoading = false;
-      });
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollToBottom();
-      });
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isInitializing = false;
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollToBottom();
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to initialize chat: $e'))
+        );
+        setState(() {
+          _isInitializing = false;
+        });
+      }
     }
   }
 
   void _onTextChanged() {
     if (!_isTyping) {
-      _isTyping = true;
+      setState(() {
+        _isTyping = true;
+      });
       _chatService.sendTypingIndicator(true);
     }
 
     _typingTimer?.cancel();
     _typingTimer = Timer(const Duration(milliseconds: 2000), () {
-      _isTyping = false;
+      setState(() {
+        _isTyping = false;
+      });
       _chatService.sendTypingIndicator(false);
     });
   }
@@ -185,6 +220,7 @@ class _MessageScreenState extends ConsumerState<MessageScreen>
   @override
   Widget build(BuildContext context) {
     final messages = _chatService.messages;
+    // final chatAsync = ref.watch(activeChatIdProvider(widget.receiverId));
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.deepPurple[200]?.withValues(alpha: 0.6),
@@ -200,7 +236,7 @@ class _MessageScreenState extends ConsumerState<MessageScreen>
           contentPadding: EdgeInsets.zero,
           leading: CircleAvatar(
             radius: 20,
-            backgroundImage: AssetImage(Assets.defaultAvatar),
+            backgroundImage: widget.profileImage == null ? AssetImage(Assets.defaultAvatar) : NetworkImage(widget.profileImage!),
           ),
           title: Text(
             widget.receiverName,
@@ -330,7 +366,7 @@ class _MessageScreenState extends ConsumerState<MessageScreen>
                   SizedBox(width: 8),
                   IconButton(
                     onPressed: _sendMessage,
-                    icon: _isTyping
+                    icon: _textMessage.text.isNotEmpty
                         ? Icon(Icons.send_outlined)
                         : Icon(Icons.mic),
                     color: Colors.deepPurple[600]?.withValues(alpha: 0.6),

@@ -85,7 +85,7 @@ class OthersNetwork extends ConsumerWidget {
           child: InkWell(
             onTap: () => context.push(
               Routes.messaging,
-              extra: {'userId': user.id, 'username': user.username},
+              extra: {'receiverId': user.id, 'username': user.fullName, 'profileImage': user.profilePicture},
             ),
             child: Text(
               'Chat',

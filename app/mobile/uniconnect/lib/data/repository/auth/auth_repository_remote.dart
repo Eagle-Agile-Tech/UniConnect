@@ -15,16 +15,14 @@ import 'auth_repository.dart';
 final authProvider = Provider<AuthRepositoryRemote>((ref) {
   final apiClient = ref.watch(authApiProvider);
   final fresh = ref.watch(freshProvider);
-  final chat = ref.watch(chatServiceProvider);
-  return AuthRepositoryRemote(apiClient, fresh, chat);
+  return AuthRepositoryRemote(apiClient, fresh);
 });
 
 class AuthRepositoryRemote implements AuthRepository {
   final AuthApiClient _authClient;
   final Fresh<OAuth2Token> _fresh;
-  final ChatService _chatService;
 
-  AuthRepositoryRemote(this._authClient, this._fresh, this._chatService);
+  AuthRepositoryRemote(this._authClient, this._fresh);
 
   @override
   Future<bool> get isAuthenticated => _authClient.isLoggedIn();
@@ -190,7 +188,6 @@ class AuthRepositoryRemote implements AuthRepository {
           issuedAt: DateTime.now(),
         );
         await _fresh.setToken(token);
-        await _chatService.initialize();
         await Future.delayed(const Duration(milliseconds: 500));
         return Result.ok(data['profilePicture'] as String);
       },

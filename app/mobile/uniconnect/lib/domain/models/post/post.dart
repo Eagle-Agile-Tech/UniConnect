@@ -13,7 +13,8 @@ abstract class Post with _$Post {
     required String authorName,
     final List<String>? mediaUrls,
     required DateTime createdAt,
-    final List<String>? hashtags,
+    //todo: hashtags -> tags
+    final List<String>? tags,
     required final int likeCount,
     required final int commentCount,
     @Default(false) bool isLikedByMe,

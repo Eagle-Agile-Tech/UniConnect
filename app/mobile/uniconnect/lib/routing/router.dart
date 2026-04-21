@@ -108,11 +108,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.messaging,
         builder: (context, state) {
-          final data = state.extra as Map<String, String>;
+          final data = state.extra as Map<String, dynamic>;
+          String chatId = 'hey';
           return MessageScreen(
             receiverId: data['receiverId']!,
             receiverName: data['username']!,
-            chatId: data['chatId']!,
+            profileImage: data['profileImage'],
+            chatId: chatId,
+            //chatId: data['chatId']!,
           );
         },
       ),

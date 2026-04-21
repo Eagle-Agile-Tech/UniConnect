@@ -7,6 +7,7 @@ import '../../data/repository/auth/auth_repository_remote.dart';
 import '../../data/service/socket/chat_service.dart';
 import '../../domain/models/user/user.dart';
 import '../../utils/result.dart';
+import '../chat/viewmodels/chat_provider.dart';
 import 'onboarding/view_models/onboarding_viewmodel_provider.dart';
 import 'onboarding_experts/viewmodel/expert_onboarding_provider.dart';
 
@@ -38,15 +39,11 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       final isAuth = await _repo.isAuthenticated;
       if (!isAuth) return const AuthState(user: null);
 
-      _chat = ref.watch(chatServiceProvider);
-
       final result = await _userRepo.getCurrentUser();
 
       return result.fold((user) {
-        _chat.initializeChatPlugin(user.id);
         return AuthState(user: user);
       }, (_, _) => const AuthState(user: null));
-
     } catch (e) {
       return const AuthState(user: null);
     }
@@ -58,8 +55,12 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     final result = await _repo.login(email, password);
 
     result.fold(
-      (user) => state = AsyncData(AuthState(user: user)),
-      (_, _) => state = const AsyncData(AuthState(user: null)),
+          (user) async {
+        state = AsyncData(AuthState(user: user));
+            await Future.delayed(Duration(milliseconds: 500));
+            _chat.initialize();
+        },
+          (_, _) => state = const AsyncData(AuthState(user: null)),
     );
   }
 
@@ -74,19 +75,19 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   Future<Err?> registerStudent() async {
     final onborader = ref.read(onboardingProvider.notifier);
     final result = await onborader.completeOnboarding();
-    return result.fold((user) {
+    return result.fold((user) async {
       state = AsyncData(AuthState(user: user));
+      await Future.delayed(Duration(milliseconds: 500));
+      await _chat.initialize();
       return null;
     }, (error, stackTrace) => Result.error(error) as Err);
   }
 
-  Future<Err?> registerExpert(
-    String expertise,
-    String honor,
-    String username,
-    String? bio,
-    File? profilePicture,
-  ) async {
+  Future<Err?> registerExpert(String expertise,
+      String honor,
+      String username,
+      String? bio,
+      File? profilePicture,) async {
     _onBoardExpert = ref.read(expertOnboardingProvider.notifier);
     final result = await _onBoardExpert.createExpertProfile(
       expertise,
@@ -108,7 +109,6 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     String? bio,
     File? profilePic,
   }) async {
-
     final userRepo = _userRepo;
     final result = await userRepo.updateProfile(
       firstName,
@@ -121,8 +121,9 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     return result.fold((data) async {
       final updatedUser = await _userRepo.getCurrentUser();
       updatedUser.fold(
-        (data) => state = AsyncData(AuthState(user: data)),
-        (error, stackTrace) => state  = const AsyncData(AuthState(user: null)),
+            (data) => state = AsyncData(AuthState(user: data)),
+            (error, stackTrace) =>
+        state = const AsyncData(AuthState(user: null)),
       );
       return Result.ok('Profile updated');
     }, (error, _) => Result.error(error));

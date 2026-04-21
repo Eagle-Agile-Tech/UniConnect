@@ -329,4 +329,15 @@ class ApiClient {
       return Result.error(e);
     }
   }
+
+  // Chats
+Future<Result<Map<String, dynamic>>> getChatId(String receiverId) async {
+  try{
+    final response = await _client.get('/chats/$receiverId');
+    final Map<String,dynamic> data = response.data;
+    return Result.ok(data);
+  } on DioException catch(e) {
+    return Result.error(e);
+  }
+}
 }

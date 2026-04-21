@@ -49,7 +49,7 @@ class _MessagesState extends ConsumerState<DirectChatScreen>
   }
 
   void _ensureChatConnection() async {
-    final chatServiceProviderInstance = ref.read(chatServiceProvider);
+    // final chatServiceProviderInstance = ref.read(activechatServiceProvider);
     if (ChatConfig.instance.userId != null) {
       try {
         final chatService = ChatPlugin.chatService;
@@ -65,7 +65,7 @@ class _MessagesState extends ConsumerState<DirectChatScreen>
         );
       }
     } else {
-      await chatServiceProviderInstance.initializeChatPlugin();
+      // await chatServiceProviderInstance.initialize();
     }
   }
 
@@ -136,7 +136,7 @@ class _MessagesState extends ConsumerState<DirectChatScreen>
 
               context.push(
                 Routes.messaging,
-                extra: {'receiverId': room.userId, 'username': room.username, 'chatId': ref.read(chatIdProvider.notifier).state![index]},
+                extra: {'receiverId': room.userId, 'username': room.username, 'chatId': ref.read(activeChatIdProvider.notifier).state![index]},
               );
             },
             contentPadding: const EdgeInsets.symmetric(
