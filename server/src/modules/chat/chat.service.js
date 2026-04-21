@@ -183,6 +183,27 @@ class ChatService {
     if (!otherUserId) {
       throw new BadRequestError('otherUserId is required');
     }
+
+    const existingChat = await prisma.chat.findUnique({
+      where: { id: otherUserId },
+      include: chatInclude,
+    });
+
+    if (existingChat) {
+      const isParticipant = existingChat.participants.some(
+        (participant) => participant.userId === userId
+      );
+
+      if (!isParticipant) {
+        throw new ForbiddenError('You are not a participant of this chat');
+      }
+
+      return {
+        chatId: existingChat.id,
+        messages: existingChat.messages || [],
+      };
+    }
+
     if (otherUserId === userId) {
       throw new BadRequestError('Cannot create or fetch a direct chat with yourself');
     }
