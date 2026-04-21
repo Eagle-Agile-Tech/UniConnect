@@ -610,5 +610,42 @@ class userService {
         return { message: "User profile deleted successfully" };
     }
 
+    async getUserProfileById(userId) {
+        if(userId === undefined || userId === null) {
+            throw new BadRequestError("User id is required");
+        }
+
+        const userProfile = await prisma.userProfile.findUnique({
+            where: { userId },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true,
+                        email: true,
+                        role: true,
+                    },
+                },
+                university: {
+                    select: { name: true },
+                },
+            },
+        });
+
+        if (!userProfile) {
+            throw new NotFoundError("User profile not found");
+        }
+
+        const { university, user, ...restProfile } = userProfile;
+        return buildUserResponse({
+            user,
+            profile: {
+                ...restProfile,
+                university,
+            },
+        });
+    }
+
 }
 module.exports = new userService();

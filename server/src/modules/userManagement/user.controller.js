@@ -82,6 +82,16 @@ class UserController {
     }
   }
 
+  async getUserProfileById(req, res, next) {
+    try {
+      const { userId } = req.params;
+      const profile = await userService.getUserProfileById(userId);
+      res.status(200).json(profile);
+    } catch (err) {
+      next(err);
+    }
+  }
+
   
 }
 
