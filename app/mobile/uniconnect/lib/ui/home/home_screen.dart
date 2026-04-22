@@ -25,7 +25,6 @@ class HomeScreen extends ConsumerWidget {
         ),
         actions: [
           IconButton(
-            // Todo: make the navigator router
             onPressed: () => context.push(Routes.post),
             icon: const Icon(
               Icons.add_circle_outline_outlined,
@@ -40,7 +39,14 @@ class HomeScreen extends ConsumerWidget {
           ),
         ),
       ),
-      drawer: Drawer(child: DrawerContent()),
+      drawer: Drawer(
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.zero,
+        ),
+        elevation: 4,
+        width: MediaQuery.of(context).size.width * 0.8,
+        child: const DrawerContent(),
+      ),
       body: RefreshIndicator(
         onRefresh: () => ref.read(homeViewModelProvider.future),
         child: postAsync.when(

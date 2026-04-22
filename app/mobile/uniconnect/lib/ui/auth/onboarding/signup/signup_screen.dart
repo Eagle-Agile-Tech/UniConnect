@@ -28,6 +28,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   );
   final _passwordController = TextEditingController(text: '!@Fffds1ff');
   final _confirmPasswordController = TextEditingController(text: '!@Fffds1ff');
+  bool _isPassVisible = true;
+  bool _isPassConfirmVisible = true;
 
   @override
   void dispose() {
@@ -98,7 +100,15 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               TextFormField(
                 controller: _passwordController,
                 validator: (value) => UCValidator.validatePassword(value),
-                decoration: const InputDecoration(labelText: 'Password'),
+                obscureText: _isPassVisible,
+                decoration: InputDecoration(labelText: 'Password',suffixIcon: IconButton(
+                  onPressed: () {
+                    setState(() {
+                      _isPassVisible = !_isPassVisible;
+                    });
+                  },
+                  icon: Icon(_isPassVisible ? Icons.visibility : Icons.visibility_off),
+                )),
               ),
               SizedBox(height: Dimens.defaultSpace),
               TextFormField(
@@ -107,7 +117,15 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   value,
                   _passwordController.text.trim(),
                 ),
-                decoration: const InputDecoration(labelText: 'Confirm Password'),
+                obscureText: _isPassConfirmVisible,
+                decoration: InputDecoration(labelText: 'Confirm Password',suffixIcon: IconButton(
+                  onPressed: () {
+                    setState(() {
+                      _isPassConfirmVisible = !_isPassConfirmVisible;
+                    });
+                  },
+                  icon: Icon(_isPassConfirmVisible ? Icons.visibility : Icons.visibility_off),
+                )),
               ),
               SizedBox(height: Dimens.spaceBtwSections),
               ElevatedButton(

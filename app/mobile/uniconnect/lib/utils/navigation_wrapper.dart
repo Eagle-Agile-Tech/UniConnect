@@ -33,7 +33,7 @@ class _NavigationWrapperState extends State<NavigationWrapper> {
     ),
     const NavigationDestination(
       icon: Icon(Icons.notifications_none),
-      label: 'Notifications',
+      label: 'Notification',
       selectedIcon: Icon(Icons.notifications_rounded),
     ),
     const NavigationDestination(
@@ -59,6 +59,7 @@ class _NavigationWrapperState extends State<NavigationWrapper> {
         children: pages,
       ),
       bottomNavigationBar: NavigationBar(
+        height: 65,
         elevation: 0,
         labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
         destinations: destinations,

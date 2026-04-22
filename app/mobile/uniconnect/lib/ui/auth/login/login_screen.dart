@@ -19,6 +19,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final GlobalKey<FormState> _key = GlobalKey<FormState>();
   final _email = TextEditingController(text: 'feyteshome@ju2.edu.et');
   final _password = TextEditingController(text: '!@Fffds1ff');
+  bool _isPassVisible = true;
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +42,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 controller: _password,
                 validator: (value) =>
                     UCValidator.validateEmptyText('password', value),
-                decoration: InputDecoration(labelText: 'Password'),
+                obscureText: _isPassVisible,
+                decoration: InputDecoration(labelText: 'Password',suffixIcon: IconButton(
+                  onPressed: () {
+                    setState(() {
+                      _isPassVisible = !_isPassVisible;
+                    });
+                  },
+                  icon: Icon(_isPassVisible ? Icons.visibility : Icons.visibility_off),
+                )),
               ),
               SizedBox(height: Dimens.defaultSpace),
               Align(

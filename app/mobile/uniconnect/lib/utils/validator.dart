@@ -17,31 +17,32 @@ abstract final class UCValidator {
       return EmailType.invalid;
     }
 
+    // 1. Check basic syntax first
     final emailRegex = RegExp(
       r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
     );
 
+    if (!emailRegex.hasMatch(value)) {
+      return EmailType.invalid;
+    }
+
+    // 2. Now that we know it's a valid format, categorize it
     final domain = value.split('@').last.toLowerCase();
 
     const academicIndicators = [
       '.edu',
-      '.ac',
+      '.ac.uk', // Be more specific where possible
+      '.edu.au',
       '.sch',
-      '.res',
-      '.univ',
-      '.teaching'
     ];
 
+    // Use endsWith or a regex to ensure you're catching the TLD/Subdomain correctly
     bool isAcademic = academicIndicators.any((indicator) =>
-        domain.contains(indicator)
+    domain.endsWith(indicator) || domain.contains('$indicator.')
     );
 
     if (isAcademic) {
       return EmailType.institutional;
-    }
-
-    if (!emailRegex.hasMatch(value)) {
-      return EmailType.invalid;
     }
 
     return EmailType.general;

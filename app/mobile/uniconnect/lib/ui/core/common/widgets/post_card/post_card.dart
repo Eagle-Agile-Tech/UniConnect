@@ -187,10 +187,10 @@ class _UCPostCardState extends ConsumerState<UCPostCard> {
                     ),
                     Text(widget.post.commentCount.toString()),
                     // todo: implement share functionality within the app only
-                    IconButton(
-                      onPressed: () {},
-                      icon: const Icon(Icons.share_outlined),
-                    ),
+                    // IconButton(
+                    //   onPressed: () {},
+                    //   icon: const Icon(Icons.share_outlined),
+                    // ),
                     Spacer(),
                     IconButton(
                       onPressed: () =>

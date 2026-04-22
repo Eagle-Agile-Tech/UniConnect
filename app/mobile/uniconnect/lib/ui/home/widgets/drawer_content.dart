@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:uniconnect/ui/core/theme/dimens.dart';
 
 import '../../../config/theme_provider.dart';
 import '../../../routing/routes.dart';
@@ -14,6 +15,7 @@ class DrawerContent extends ConsumerWidget {
     final currentMode = themeAsync.value ?? ThemeMode.system;
     return Column(
       children: [
+        SizedBox(height: MediaQuery.of(context).padding.top),
         ListTile(
           title: Text('Create a community'),
           trailing: IconButton(
