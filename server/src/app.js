@@ -1,4 +1,4 @@
-// ENV setup (keep ONE approach)
+// ENV setup
 require("./config/env");
 
 const express = require("express");
@@ -18,8 +18,7 @@ require("./modules/ai/ai-moderation.queue");
 // Routes
 const postRoutes = require("./modules/post/post.routes");
 const engagementRoutes = require("./modules/engagement/engagement.routes");
-const courseRoutes = require("./modules/course/course.routes.js");
-
+const courseRoutes = require("./modules/course/course.routes");
 
 const userRoutes = require("./modules/userManagement/user.route");
 const authRoutes = require("./modules/auth/auth.routes");
@@ -29,22 +28,14 @@ const expertRoutes = require("./modules/expert/expert.route");
 const chatRoutes = require("./modules/chat/chat.route");
 const eventRoutes = require("./modules/event/event.route");
 const communityRoutes = require("./modules/community/community.route");
+const notificationRoutes = require("./modules/notification/notification.route");
+const trainingDatasetRoutes = require("./modules/ai-recommendation-service/training-dataset.route");
+
 const errorHandler = require("./middlewares/errorhHandler");
 const initAdmin = require("./config/initAdmin");
+
 const savedCourseRoutes = require("./modules/course/savedCourse.routes");
 const networkRoutes = require("./modules/network/network.routes");
-const userRoutes = require('./modules/userManagement/user.route');
-const authRoutes = require('./modules/auth/auth.routes');
-const adminRoutes = require('./modules/admin/admin.route');
-const institutionRoutes = require('./modules/institution/institution.route');
-const expertRoutes = require('./modules/expert/expert.route');
-const chatRoutes = require('./modules/chat/chat.route');
-const eventRoutes = require('./modules/event/event.route');
-const communityRoutes = require('./modules/community/community.route');
-const notificationRoutes = require('./modules/notification/notification.route');
-const trainingDatasetRoutes = require('./modules/ai-recommendation-service/training-dataset.route');
-const errorHandler = require('./middlewares/errorhHandler');
-const initAdmin = require('./config/initAdmin');
 
 const app = express();
 const server = http.createServer(app);
@@ -62,10 +53,10 @@ app.use(
   cors({
     origin: ["http://localhost:3000", "http://localhost:5173"],
     credentials: true,
-  }),
+  })
 );
 
-// Health / base route
+// Health route
 app.get("/", (req, res) => {
   res.status(200).json({
     status: "success",
@@ -73,20 +64,21 @@ app.get("/", (req, res) => {
   });
 });
 
-// Routes (combine both systems)
+// Routes
 app.use("/api/v1/posts", postRoutes);
 app.use("/api/v1", engagementRoutes);
 
-app.use('/api/auth', authRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/institutions', institutionRoutes);
-app.use('/api/experts', expertRoutes);
-app.use('/api/chats', chatRoutes);
-app.use('/api/events', eventRoutes);
-app.use('/api/communities', communityRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/institutions", institutionRoutes);
+app.use("/api/experts", expertRoutes);
+app.use("/api/chats", chatRoutes);
+app.use("/api/events", eventRoutes);
+app.use("/api/communities", communityRoutes);
+app.use("/api/notifications", notificationRoutes);
 
-// Error handler
+// Error handler (must be last)
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
@@ -110,7 +102,7 @@ async function startServer() {
 
 startServer();
 
-// Graceful shutdown (from your branch)
+// Graceful shutdown
 process.on("SIGTERM", async () => {
   await prisma.$disconnect();
   process.exit(0);
