@@ -32,7 +32,6 @@ class CommentService {
         },
       });
 
-<<<<<<< HEAD
       await interactionService.logPostComment(
         userId,
         postId,
@@ -45,8 +44,6 @@ class CommentService {
       );
 
       // Create notification for post author (if not self-comment)
-=======
->>>>>>> 73ccb35 (feat: add course and payment and network)
       if (post.authorId !== userId) {
         await notificationService.createAndSendNotification({
           recipientId: post.authorId,

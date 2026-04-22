@@ -12,28 +12,38 @@
 
 */
 -- CreateEnum
-CREATE TYPE "InstitutionVerificationStatus" AS ENUM ('PENDING', 'UNVERIFIED', 'VERIFIED', 'REJECTED');
+DO $$
+BEGIN
+  CREATE TYPE "InstitutionVerificationStatus" AS ENUM ('PENDING', 'UNVERIFIED', 'VERIFIED', 'REJECTED');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "InstitutionType" AS ENUM ('UNIVERSITY', 'COMPANY', 'NGO', 'RESEARCH_CENTER', 'TRAINING_CENTER', 'GOVERNMENT', 'OTHER');
+DO $$
+BEGIN
+  CREATE TYPE "InstitutionType" AS ENUM ('UNIVERSITY', 'COMPANY', 'NGO', 'RESEARCH_CENTER', 'TRAINING_CENTER', 'GOVERNMENT', 'OTHER');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
 -- AlterTable
-ALTER TABLE "Chat" ADD COLUMN     "avatarUrl" TEXT,
-ADD COLUMN     "createdById" TEXT,
-ADD COLUMN     "name" TEXT;
+ALTER TABLE "Chat" ADD COLUMN IF NOT EXISTS "avatarUrl" TEXT,
+ADD COLUMN IF NOT EXISTS "createdById" TEXT,
+ADD COLUMN IF NOT EXISTS "name" TEXT;
 
 -- AlterTable
-ALTER TABLE "Community" DROP COLUMN "type";
+ALTER TABLE "Community" DROP COLUMN IF EXISTS "type";
 
 -- AlterTable
-ALTER TABLE "CommunityMember" DROP COLUMN "status";
+ALTER TABLE "CommunityMember" DROP COLUMN IF EXISTS "status";
 
 -- AlterTable
-ALTER TABLE "Institution" DROP COLUMN "isVerified",
+ALTER TABLE "Institution" DROP COLUMN IF EXISTS "isVerified",
 ADD COLUMN     "profileUserId" TEXT,
 ADD COLUMN     "secretCode" TEXT,
 ADD COLUMN     "secretCodeExpiresAt" TIMESTAMP(3),
-ADD COLUMN     "type" "InstitutionType" NOT NULL,
+ADD COLUMN     "type" "InstitutionType" NOT NULL DEFAULT 'OTHER',
 ADD COLUMN     "userId" TEXT,
 ADD COLUMN     "verificationStatus" "InstitutionVerificationStatus" NOT NULL DEFAULT 'UNVERIFIED',
 ADD COLUMN     "verifiedAt" TIMESTAMP(3),
