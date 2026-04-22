@@ -16,28 +16,35 @@ abstract final class UCValidator {
     if (value == null || value.isEmpty) {
       return EmailType.invalid;
     }
-    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-    if (!emailRegex.hasMatch(value)) return EmailType.invalid;
-    const generalDomains = [
-      'gmail.com',
-      'yahoo.com',
-      'outlook.com',
-      'hotmail.com',
-    ];
-    const academicDomains = [
-      '.edu',
-      '.ac.',
-      '.edu.',
-      '.sch.',
-      '.res.in',
-      '.univ-',
-    ];
+
+    final emailRegex = RegExp(
+      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+    );
+
     final domain = value.split('@').last.toLowerCase();
-    if (academicDomains.any((pattern) => domain.contains(pattern))) {
+
+    const academicIndicators = [
+      '.edu',
+      '.ac',
+      '.sch',
+      '.res',
+      '.univ',
+      '.teaching'
+    ];
+
+    bool isAcademic = academicIndicators.any((indicator) =>
+        domain.contains(indicator)
+    );
+
+    if (isAcademic) {
       return EmailType.institutional;
-    } else {
-      return EmailType.general;
     }
+
+    if (!emailRegex.hasMatch(value)) {
+      return EmailType.invalid;
+    }
+
+    return EmailType.general;
   }
 
   static String? validatePassword(String? value) {

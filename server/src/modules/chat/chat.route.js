@@ -72,5 +72,7 @@ router.post(
   chatController.markAsDelivered
 );
 router.post('/typing', validateRequest(typingSchema), chatController.typing);
+router.get('/:otherUserId', chatController.getChatIdFromUserIds);
+ 
 
 module.exports = router;

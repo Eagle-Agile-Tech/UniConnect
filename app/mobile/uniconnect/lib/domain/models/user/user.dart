@@ -21,8 +21,8 @@ abstract class User with _$User{
     String? bio,
     String? profilePicture,
     required UserRole role,
-    Student? student,
-    Expert? expert,
+    @JsonKey(name:'STUDENT') Student? student,
+    @JsonKey(name:'EXPERT') Expert? expert,
     @Default(false) bool areWe
 }) = _User;
 

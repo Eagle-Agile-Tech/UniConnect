@@ -1,30 +1,28 @@
 import 'dart:io';
 
-import 'package:chat_plugin/chat_plugin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fresh_dio/fresh_dio.dart';
-import 'package:uniconnect/data/service/socket/chat_service.dart' as Chat;
+import 'package:uniconnect/ui/chat/viewmodels/chat_provider.dart';
 
 import 'package:uniconnect/utils/result.dart';
 
 import '../../../domain/models/user/user.dart';
 import '../../service/api/auth_api_client.dart';
 import '../../service/api/token_refresher.dart';
+import '../../service/socket/chat_service.dart';
 import 'auth_repository.dart';
 
 final authProvider = Provider<AuthRepositoryRemote>((ref) {
   final apiClient = ref.watch(authApiProvider);
   final fresh = ref.watch(freshProvider);
-  final chat = ref.watch(Chat.chatServiceProvider);
-  return AuthRepositoryRemote(apiClient, fresh, chat);
+  return AuthRepositoryRemote(apiClient, fresh);
 });
 
 class AuthRepositoryRemote implements AuthRepository {
   final AuthApiClient _authClient;
   final Fresh<OAuth2Token> _fresh;
-  final Chat.ChatService _chatService;
 
-  AuthRepositoryRemote(this._authClient, this._fresh, this._chatService);
+  AuthRepositoryRemote(this._authClient, this._fresh);
 
   @override
   Future<bool> get isAuthenticated => _authClient.isLoggedIn();
@@ -50,17 +48,18 @@ class AuthRepositoryRemote implements AuthRepository {
   @override
   Future<Result<String>> verifyOtp(String email, String otp) async {
     final result = await _authClient.verifyOtp(email, otp);
-    return result.fold(
-      (data) async {
-        final token = OAuth2Token(
-          accessToken: data['accessToken'],
-          refreshToken: data['refreshToken'],
-        );
-        await _fresh.setToken(token);
-        return Result.ok(data['university'] as String);
-      },
-      (error, stackTrace) => Result.error(error),
-    );
+    return result.fold((data) async {
+      final token = OAuth2Token(
+        accessToken: data['accessToken'],
+        refreshToken: data['refreshToken'],
+        expiresIn: data['accessTokenExpiresIn'],
+        issuedAt: DateTime.fromMillisecondsSinceEpoch(
+          data['accessTokenIssuedAt'] * 1000,
+        ),
+      );
+      await _fresh.setToken(token);
+      return Result.ok(data['university'] as String);
+    }, (error, stackTrace) => Result.error(error));
   }
 
   @override
@@ -101,7 +100,6 @@ class AuthRepositoryRemote implements AuthRepository {
     );
     return result.fold(
       (data) async {
-        await _chatService.initializeChatPlugin(data['id']);
         await Future.delayed(const Duration(milliseconds: 500));
         return Result.ok(User.fromJson(data));
       },
@@ -119,11 +117,13 @@ class AuthRepositoryRemote implements AuthRepository {
         final token = OAuth2Token(
           accessToken: data['accessToken'],
           refreshToken: data['refreshToken'],
+          expiresIn: data['accessTokenExpiresIn'],
+          issuedAt: DateTime.fromMillisecondsSinceEpoch(
+            data['accessTokenIssuedAt'] * 1000,
+          ),
         );
         await _fresh.setToken(token);
 
-        // todo: token
-        await _chatService.initializeChatPlugin(data['id']);
         await Future.delayed(const Duration(milliseconds: 500));
 
         return Result.ok(User.fromJson(data));
@@ -135,10 +135,8 @@ class AuthRepositoryRemote implements AuthRepository {
   }
 
   Future<bool> logout() async {
+    await _fresh.setToken(null);
     final result = await _authClient.logoutUser();
-    if (ChatConfig.instance.userId != null) {
-      ChatPlugin.chatService.fullDisconnect();
-    }
     return result;
   }
 
@@ -186,10 +184,10 @@ class AuthRepositoryRemote implements AuthRepository {
         final token = OAuth2Token(
           accessToken: data['accessToken'],
           refreshToken: data['refreshToken'],
+          expiresIn: data['accessTokenExpiresIn'].toInt(),
+          issuedAt: DateTime.now(),
         );
         await _fresh.setToken(token);
-        // todo: token
-        await _chatService.initializeChatPlugin(data['id']);
         await Future.delayed(const Duration(milliseconds: 500));
         return Result.ok(data['profilePicture'] as String);
       },

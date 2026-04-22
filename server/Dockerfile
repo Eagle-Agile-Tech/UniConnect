@@ -1,7 +1,7 @@
 FROM node:20-alpine
 
 WORKDIR /app
-
+RUN apk add --no-cache postgresql-client
 # Install dependencies for both backend packages.
 COPY src/package*.json ./src/
 COPY Database/package*.json ./Database/

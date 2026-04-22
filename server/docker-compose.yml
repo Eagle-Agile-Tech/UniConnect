@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "${DB_HOST_PORT:-5433}:5432"
+      - "${DB_HOST_PORT:-5434}:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
@@ -52,10 +52,11 @@ services:
     ports:
       - "${API_HOST_PORT:-3000}:3000"
     command: >
-      sh -c "cd /app/src &&
-             npm run db:generate &&
-             npm run db:migrate &&
-             npm run dev"
+      sh -c "until pg_isready -h db -U postgres; do sleep 2; done &&
+      cd /app/src &&
+      npm run db:generate &&
+      npm run db:migrate &&
+      npm run dev"
 
 volumes:
   db_data:

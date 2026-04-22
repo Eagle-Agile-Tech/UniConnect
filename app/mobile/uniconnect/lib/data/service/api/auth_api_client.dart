@@ -109,8 +109,8 @@ class AuthApiClient {
         'username': username,
         'yearOfStudy': currentYear,
         'graduationYear': expectedGraduationYear.year,
-        'bio': bio,
-        if (interests != null) 'interests': jsonEncode(interests),
+        'bio': ?bio,
+        'interests': ?interests,
       };
 
       if (profilePicture != null) {

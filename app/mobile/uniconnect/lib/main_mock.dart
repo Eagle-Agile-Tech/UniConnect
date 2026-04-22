@@ -2,9 +2,11 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http_mock_adapter/http_mock_adapter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uniconnect/routing/router.dart';
 import 'package:uniconnect/ui/core/theme/theme.dart';
 
+import 'config/theme_provider.dart';
 import 'data/service/api/api_client.dart';
 import 'data/service/api/auth_api_client.dart';
 
@@ -152,20 +154,146 @@ void main() async {
     '/searchPosts/iman',
         (server) =>
         server.reply(200, [
-          {
-            "id": "s_1",
-            "content": "Searching for Flutter mentors!",
-            "authorId": "u_005",
-            "authorName": "Samuel Worku",
-            "authorProfilePicture": "https://example.com/profiles/u_005.jpg",
-            "mediaUrls": [],
-            "createdAt": "2026-03-04T08:30:00.000Z",
-            "hashtags": ["Mentorship"],
-            "likeCount": 5,
-            "commentCount": 1,
-            "isLikedByMe": false,
-            "isBookmarkedByMe": false,
-          },
+      {
+        "id": "p_001",
+        "content": "Just finished my first Flutter app! Check out this UI.",
+        "authorId": "u_001",
+        "authorName": "Daniel Tesfaye",
+        "authorProfilePicture": "https://images.unsplash.com/photo-1518770660439-4636190af475",
+        "mediaUrls": ["https://images.unsplash.com/photo-1551650975-87deedd944c3"],
+        "createdAt": "2026-03-05T10:00:00.000Z",
+        "hashtags": ["Flutter", "MobileDev"],
+        "likeCount": 42,
+        "commentCount": 8,
+        "isLikedByMe": true,
+        "isBookmarkedByMe": false,
+      },
+      {
+        "id": "p_002",
+        "content": "Does anyone have resources for advanced Machine Learning in Python?",
+        "authorId": "u_002",
+        "authorName": "Sara Bekele",
+        "authorProfilePicture": "https://images.unsplash.com/photo-1495954484750-af469f2f9be5",
+        "mediaUrls": [],
+        "createdAt": "2026-03-05T11:15:00.000Z",
+        "hashtags": ["ML", "Python", "Help"],
+        "likeCount": 12,
+        "commentCount": 15,
+        "isLikedByMe": false,
+        "isBookmarkedByMe": true,
+      },
+      {
+        "id": "p_003",
+        "content": "The library is so quiet today. Perfect for grinding on the thesis.",
+        "authorId": "u_003",
+        "authorName": "Abel Kebede",
+        "authorProfilePicture": "https://i.pravatar.cc/300?img=12",
+        "mediaUrls": ["https://images.unsplash.com/photo-1497633762265-9d179a990aa6"],
+        "createdAt": "2026-03-05T09:30:00.000Z",
+        "hashtags": ["Study", "CampusLife"],
+        "likeCount": 89,
+        "commentCount": 3,
+        "isLikedByMe": false,
+        "isBookmarkedByMe": false,
+      },
+      {
+        "id": "p_004",
+        "content": "New Research Paper Published: 'Robotics in Agriculture'. Link in bio!",
+        "authorId": "u_004",
+        "authorName": "Marta Hailu",
+        "authorProfilePicture": "https://i.pravatar.cc/300?img=5",
+        "mediaUrls": [],
+        "createdAt": "2026-03-04T15:45:00.000Z",
+        "hashtags": ["Research", "Robotics"],
+        "likeCount": 156,
+        "commentCount": 24,
+        "isLikedByMe": true,
+        "isBookmarkedByMe": true,
+      },
+      {
+        "id": "p_005",
+        "content": "Searching for Flutter mentors to help with a startup project!",
+        "authorId": "u_005",
+        "authorName": "Samuel Worku",
+        "authorProfilePicture": "https://i.pravatar.cc/300?img=3",
+        "mediaUrls": [],
+        "createdAt": "2026-03-04T08:30:00.000Z",
+        "hashtags": ["Mentorship", "Startups"],
+        "likeCount": 5,
+        "commentCount": 1,
+        "isLikedByMe": false,
+        "isBookmarkedByMe": false,
+      },
+      {
+        "id": "p_006",
+        "content": "Who's attending the Hackathon this weekend? Team 'CodeRangers' is looking for a designer!",
+        "authorId": "123",
+        "authorName": "John Doe",
+        "authorProfilePicture": "https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d",
+        "mediaUrls": ["https://images.unsplash.com/photo-1504384308090-c894fdcc538d"],
+        "createdAt": "2026-03-05T14:20:00.000Z",
+        "hashtags": ["Hackathon", "UIUX"],
+        "likeCount": 34,
+        "commentCount": 12,
+        "isLikedByMe": false,
+        "isBookmarkedByMe": false,
+      },
+      {
+        "id": "p_007",
+        "content": "Sunrise at Jimma University. Best way to start the day.",
+        "authorId": "u_002",
+        "authorName": "Sara Bekele",
+        "authorProfilePicture": "https://images.unsplash.com/photo-1495954484750-af469f2f9be5",
+        "mediaUrls": ["https://images.unsplash.com/photo-1470252649358-96949c751bd8"],
+        "createdAt": "2026-03-05T06:10:00.000Z",
+        "hashtags": ["Morning", "Campus"],
+        "likeCount": 210,
+        "commentCount": 9,
+        "isLikedByMe": true,
+        "isBookmarkedByMe": false,
+      },
+      {
+        "id": "p_008",
+        "content": "Just a reminder: Midterm results are out for CS302.",
+        "authorId": "u_004",
+        "authorName": "Marta Hailu",
+        "authorProfilePicture": "https://i.pravatar.cc/300?img=5",
+        "mediaUrls": [],
+        "createdAt": "2026-03-03T16:00:00.000Z",
+        "hashtags": ["CS302", "Grades"],
+        "likeCount": 22,
+        "commentCount": 45,
+        "isLikedByMe": false,
+        "isBookmarkedByMe": false,
+      },
+      {
+        "id": "p_009",
+        "content": "Exploring the integration of AI in everyday mobile apps. Any thoughts?",
+        "authorId": "u_001",
+        "authorName": "Daniel Tesfaye",
+        "authorProfilePicture": "https://images.unsplash.com/photo-1518770660439-4636190af475",
+        "mediaUrls": [],
+        "createdAt": "2026-03-02T12:00:00.000Z",
+        "hashtags": ["AI", "Innovation"],
+        "likeCount": 67,
+        "commentCount": 14,
+        "isLikedByMe": false,
+        "isBookmarkedByMe": false,
+      },
+      {
+        "id": "p_010",
+        "content": "Weekend coding session! Coffee and Dart.",
+        "authorId": "u_003",
+        "authorName": "Abel Kebede",
+        "authorProfilePicture": "https://i.pravatar.cc/300?img=12",
+        "mediaUrls": ["https://images.unsplash.com/photo-1499750310107-5fef28a66643"],
+        "createdAt": "2026-03-01T20:30:00.000Z",
+        "hashtags": ["Coding", "Dart"],
+        "likeCount": 45,
+        "commentCount": 2,
+        "isLikedByMe": false,
+        "isBookmarkedByMe": true,
+      },
         ]),
   );
 
@@ -279,125 +407,89 @@ void main() async {
         server.reply(200, [
           {
             "id": "u_001",
+            "role": "STUDENT",
             "firstName": "Daniel",
             "lastName": "Tesfaye",
             "email": "daniel.tesfaye@example.com",
             "username": "danites",
             "university": "Addis Ababa University",
-            "degree": "Computer Science",
-            "currentYear": "3rd Year",
-            "expectedGraduationYear": "2027-07-15T00:00:00Z",
-            "createdAt": "2025-09-10T12:15:30Z",
-            "updatedAt": "2026-02-11T09:20:10Z",
+            "networkCount": 120,
             "bio": "Passionate about mobile development and AI.",
-            "interests": ["Flutter", "Machine Learning", "Startups"],
-            "profilePicture":
-            "https://images.unsplash.com/photo-1518770660439-4636190af475",
+            "profilePicture": "https://images.unsplash.com/photo-1518770660439-4636190af475",
+            "student": {
+              "currentYear": "3",
+              "degree": "Computer Science",
+              "expectedGraduationYear": "2027-07-15T00:00:00Z",
+              "interests": ["Flutter", "Machine Learning", "Startups"],
+              "verificationStatus": "APPROVED"
+            }
           },
           {
             "id": "u_002",
+            "role": "STUDENT",
             "firstName": "Sara",
             "lastName": "Bekele",
             "email": "sara.bekele@example.com",
             "username": "sarab",
             "university": "Jimma University",
-            "degree": "Software Engineering",
-            "currentYear": "2nd Year",
-            "expectedGraduationYear": "2028-07-01T00:00:00Z",
-            "createdAt": "2025-08-21T10:05:45Z",
-            "updatedAt": "2026-01-18T14:12:00Z",
+            "networkCount": 85,
             "bio": "Frontend enthusiast and UI/UX lover.",
-            "interests": ["UI Design", "Flutter", "Figma"],
             "profilePicture": "https://example.com/profiles/u_002.jpg",
+            "student": {
+              "currentYear": "2",
+              "degree": "Software Engineering",
+              "expectedGraduationYear": "2028-07-01T00:00:00Z",
+              "interests": ["UI Design", "Flutter", "Figma"],
+              "verificationStatus": "APPROVED"
+            }
           },
           {
             "id": "u_003",
+            "role": "EXPERT",
             "firstName": "Abel",
             "lastName": "Kebede",
             "email": "abel.kebede@example.com",
             "username": "abelk",
             "university": "Bahir Dar University",
-            "degree": "Information Systems",
-            "currentYear": "4th Year",
-            "expectedGraduationYear": "2026-06-20T00:00:00Z",
-            "createdAt": "2024-11-12T08:30:00Z",
-            "updatedAt": "2026-02-01T16:45:00Z",
+            "networkCount": 450,
             "bio": "Interested in backend systems and cloud computing.",
-            "interests": ["Node.js", "AWS", "Distributed Systems"],
-            "profilePicture": null,
+            "profilePicture": "https://i.pravatar.cc/300?img=12",
+            "expert": {
+              "expertise": "Cloud Computing",
+              "honor": "Senior Architect"
+            }
           },
           {
             "id": "u_004",
+            "role": "EXPERT",
             "firstName": "Marta",
             "lastName": "Hailu",
             "email": "marta.hailu@example.com",
             "username": "martah",
             "university": "Hawassa University",
-            "degree": "Computer Engineering",
-            "currentYear": "1st Year",
-            "expectedGraduationYear": "2029-07-10T00:00:00Z",
-            "createdAt": "2026-01-02T11:00:00Z",
-            "updatedAt": "2026-02-28T18:30:00Z",
-            "bio": null,
-            "interests": ["Robotics", "Embedded Systems"],
+            "networkCount": 320,
+            "bio": "Embedded systems specialist.",
             "profilePicture": "https://example.com/profiles/u_004.jpg",
+            "expert": {
+              "expertise": "Robotics",
+              "honor": "Lead Researcher"
+            }
           },
           {
             "id": "u_005",
+            "role": "EXPERT",
             "firstName": "Samuel",
             "lastName": "Worku",
             "email": "samuel.worku@example.com",
             "username": "samworku",
             "university": "Adama Science and Technology University",
-            "degree": "Data Science",
-            "currentYear": "3rd Year",
-            "expectedGraduationYear": "2027-07-05T00:00:00Z",
-            "createdAt": "2025-06-14T09:10:20Z",
-            "updatedAt": "2026-03-01T13:55:00Z",
+            "networkCount": 1200,
             "bio": "Data nerd who enjoys building ML models.",
-            "interests": ["Python", "Deep Learning", "Data Visualization"],
             "profilePicture": "https://example.com/profiles/u_005.jpg",
-          },
-        ]),
-  );
-
-  dioAdapter.onGet(
-    '/searchPosts/iman',
-        (server) =>
-        server.reply(200, [
-          {
-            "id": "1",
-            "content": "Just had an amazing day exploring the campus!",
-            "authorId": "123",
-            "mediaUrls": [
-              "https://images.unsplash.com/photo-1518770660439-4636190af475",
-              "https://images.unsplash.com/photo-1518770660439-4636190af475",
-            ],
-            "createdAt": "2026-03-04T08:30:00.000Z",
-            "hashtags": ["Flutter", "UI"],
-            "likeCount": 24,
-            "commentCount": 5,
-          },
-          {
-            "id": "1",
-            "content": "Campus vibes!",
-            "authorId": "123",
-            "createdAt": "2026-03-04T08:30:00.000Z",
-            "likeCount": 24,
-            "commentCount": 5,
-          },
-          {
-            "id": "1",
-            "content": "Just had an amazing day exploring the campus!",
-            "authorId": "123",
-            "mediaUrls": [
-              "https://images.unsplash.com/photo-1518770660439-4636190af475",
-              "https://images.unsplash.com/photo-1518770660439-4636190af475",
-            ],
-            "createdAt": "2026-03-04T08:30:00.000Z",
-            "hashtags": ["Flutter", "UI"],
-            "likeCount": 24,
-            "commentCount": 5,
+            "expert": {
+              "expertise": "Data Science",
+              "honor": "Doctorate"
+            }
           },
         ]),
   );
@@ -667,9 +759,11 @@ void main() async {
     data: Matchers.any,
   );
 
+  final prefs = await SharedPreferences.getInstance();
   runApp(
     ProviderScope(
       overrides: [
+        sharedPrefsProvider.overrideWithValue(prefs),
         apiClientProvider.overrideWithValue(ApiClient(client: dio)),
         authApiProvider.overrideWithValue(AuthApiClient(client: dio)),
       ],
@@ -684,11 +778,13 @@ class UniConnectMock extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
+    final themeState = ref.watch(themeProvider);
     return MaterialApp.router(
       routerConfig: router,
       debugShowCheckedModeBanner: false,
       theme: UCTheme.lightTheme,
       darkTheme: UCTheme.darkTheme,
+      themeMode: themeState.value ?? ThemeMode.system,
     );
   }
 }

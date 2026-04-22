@@ -14,7 +14,7 @@ const createUserSchema = zod.object({
   universityId: zod.string().uuid('University id must be a valid UUID').optional(),
   universityName: zod.string().min(2, 'University name must be at least 2 characters').max(120).optional(),
   yearOfStudy: zod.coerce.number().int().min(1).max(10).optional(),
-  graduationYear: zod.coerce.number().int().min(1900).max(2100).optional(),
+  expectedGraduationYear: zod.coerce.date().optional(),
 });
 
 const updateUserSchema = createUserSchema.partial();
@@ -35,7 +35,6 @@ const checkUsernameParamsSchema = zod.object({
     .max(20, 'Username must be at most 20 characters')
     .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores'),
 });
-
 
 module.exports = {
   createUserSchema,

@@ -4,7 +4,7 @@ import '../../../domain/models/user/user.dart';
 import '../../../utils/result.dart';
 
 abstract class UserRepository {
-  Future<Result<List<User>>> searchUsers(String keyWord);
+  Future<Result<List<(String id, String username, String? profileImage, String fullName)>>> searchUsers(String keyWord);
   Future<Result<User>> getUser(String id);
   Future<Result<List<User>>> getUserNetworks(String userId);
   Future<Result<User>> getCurrentUser();

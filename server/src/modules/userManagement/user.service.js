@@ -2,6 +2,28 @@ const prisma = require("./../../lib/prisma");
 const { createUserSchema } = require("./user.schema");
 const crypto = require("crypto");
 const buildUserResponse = require("../../lib/userResponse");
+
+function normalizeFullName(profile) {
+    const directFullName =
+        typeof profile?.fullName === "string" ? profile.fullName.trim() : "";
+    if (directFullName) return directFullName;
+
+    const firstName =
+        typeof profile?.user?.firstName === "string" ? profile.user.firstName.trim() : "";
+    const lastName =
+        typeof profile?.user?.lastName === "string" ? profile.user.lastName.trim() : "";
+    const combined = `${firstName} ${lastName}`.trim();
+    return combined || null;
+}
+
+function mapSearchProfile(profile) {
+    return {
+        userId: profile.userId,
+        username: profile.username,
+        profileImage: profile.profileImage,
+        fullName: normalizeFullName(profile),
+    };
+}
 const {
     BadRequestError,
     ConflictError,
@@ -13,20 +35,20 @@ const usernameOnlySchema = createUserSchema.pick({ username: true });
 
 function parseGraduationYear(value) {
     if (value === null || value === undefined || value === "") return undefined;
-    if (typeof value === "number" && Number.isInteger(value)) return value;
+    if (typeof value === "number" && Number.isInteger(value)) {
+        return new Date(Date.UTC(value, 0, 1));
+    }
     if (typeof value === "string") {
         const trimmed = value.trim();
         if (/^\d{4}$/.test(trimmed)) {
-            return Number(trimmed);
+            return new Date(Date.UTC(Number(trimmed), 0, 1));
         }
         const parsedDate = new Date(trimmed);
         if (!Number.isNaN(parsedDate.getTime())) {
-            return parsedDate.getUTCFullYear();
+            return parsedDate;
         }
     }
-    if (value instanceof Date && !Number.isNaN(value.getTime())) {
-        return value.getUTCFullYear();
-    }
+    if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
     return null;
 }
 
@@ -57,7 +79,11 @@ function mapStudentFields(input) {
     const student = input?.student || {};
     const degree = input?.degree ?? student?.degree;
     const currentYear = input?.currentYear ?? student?.currentYear;
-    const expectedGraduationYear = input?.expectedGraduationYear ?? student?.expectedGraduationYear;
+    const expectedGraduationYear =
+        input?.expectedGraduationYear ??
+        input?.graduationYear ??
+        student?.expectedGraduationYear ??
+        student?.graduationYear;
     const interests = input?.interests ?? student?.interests;
 
     const mapped = {};
@@ -78,7 +104,7 @@ function mapStudentFields(input) {
         err.source = "body";
         throw err;
     }
-    if (graduationYear !== undefined) mapped.graduationYear = graduationYear;
+    if (graduationYear !== undefined) mapped.expectedGraduationYear = graduationYear;
 
     if (interests !== undefined) mapped.interests = interests;
 
@@ -211,7 +237,7 @@ class userService {
             universityId,
             universityName,
             yearOfStudy,
-            graduationYear,
+            expectedGraduationYear,
         } = data;
 
         const user = await prisma.user.findUnique({
@@ -273,7 +299,7 @@ class userService {
                     level,
                     universityId: resolvedUniversityId,
                     yearOfStudy,
-                    graduationYear,
+                    graduationYear: expectedGraduationYear,
                 },
             });
             const freshUser = await prisma.user.findUnique({
@@ -318,7 +344,7 @@ class userService {
                 level,
                 universityId: resolvedUniversityId,
                 yearOfStudy,
-                graduationYear,
+                graduationYear: expectedGraduationYear,
             },
         });
         const freshUser = await prisma.user.findUnique({
@@ -396,7 +422,14 @@ class userService {
         select: {
             userId: true,
             username: true,
-            profileImage: true
+            profileImage: true,
+            fullName: true,
+            user: {
+                select: {
+                    firstName: true,
+                    lastName: true,
+                }
+            }
         },
         take: 5
     });
@@ -418,7 +451,14 @@ class userService {
         select: {
             userId: true,
             username: true,
-            profileImage: true
+            profileImage: true,
+            fullName: true,
+            user: {
+                select: {
+                    firstName: true,
+                    lastName: true,
+                }
+            }
         },
         take: 5
     });
@@ -441,7 +481,14 @@ class userService {
         select: {
             userId: true,
             username: true,
-            profileImage: true
+            profileImage: true,
+            fullName: true,
+            user: {
+                select: {
+                    firstName: true,
+                    lastName: true,
+                }
+            }
         },
         take: 5
     });
@@ -450,7 +497,7 @@ class userService {
         ...exactMatches,
         ...startsWithMatches,
         ...containsMatches
-    ].slice(0, 8);
+    ].slice(0, 8).map(mapSearchProfile);
 }
 
 
@@ -471,7 +518,7 @@ class userService {
             universityId,
             universityName,
             yearOfStudy,
-            graduationYear,
+            expectedGraduationYear,
         } = data;
 
         if (data.username) {
@@ -501,7 +548,14 @@ class userService {
         await prisma.userProfile.update({
             where: { userId },
             data: {
-                ...data,
+                username: data.username,
+                bio,
+                profileImage,
+                interests,
+                department,
+                level,
+                yearOfStudy,
+                graduationYear: expectedGraduationYear,
                 universityId: resolvedUniversityId,
             }
         });
@@ -554,6 +608,43 @@ class userService {
             where: { userId },
         });
         return { message: "User profile deleted successfully" };
+    }
+
+    async getUserProfileById(userId) {
+        if(userId === undefined || userId === null) {
+            throw new BadRequestError("User id is required");
+        }
+
+        const userProfile = await prisma.userProfile.findUnique({
+            where: { userId },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true,
+                        email: true,
+                        role: true,
+                    },
+                },
+                university: {
+                    select: { name: true },
+                },
+            },
+        });
+
+        if (!userProfile) {
+            throw new NotFoundError("User profile not found");
+        }
+
+        const { university, user, ...restProfile } = userProfile;
+        return buildUserResponse({
+            user,
+            profile: {
+                ...restProfile,
+                university,
+            },
+        });
     }
 
 }

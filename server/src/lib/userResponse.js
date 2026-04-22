@@ -56,8 +56,11 @@ function buildUserResponse({
       : profile?.level
         ? String(profile.level).toLowerCase()
         : null;
-  const graduationYearValue =
-    typeof profile?.graduationYear === 'number' ? profile.graduationYear : null;
+  let graduationYearValue = null;
+  if (profile?.graduationYear) {
+    const dateObj = new Date(profile.graduationYear);
+    graduationYearValue = isNaN(dateObj.getTime()) ? null : dateObj.toISOString();
+  }
 
 
   response.STUDENT = {
@@ -72,6 +75,27 @@ function buildUserResponse({
     response.accessToken = accessToken ?? null;
     response.refreshToken = refreshToken ?? null;
     if (sessionId !== undefined) response.sessionId = sessionId ?? null;
+
+    // Add expiresIn and issuedAt if possible
+    try {
+      const jwt = require('jsonwebtoken');
+      if (accessToken) {
+        const decoded = jwt.decode(accessToken, { complete: true });
+        if (decoded && decoded.payload) {
+          response.accessTokenExpiresIn = decoded.payload.exp ? decoded.payload.exp - decoded.payload.iat : null;
+          response.accessTokenIssuedAt = decoded.payload.iat || null;
+        }
+      }
+      if (refreshToken) {
+        const decoded = jwt.decode(refreshToken, { complete: true });
+        if (decoded && decoded.payload) {
+          response.refreshTokenExpiresIn = decoded.payload.exp ? decoded.payload.exp - decoded.payload.iat : null;
+          response.refreshTokenIssuedAt = decoded.payload.iat || null;
+        }
+      }
+    } catch (e) {
+      // ignore if jsonwebtoken is not available or decode fails
+    }
   }
 
   if (expertProfile || user?.role === 'EXPERT') {

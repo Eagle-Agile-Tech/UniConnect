@@ -36,6 +36,8 @@ router.get(
   userController.checkUsernameAvailableSimple
 );
 
+router.get('/profile/:userId', userController.getUserProfileById);
+
 router.get('/profiles/username/:username', userController.searchUsernames);
 
 router.post(
