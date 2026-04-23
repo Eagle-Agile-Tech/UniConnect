@@ -1,7 +1,10 @@
 const express = require("express");
 const controller = require("./network.controller");
+const authMiddleware = require("../../middlewares/authMiddleware");
 
 const router = express.Router();
+
+router.use(authMiddleware);
 
 // Requests
 router.post("/request", controller.sendRequest);

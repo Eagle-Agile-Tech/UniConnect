@@ -1,0 +1,51 @@
+/* src/pages/expert/MyCourses.css */
+.my-courses-page {
+  display: flex;
+  min-height: 100vh;
+  font-family: "Inter", "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background-color: #faf9fe;
+}
+
+.my-courses-main {
+  flex: 1;
+  padding: 36px 44px 60px;
+  overflow-y: auto;
+}
+
+.my-courses-main h1 {
+  margin: 0 0 28px 0;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #1e1b2e;
+  position: relative;
+  padding-left: 14px;
+}
+
+.my-courses-main h1::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 24px;
+  background: #6d28d9;
+  border-radius: 2px;
+}
+
+.courses-list {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
+@media (max-width: 768px) {
+  .my-courses-main {
+    padding: 24px 20px 40px;
+  }
+  
+  .my-courses-main h1 {
+    font-size: 24px;
+  }
+}

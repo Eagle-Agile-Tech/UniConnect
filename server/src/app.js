@@ -18,7 +18,6 @@ require('./modules/ai/ai-moderation.queue');
 // Routes
 const postRoutes = require('./modules/post/post.routes');
 const engagementRoutes = require('./modules/engagement/engagement.routes');
-
 const userRoutes = require('./modules/userManagement/user.route');
 const authRoutes = require('./modules/auth/auth.routes');
 const adminRoutes = require('./modules/admin/admin.route');
@@ -27,11 +26,16 @@ const expertRoutes = require('./modules/expert/expert.route');
 const chatRoutes = require('./modules/chat/chat.route');
 const eventRoutes = require('./modules/event/event.route');
 const communityRoutes = require('./modules/community/community.route');
-const notificationRoutes = require('./modules/notification/notification.route');
-const trainingDatasetRoutes = require('./modules/ai-recommendation-service/training-dataset.route');
+
 const recommendationRoutes = require('./modules/ai-recommendation-service/recommendation.route');
 const errorHandler = require('./middlewares/errorhHandler');
 const initAdmin = require('./config/initAdmin');
+const courseRoutes = require('./modules/course/course.routes');
+const savedCourseRoutes = require('./modules/course/savedCourse.routes');
+const paymentRoutes = require('./modules/payment/payment.routes');
+const networkRoutes = require('./modules/network/network.routes');
+const notificationRoutes = require('./modules/notification/notification.route');
+const trainingDatasetRoutes = require('./modules/ai-recommendation-service/training-dataset.route');
 
 const app = express();
 const server = http.createServer(app);
@@ -87,6 +91,10 @@ app.use('/api/experts', expertRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/communities', communityRoutes);
+app.use('/api/courses', courseRoutes);
+app.use('/api/saved-courses', savedCourseRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/network', networkRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/v1/recommendations', recommendationRoutes);
 app.use('/api/admin/recommendations', trainingDatasetRoutes);

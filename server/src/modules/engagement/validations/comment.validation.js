@@ -4,8 +4,6 @@ const { body, param } = require("express-validator");
 const validateComment = [
   param("postId").isUUID().withMessage("Invalid post ID format"),
 
-  body("authorId").isUUID().withMessage("Invalid author ID format"),
-
   body("comment")
     .notEmpty()
     .withMessage("Comment cannot be empty")

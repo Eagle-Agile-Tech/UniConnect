@@ -9,6 +9,43 @@ const {
 } = require("../utils/post.helpers");
 
 class PostFeedService {
+  getPostInclude() {
+    return {
+      author: {
+        select: {
+          id: true,
+          email: true,
+          role: true,
+          firstName: true,
+          lastName: true,
+          profile: {
+            select: {
+              username: true,
+              profileImage: true,
+              bio: true,
+            },
+          },
+        },
+      },
+      media: true,
+      _count: {
+        select: {
+          comments: true,
+          postReactions: true,
+          favorites: true,
+        },
+      },
+    };
+  }
+
+  formatPostWithCounts(post) {
+    const formatted = formatPostResponse(post);
+    formatted.reactionCount = post._count?.postReactions || 0;
+    formatted.commentCount = post._count?.comments || 0;
+    formatted.bookmarkCount = post._count?.favorites || 0;
+    return formatted;
+  }
+
   async listPosts(filters = {}, userId = null) {
     const startTime = Date.now();
     let { cursor, limit = 15, authorId } = filters;
@@ -91,30 +128,7 @@ class PostFeedService {
           { createdAt: "desc" },
           { id: "desc" }, // stable ordering
         ],
-        include: {
-          author: {
-            select: {
-              id: true,
-              email: true,
-              role: true,
-              firstName: true,
-              lastName: true,
-              profile: {
-                select: {
-                  username: true,
-                  profileImage: true,
-                },
-              },
-            },
-          },
-          media: true,
-          _count: {
-            select: {
-              comments: true,
-              postReactions: true,
-            },
-          },
-        },
+        include: this.getPostInclude(),
       };
 
       const posts = await prisma.post.findMany(queryOptions);
@@ -183,31 +197,7 @@ class PostFeedService {
     try {
       const post = await prisma.post.findUnique({
         where: { id: postId },
-        include: {
-          author: {
-            select: {
-              id: true,
-              email: true,
-              role: true,
-              firstName: true,
-              lastName: true,
-              profile: {
-                select: {
-                  username: true,
-                  profileImage: true,
-                  bio: true,
-                },
-              },
-            },
-          },
-          media: true,
-          _count: {
-            select: {
-              comments: true,
-              postReactions: true,
-            },
-          },
-        },
+        include: this.getPostInclude(),
       });
 
       if (!post || post.isDeleted) return null;
@@ -254,6 +244,218 @@ class PostFeedService {
       console.error("PostFeedService.getPostById failed:", error?.message || error);
       throw new Error("Failed to load post");
     }
+  }
+
+  async getFeedForUser(userId, filters = {}) {
+    if (!userId) {
+      throw new Error("userId is required");
+    }
+
+    return this.listPosts(filters, userId);
+  }
+
+  async getComments(postId, filters = {}) {
+    const limit = Math.min(parseInt(filters.limit || 20), 50);
+    const cursor = filters.cursor;
+
+    const where = {
+      postId,
+      isDeleted: false,
+      moderationStatus: "APPROVED",
+    };
+
+    if (cursor) {
+      const cursorComment = await prisma.postComment.findUnique({
+        where: { id: cursor },
+        select: { createdAt: true, id: true },
+      });
+
+      if (cursorComment) {
+        where.OR = [
+          { createdAt: { lt: cursorComment.createdAt } },
+          { createdAt: cursorComment.createdAt, id: { lt: cursorComment.id } },
+        ];
+      }
+    }
+
+    const comments = await prisma.postComment.findMany({
+      where,
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: limit + 1,
+      include: {
+        commenter: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profile: {
+              select: {
+                username: true,
+                profileImage: true,
+              },
+            },
+          },
+        },
+        _count: {
+          select: {
+            replies: true,
+            commentReactions: true,
+          },
+        },
+      },
+    });
+
+    const hasMore = comments.length > limit;
+    if (hasMore) comments.pop();
+
+    return {
+      data: comments,
+      meta: {
+        nextCursor: hasMore ? comments[comments.length - 1].id : null,
+        hasMore,
+        limit,
+      },
+    };
+  }
+
+  async getUserFavorites(userId, filters = {}) {
+    const limit = Math.min(parseInt(filters.limit || 20), 50);
+    const cursor = filters.cursor;
+
+    const favorites = await prisma.favorite.findMany({
+      where: { userId },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      take: limit + 1,
+      include: {
+        post: {
+          include: this.getPostInclude(),
+        },
+      },
+    });
+
+    const hasMore = favorites.length > limit;
+    if (hasMore) favorites.pop();
+
+    return {
+      data: favorites.map((item) => this.formatPostWithCounts(item.post)),
+      meta: {
+        nextCursor: hasMore ? favorites[favorites.length - 1].id : null,
+        hasMore,
+        limit,
+      },
+    };
+  }
+
+  async getTrendingPosts(filters = {}) {
+    const limit = Math.min(parseInt(filters.limit || 20), 50);
+    const windowMap = {
+      day: 1,
+      week: 7,
+      month: 30,
+    };
+
+    const days = windowMap[filters.timeWindow] || 1;
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    const posts = await prisma.post.findMany({
+      where: {
+        isDeleted: false,
+        moderationStatus: "APPROVED",
+        visibility: "PUBLIC",
+        createdAt: { gte: since },
+      },
+      orderBy: [
+        { postReactions: { _count: "desc" } },
+        { comments: { _count: "desc" } },
+        { createdAt: "desc" },
+      ],
+      take: limit,
+      include: this.getPostInclude(),
+    });
+
+    return {
+      data: posts.map((post) => this.formatPostWithCounts(post)),
+      meta: {
+        limit,
+        timeWindow: filters.timeWindow || "day",
+      },
+    };
+  }
+
+  async searchPosts(filters = {}) {
+    const limit = Math.min(parseInt(filters.limit || 20), 50);
+
+    const where = {
+      isDeleted: false,
+      moderationStatus: "APPROVED",
+      ...(filters.authorId ? { authorId: filters.authorId } : {}),
+      ...(filters.category ? { category: filters.category } : {}),
+      ...(filters.q ? { content: { contains: filters.q, mode: "insensitive" } } : {}),
+      ...(filters.tags?.length ? { tags: { hasSome: filters.tags } } : {}),
+      ...(filters.fromDate || filters.toDate
+        ? {
+            createdAt: {
+              ...(filters.fromDate ? { gte: new Date(filters.fromDate) } : {}),
+              ...(filters.toDate ? { lte: new Date(filters.toDate) } : {}),
+            },
+          }
+        : {}),
+      ...(filters.hasMedia ? { media: { some: {} } } : {}),
+    };
+
+    const posts = await prisma.post.findMany({
+      where,
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: limit,
+      include: this.getPostInclude(),
+    });
+
+    return {
+      data: posts.map((post) => this.formatPostWithCounts(post)),
+      meta: { limit },
+    };
+  }
+
+  async getPostAnalytics(postId, userId) {
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+      select: { id: true, authorId: true, createdAt: true },
+    });
+
+    if (!post) {
+      throw new Error("Post not found");
+    }
+
+    if (post.authorId !== userId) {
+      throw new Error("Not authorized");
+    }
+
+    const [reactionCount, commentCount, bookmarkCount, reactionBreakdown] =
+      await Promise.all([
+        prisma.postReaction.count({ where: { postId } }),
+        prisma.postComment.count({ where: { postId, isDeleted: false } }),
+        prisma.favorite.count({ where: { postId } }),
+        prisma.postReaction.groupBy({
+          by: ["type"],
+          where: { postId },
+          _count: { _all: true },
+        }),
+      ]);
+
+    return {
+      data: {
+        postId,
+        createdAt: post.createdAt,
+        reactionCount,
+        commentCount,
+        bookmarkCount,
+        reactionBreakdown: reactionBreakdown.reduce((acc, item) => {
+          acc[item.type] = item._count._all;
+          return acc;
+        }, {}),
+      },
+    };
   }
 }
 

@@ -1,0 +1,83 @@
+.edit-course-page {
+  display: flex;
+}
+
+.edit-course-main {
+  flex: 1;
+  padding: 40px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.page-header .eyebrow {
+  margin: 0 0 8px;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.85rem;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.page-header .subtext {
+  margin: 10px 0 0;
+  color: #666;
+  max-width: 680px;
+}
+
+.edit-form {
+  margin-top: 20px;
+  display: grid;
+  gap: 16px;
+}
+
+.edit-form label {
+  font-weight: 600;
+  color: #333;
+}
+
+.edit-form input,
+.edit-form textarea {
+  width: 100%;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 1rem;
+  background: #fff;
+}
+
+.edit-form textarea {
+  min-height: 160px;
+  resize: vertical;
+}
+
+.edit-form button {
+  width: fit-content;
+  border: none;
+  border-radius: 8px;
+  padding: 14px 24px;
+  background: #1d4ed8;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.edit-form button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.error-message {
+  color: #b91c1c;
+  margin-top: 0;
+}
