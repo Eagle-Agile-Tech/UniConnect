@@ -1,66 +1,73 @@
 /*
   Warnings:
 
-  - You are about to drop the column `type` on the `Community` table. All the data in the column will be lost.
-  - You are about to drop the column `status` on the `CommunityMember` table. All the data in the column will be lost.
-  - You are about to drop the column `isVerified` on the `Institution` table. All the data in the column will be lost.
-  - A unique constraint covering the columns `[userId]` on the table `Institution` will be added. If there are existing duplicate values, this will fail.
-  - A unique constraint covering the columns `[secretCode]` on the table `Institution` will be added. If there are existing duplicate values, this will fail.
-  - A unique constraint covering the columns `[profileUserId]` on the table `Institution` will be added. If there are existing duplicate values, this will fail.
-  - A unique constraint covering the columns `[senderId,clientMessageId]` on the table `Message` will be added. If there are existing duplicate values, this will fail.
-  - Added the required column `type` to the `Institution` table without a default value. This is not possible if the table is not empty.
-
+  - You are about to drop the column `type` on the `Community` table.
+  - You are about to drop the column `status` on the `CommunityMember` table.
 */
--- CreateEnum
-DO $$
-BEGIN
-  CREATE TYPE "InstitutionVerificationStatus" AS ENUM ('PENDING', 'UNVERIFIED', 'VERIFIED', 'REJECTED');
-EXCEPTION
-  WHEN duplicate_object THEN NULL;
-END $$;
 
--- CreateEnum
-DO $$
-BEGIN
-  CREATE TYPE "InstitutionType" AS ENUM ('UNIVERSITY', 'COMPANY', 'NGO', 'RESEARCH_CENTER', 'TRAINING_CENTER', 'GOVERNMENT', 'OTHER');
-EXCEPTION
-  WHEN duplicate_object THEN NULL;
-END $$;
+-- Enums (safe reset)
+DROP TYPE IF EXISTS "InstitutionVerificationStatus";
+CREATE TYPE "InstitutionVerificationStatus" AS ENUM ('PENDING', 'UNVERIFIED', 'VERIFIED', 'REJECTED');
 
--- AlterTable
-ALTER TABLE "Chat" ADD COLUMN IF NOT EXISTS "avatarUrl" TEXT,
-ADD COLUMN IF NOT EXISTS "createdById" TEXT,
-ADD COLUMN IF NOT EXISTS "name" TEXT;
+DROP TYPE IF EXISTS "InstitutionType";
+CREATE TYPE "InstitutionType" AS ENUM ('UNIVERSITY', 'COMPANY', 'NGO', 'RESEARCH_CENTER', 'TRAINING_CENTER', 'GOVERNMENT', 'OTHER');
 
--- AlterTable
+-- Chat updates
+ALTER TABLE "Chat"
+  ADD COLUMN IF NOT EXISTS "avatarUrl" TEXT,
+  ADD COLUMN IF NOT EXISTS "createdById" TEXT,
+  ADD COLUMN IF NOT EXISTS "name" TEXT;
+
+-- Cleanup old columns
 ALTER TABLE "Community" DROP COLUMN IF EXISTS "type";
-
--- AlterTable
 ALTER TABLE "CommunityMember" DROP COLUMN IF EXISTS "status";
 
--- AlterTable
-ALTER TABLE "Institution" DROP COLUMN IF EXISTS "isVerified",
-ADD COLUMN     "profileUserId" TEXT,
-ADD COLUMN     "secretCode" TEXT,
-ADD COLUMN     "secretCodeExpiresAt" TIMESTAMP(3),
-ADD COLUMN     "type" "InstitutionType" NOT NULL DEFAULT 'OTHER',
-ADD COLUMN     "userId" TEXT,
-ADD COLUMN     "verificationStatus" "InstitutionVerificationStatus" NOT NULL DEFAULT 'UNVERIFIED',
-ADD COLUMN     "verifiedAt" TIMESTAMP(3),
-ADD COLUMN     "verifiedById" TEXT;
+-- Institution (SAFE MIGRATION)
+ALTER TABLE "Institution"
+  ADD COLUMN IF NOT EXISTS "profileUserId" TEXT,
+  ADD COLUMN IF NOT EXISTS "secretCode" TEXT,
+  ADD COLUMN IF NOT EXISTS "secretCodeExpiresAt" TIMESTAMP(3),
+  ADD COLUMN IF NOT EXISTS "type" "InstitutionType",
+  ADD COLUMN IF NOT EXISTS "userId" TEXT,
+  ADD COLUMN IF NOT EXISTS "verificationStatus" "InstitutionVerificationStatus" NOT NULL DEFAULT 'UNVERIFIED',
+  ADD COLUMN IF NOT EXISTS "verifiedAt" TIMESTAMP(3),
+  ADD COLUMN IF NOT EXISTS "verifiedById" TEXT;
 
--- AlterTable
-ALTER TABLE "Message" ADD COLUMN     "clientMessageId" TEXT;
+-- Migrate existing data safely
+UPDATE "Institution"
+SET "type" = 'OTHER'
+WHERE "type" IS NULL;
 
--- AlterTable
-ALTER TABLE "Notification" ALTER COLUMN "title" DROP DEFAULT,
-ALTER COLUMN "body" DROP DEFAULT;
+UPDATE "Institution"
+SET "verificationStatus" = CASE
+  WHEN COALESCE("isVerified", false) THEN 'VERIFIED'::"InstitutionVerificationStatus"
+  ELSE 'UNVERIFIED'::"InstitutionVerificationStatus"
+END
+WHERE "verificationStatus" IS NULL
+   OR "verificationStatus" = 'UNVERIFIED';
 
--- AlterTable
-ALTER TABLE "UserProfile" ADD COLUMN     "fullName" TEXT;
+-- Enforce constraint AFTER data is safe
+ALTER TABLE "Institution"
+  ALTER COLUMN "type" SET NOT NULL;
 
--- CreateTable
-CREATE TABLE "InstitutionVerificationRequest" (
+-- Now it's safe to drop old column
+ALTER TABLE "Institution" DROP COLUMN IF EXISTS "isVerified";
+
+-- Message updates
+ALTER TABLE "Message"
+  ADD COLUMN IF NOT EXISTS "clientMessageId" TEXT;
+
+-- Notification cleanup
+ALTER TABLE "Notification"
+  ALTER COLUMN "title" DROP DEFAULT,
+  ALTER COLUMN "body" DROP DEFAULT;
+
+-- User profile update
+ALTER TABLE "UserProfile"
+  ADD COLUMN IF NOT EXISTS "fullName" TEXT;
+
+-- New tables
+CREATE TABLE IF NOT EXISTS "InstitutionVerificationRequest" (
     "id" TEXT NOT NULL,
     "institutionId" TEXT NOT NULL,
     "documentUrl" TEXT NOT NULL,
@@ -68,78 +75,132 @@ CREATE TABLE "InstitutionVerificationRequest" (
     "reviewedById" TEXT,
     "reviewedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
     CONSTRAINT "InstitutionVerificationRequest_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "MessageReceipt" (
+CREATE TABLE IF NOT EXISTS "MessageReceipt" (
     "id" TEXT NOT NULL,
     "messageId" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "deliveredAt" TIMESTAMP(3),
     "readAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
     CONSTRAINT "MessageReceipt_pkey" PRIMARY KEY ("id")
 );
 
--- CreateIndex
-CREATE INDEX "InstitutionVerificationRequest_institutionId_idx" ON "InstitutionVerificationRequest"("institutionId");
+-- Indexes
+CREATE INDEX IF NOT EXISTS "InstitutionVerificationRequest_institutionId_idx" ON "InstitutionVerificationRequest"("institutionId");
+CREATE INDEX IF NOT EXISTS "InstitutionVerificationRequest_status_idx" ON "InstitutionVerificationRequest"("status");
+CREATE INDEX IF NOT EXISTS "InstitutionVerificationRequest_reviewedById_idx" ON "InstitutionVerificationRequest"("reviewedById");
 
--- CreateIndex
-CREATE INDEX "InstitutionVerificationRequest_status_idx" ON "InstitutionVerificationRequest"("status");
+CREATE INDEX IF NOT EXISTS "MessageReceipt_userId_idx" ON "MessageReceipt"("userId");
+CREATE INDEX IF NOT EXISTS "MessageReceipt_messageId_idx" ON "MessageReceipt"("messageId");
+CREATE UNIQUE INDEX IF NOT EXISTS "MessageReceipt_messageId_userId_key" ON "MessageReceipt"("messageId", "userId");
 
--- CreateIndex
-CREATE INDEX "InstitutionVerificationRequest_reviewedById_idx" ON "InstitutionVerificationRequest"("reviewedById");
+CREATE INDEX IF NOT EXISTS "ExpertInvitation_institutionId_idx" ON "ExpertInvitation"("institutionId");
 
--- CreateIndex
-CREATE INDEX "MessageReceipt_userId_idx" ON "MessageReceipt"("userId");
+CREATE UNIQUE INDEX IF NOT EXISTS "Institution_userId_key" ON "Institution"("userId");
+CREATE UNIQUE INDEX IF NOT EXISTS "Institution_secretCode_key" ON "Institution"("secretCode");
+CREATE UNIQUE INDEX IF NOT EXISTS "Institution_profileUserId_key" ON "Institution"("profileUserId");
 
--- CreateIndex
-CREATE INDEX "MessageReceipt_messageId_idx" ON "MessageReceipt"("messageId");
+CREATE INDEX IF NOT EXISTS "Institution_verifiedById_idx" ON "Institution"("verifiedById");
 
--- CreateIndex
-CREATE UNIQUE INDEX "MessageReceipt_messageId_userId_key" ON "MessageReceipt"("messageId", "userId");
+CREATE UNIQUE INDEX IF NOT EXISTS "Message_senderId_clientMessageId_key"
+  ON "Message"("senderId", "clientMessageId");
 
--- CreateIndex
-CREATE INDEX "ExpertInvitation_institutionId_idx" ON "ExpertInvitation"("institutionId");
+-- Foreign keys (safe guards)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'Institution_userId_fkey'
+  ) THEN
+    ALTER TABLE "Institution"
+      ADD CONSTRAINT "Institution_userId_fkey"
+      FOREIGN KEY ("userId") REFERENCES "User"("id")
+      ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END $$;
 
--- CreateIndex
-CREATE UNIQUE INDEX "Institution_userId_key" ON "Institution"("userId");
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'Institution_verifiedById_fkey'
+  ) THEN
+    ALTER TABLE "Institution"
+      ADD CONSTRAINT "Institution_verifiedById_fkey"
+      FOREIGN KEY ("verifiedById") REFERENCES "User"("id")
+      ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END $$;
 
--- CreateIndex
-CREATE UNIQUE INDEX "Institution_secretCode_key" ON "Institution"("secretCode");
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'Institution_profileUserId_fkey'
+  ) THEN
+    ALTER TABLE "Institution"
+      ADD CONSTRAINT "Institution_profileUserId_fkey"
+      FOREIGN KEY ("profileUserId") REFERENCES "User"("id")
+      ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END $$;
 
--- CreateIndex
-CREATE UNIQUE INDEX "Institution_profileUserId_key" ON "Institution"("profileUserId");
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'InstitutionVerificationRequest_institutionId_fkey'
+  ) THEN
+    ALTER TABLE "InstitutionVerificationRequest"
+      ADD CONSTRAINT "InstitutionVerificationRequest_institutionId_fkey"
+      FOREIGN KEY ("institutionId") REFERENCES "Institution"("id")
+      ON DELETE RESTRICT ON UPDATE CASCADE;
+  END IF;
+END $$;
 
--- CreateIndex
-CREATE INDEX "Institution_verifiedById_idx" ON "Institution"("verifiedById");
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'InstitutionVerificationRequest_reviewedById_fkey'
+  ) THEN
+    ALTER TABLE "InstitutionVerificationRequest"
+      ADD CONSTRAINT "InstitutionVerificationRequest_reviewedById_fkey"
+      FOREIGN KEY ("reviewedById") REFERENCES "User"("id")
+      ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END $$;
 
--- CreateIndex
-CREATE UNIQUE INDEX "Message_senderId_clientMessageId_key" ON "Message"("senderId", "clientMessageId");
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'ExpertInvitation_institutionId_fkey'
+  ) THEN
+    ALTER TABLE "ExpertInvitation"
+      ADD CONSTRAINT "ExpertInvitation_institutionId_fkey"
+      FOREIGN KEY ("institutionId") REFERENCES "Institution"("id")
+      ON DELETE RESTRICT ON UPDATE CASCADE;
+  END IF;
+END $$;
 
--- AddForeignKey
-ALTER TABLE "Institution" ADD CONSTRAINT "Institution_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'MessageReceipt_messageId_fkey'
+  ) THEN
+    ALTER TABLE "MessageReceipt"
+      ADD CONSTRAINT "MessageReceipt_messageId_fkey"
+      FOREIGN KEY ("messageId") REFERENCES "Message"("id")
+      ON DELETE RESTRICT ON UPDATE CASCADE;
+  END IF;
+END $$;
 
--- AddForeignKey
-ALTER TABLE "Institution" ADD CONSTRAINT "Institution_verifiedById_fkey" FOREIGN KEY ("verifiedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Institution" ADD CONSTRAINT "Institution_profileUserId_fkey" FOREIGN KEY ("profileUserId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "InstitutionVerificationRequest" ADD CONSTRAINT "InstitutionVerificationRequest_institutionId_fkey" FOREIGN KEY ("institutionId") REFERENCES "Institution"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "InstitutionVerificationRequest" ADD CONSTRAINT "InstitutionVerificationRequest_reviewedById_fkey" FOREIGN KEY ("reviewedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "ExpertInvitation" ADD CONSTRAINT "ExpertInvitation_institutionId_fkey" FOREIGN KEY ("institutionId") REFERENCES "Institution"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "MessageReceipt" ADD CONSTRAINT "MessageReceipt_messageId_fkey" FOREIGN KEY ("messageId") REFERENCES "Message"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "MessageReceipt" ADD CONSTRAINT "MessageReceipt_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'MessageReceipt_userId_fkey'
+  ) THEN
+    ALTER TABLE "MessageReceipt"
+      ADD CONSTRAINT "MessageReceipt_userId_fkey"
+      FOREIGN KEY ("userId") REFERENCES "User"("id")
+      ON DELETE RESTRICT ON UPDATE CASCADE;
+  END IF;
+END $$;

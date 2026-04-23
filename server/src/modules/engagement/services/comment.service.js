@@ -43,7 +43,7 @@ class CommentService {
         tx,
       );
 
-      // Create notification for post author (if not self-comment)
+      // Create notification for post author when someone else comments.
       if (post.authorId !== userId) {
         await notificationService.createAndSendNotification({
           recipientId: post.authorId,

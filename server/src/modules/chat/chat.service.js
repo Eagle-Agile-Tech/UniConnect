@@ -28,28 +28,80 @@ const chatInclude = {
     },
   },
   messages: {
-  orderBy: { createdAt: 'asc' },
-  include: {
-    sender: { select: userSelect },
-    media: true,
-    receipts: {
-      select: {
-        userId: true,
-        deliveredAt: true,
-        readAt: true,
+    orderBy: { createdAt: 'asc' },
+    include: {
+      sender: { select: userSelect },
+      media: true,
+      receipts: {
+        select: {
+          userId: true,
+          deliveredAt: true,
+          readAt: true,
+        },
       },
     },
   },
-  select: {
-    id: true,
-    content: true,   
-    createdAt: true,
-    senderId: true,
-    media: true,
-    receipts: true,
-  },
-}
 };
+
+function getDisplayName(user) {
+  const profileName = user?.profile?.fullName?.trim();
+  if (profileName) return profileName;
+
+  const derivedName = [user?.firstName, user?.lastName]
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+  if (derivedName) return derivedName;
+
+  const username = user?.profile?.username?.trim();
+  if (username) return username;
+
+  return user?.id ?? '';
+}
+
+function formatChatUser(user) {
+  if (!user) return user;
+
+  return {
+    ...user,
+    name: getDisplayName(user),
+    avatarUrl: user.profile?.profileImage ?? null,
+  };
+}
+
+function formatChatMessage(message) {
+  if (!message) return message;
+
+  return {
+    ...message,
+    sender: formatChatUser(message.sender),
+  };
+}
+
+function formatChat(chat, { latestFirst = false } = {}) {
+  if (!chat) return chat;
+
+  const participants = (chat.participants || []).map((participant) => ({
+    ...participant,
+    user: formatChatUser(participant.user),
+  }));
+
+  const messages = (chat.messages || []).map(formatChatMessage);
+  if (latestFirst) {
+    messages.sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }
+
+  return {
+    ...chat,
+    participants,
+    messages,
+    _count: {
+      messages: messages.length,
+    },
+  };
+}
 
 function normalizePagination(data, defaults = { limit: 50, offset: 0 }) {
   const limit = Number.isInteger(data.limit)
@@ -115,7 +167,7 @@ class ChatService {
         where: { uniqueKey },
         include: chatInclude,
       });
-      if (existing) return existing;
+      if (existing) return formatChat(existing, { latestFirst: true });
 
       const chat = await prisma.chat.create({
         data: {
@@ -130,7 +182,7 @@ class ChatService {
         include: chatInclude,
       });
 
-      return chat;
+      return formatChat(chat, { latestFirst: true });
     }
 
     if (data.type === 'GROUP') {
@@ -173,43 +225,103 @@ class ChatService {
         include: chatInclude,
       });
 
-      return chat;
+      return formatChat(chat, { latestFirst: true });
     }
 
     throw new BadRequestError('Invalid chat type');
   }
 
-  async getChatIdFromUserIds(userId, otherUserId) {
-    if (!otherUserId) {
-      throw new BadRequestError('otherUserId is required');
-    }
-    if (otherUserId === userId) {
-      throw new BadRequestError('Cannot create or fetch a direct chat with yourself');
-    }
-
-    await ensureUserExists(otherUserId);
-
-    const [a, b] = [userId, otherUserId].sort();
-    const uniqueKey = `direct:${a}:${b}`;
-
-    let chat = await prisma.chat.findUnique({
-      where: { uniqueKey },
-      include: chatInclude,
-    });
-
-    if (!chat) {
-      chat = await this.createChat(userId, {
-        type: 'DIRECT',
-        participantId: otherUserId,
-      });
-    }
-
-    return {
-      chatId: chat.id,
-      messages: chat.messages || [],
-    };
+async getChatIdFromUserIds(userId, otherUserId, query = {}) {
+  if (!otherUserId) {
+    throw new BadRequestError('otherUserId is required');
   }
 
+  if (otherUserId === userId) {
+    throw new BadRequestError('Cannot create or fetch a direct chat with yourself');
+  }
+
+  // Ensure the other user exists
+  await ensureUserExists(otherUserId);
+
+  // Create unique key
+  const [a, b] = [userId, otherUserId].sort();
+  const uniqueKey = `direct:${a}:${b}`;
+
+  // Find or create chat
+  let chat = await prisma.chat.findUnique({
+    where: { uniqueKey },
+    include: {
+      participants: {
+        include: {
+          user: { select: userSelect },
+        },
+      },
+    },
+  });
+
+  if (!chat) {
+    chat = await prisma.chat.create({
+      data: {
+        type: 'DIRECT',
+        uniqueKey,
+        participants: {
+          createMany: {
+            data: [{ userId }, { userId: otherUserId }],
+          },
+        },
+      },
+      include: {
+        participants: {
+          include: {
+            user: { select: userSelect },
+          },
+        },
+      },
+    });
+  }
+
+  //  Pagination
+  const { limit, offset } = normalizePagination(query, {
+    limit: 50,
+    offset: 0,
+  });
+
+  //  Fetch messages separately
+  const messages = await prisma.message.findMany({
+    where: { chatId: chat.id },
+    orderBy: { createdAt: 'desc' }, // latest first
+    skip: offset,
+    take: limit,
+    include: {
+      sender: { select: userSelect },
+      media: true,
+      receipts: {
+        select: {
+          userId: true,
+          deliveredAt: true,
+          readAt: true,
+        },
+      },
+    },
+  });
+
+  return {
+    chatId: chat.id,
+
+    participants: chat.participants.map((p) => ({
+      ...p,
+      user: formatChatUser(p.user),
+    })),
+
+    messages: messages.map(formatChatMessage),
+
+    pagination: {
+      limit,
+      offset,
+      hasMore: messages.length === limit,
+    },
+  };
+}
   async getChatIdFromUserId(userId, otherUserId) {
     return this.getChatIdFromUserIds(userId, otherUserId);
   }
@@ -235,7 +347,7 @@ class ChatService {
       include: chatInclude,
     });
 
-    return { chats };
+    return { chats: chats.map((chat) => formatChat(chat, { latestFirst: true })) };
   }
 
   async updateGroupChat(userId, data) {
@@ -260,7 +372,7 @@ class ChatService {
       include: chatInclude,
     });
 
-    return updated;
+    return formatChat(updated, { latestFirst: true });
   }
 
   async addParticipant(userId, data) {
@@ -300,10 +412,12 @@ class ChatService {
       },
     });
 
-    return prisma.chat.findUnique({
+    const updatedChat = await prisma.chat.findUnique({
       where: { id: data.chatId },
       include: chatInclude,
     });
+
+    return formatChat(updatedChat, { latestFirst: true });
   }
 
   async removeParticipant(userId, data) {
@@ -342,7 +456,12 @@ class ChatService {
       },
     });
 
-    return { message: 'Participant removed' };
+    const refreshedChat = await prisma.chat.findUnique({
+      where: { id: data.chatId },
+      include: chatInclude,
+    });
+
+    return formatChat(refreshedChat, { latestFirst: true });
   }
 
   async listMessages(userId, data) {

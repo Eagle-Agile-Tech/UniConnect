@@ -35,19 +35,20 @@ router.get('/user/:userId', eventController.getPublicUserEvents);
 // Stats
 router.get('/stats', eventController.getEventStats);
 
+// My events
+router.get(
+  '/me',
+  authenticate,
+  validateRequest(getEventsQuerySchema, 'query'),
+  eventController.getEventsByUserId
+);
+
 // Get single event
 router.get('/:id', eventController.getEventById);
 
 //  AUTHENTICATED ROUTES
 
 router.use(authenticate);
-
-// My events
-router.get(
-  '/me',
-  validateRequest(getEventsQuerySchema, 'query'),
-  eventController.getEventsByUserId
-);
 
 // View event (NEW)
 router.post('/:id/view', eventController.viewEvent);
