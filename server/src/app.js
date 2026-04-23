@@ -29,6 +29,7 @@ const eventRoutes = require('./modules/event/event.route');
 const communityRoutes = require('./modules/community/community.route');
 const notificationRoutes = require('./modules/notification/notification.route');
 const trainingDatasetRoutes = require('./modules/ai-recommendation-service/training-dataset.route');
+const recommendationRoutes = require('./modules/ai-recommendation-service/recommendation.route');
 const errorHandler = require('./middlewares/errorhHandler');
 const initAdmin = require('./config/initAdmin');
 
@@ -87,6 +88,7 @@ app.use('/api/chats', chatRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/communities', communityRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/v1/recommendations', recommendationRoutes);
 app.use('/api/admin/recommendations', trainingDatasetRoutes);
 
 // Error handler
@@ -94,7 +96,6 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-// Start server
 async function startServer() {
   try {
     await redisClient.connect();
@@ -112,7 +113,9 @@ async function startServer() {
   }
 }
 
-startServer();
+if (require.main === module) {
+  startServer();
+}
 
 // Graceful shutdown (from your branch)
 process.on("SIGTERM", async () => {
@@ -124,3 +127,9 @@ process.on("SIGINT", async () => {
   await prisma.$disconnect();
   process.exit(0);
 });
+
+module.exports = {
+  app,
+  server,
+  startServer,
+};
