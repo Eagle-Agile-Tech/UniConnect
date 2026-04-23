@@ -5,20 +5,12 @@ class BookmarkController {
   /**
    * Toggle bookmark on a post
    * POST /api/v1/posts/bookmarkPost/:postId
-   * Body: { "userId": "user-id" }
+   * Body: {}
    */
   async toggleBookmark(req, res, next) {
     try {
       const { postId } = req.params;
-      const { userId } = req.body;
-
-      // Security check
-      if (userId !== req.user.id) {
-        return res.status(403).json({
-          error: "Cannot bookmark on behalf of another user",
-          code: "ERR_FORBIDDEN",
-        });
-      }
+      const userId = req.user.id;
 
       const result = await bookmarkService.toggleBookmark(userId, postId);
 

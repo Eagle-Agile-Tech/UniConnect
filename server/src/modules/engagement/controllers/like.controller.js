@@ -5,20 +5,13 @@ class LikeController {
   /**
    * Toggle like on a post
    * POST /api/v1/posts/likePost/:postId
-   * Body: { "userId": "user-id", "type": "LIKE" }
+   * Body: { "type": "LIKE" }
    */
   async toggleLike(req, res, next) {
     try {
       const { postId } = req.params;
-      const { userId, type = "LIKE" } = req.body;
-
-      // Validate that userId matches authenticated user (security)
-      if (userId !== req.user.id) {
-        return res.status(403).json({
-          error: "Cannot like on behalf of another user",
-          code: "ERR_FORBIDDEN",
-        });
-      }
+      const { type = "LIKE" } = req.body;
+      const userId = req.user.id;
 
       const result = await likeService.toggleLike(userId, postId, type);
 

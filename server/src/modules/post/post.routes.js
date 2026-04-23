@@ -6,10 +6,10 @@ const upload = require("../../config/multer");
 
 // ===== PUBLIC ROUTES =====
 // ===== PUBLIC ROUTES =====
+router.get("/", postController.listPosts);
 router.get("/trending", postController.getTrendingPosts);
 router.get("/search", postController.searchPosts);
 router.get("/feed/:userId", postController.getFeed);
-router.get("/users/:userId/favorites", postController.getBookmarks);
 router.get("/:postId/comments", postController.getComments);
 router.get("/:postId", postController.getPostById);
 
