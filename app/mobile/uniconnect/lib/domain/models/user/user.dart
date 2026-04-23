@@ -24,7 +24,6 @@ abstract class User with _$User{
     required UserRole role,
     @JsonKey(name:'STUDENT') Student? student,
     @JsonKey(name:'EXPERT') Expert? expert,
-    @JsonKey(name:'INSTITUTION') Institution? institution,
     @Default(false) bool areWe
 }) = _User;
 
