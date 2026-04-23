@@ -2,6 +2,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../../../utils/enums.dart';
 import 'expert/expert.dart';
+import 'institution/institution.dart';
 import 'student/student.dart';
 
 part 'user.freezed.dart';
@@ -23,7 +24,7 @@ abstract class User with _$User{
     required UserRole role,
     @JsonKey(name:'STUDENT') Student? student,
     @JsonKey(name:'EXPERT') Expert? expert,
-    @JsonKey(name:'EXPERT') Institution? institution,
+    @JsonKey(name:'INSTITUTION') Institution? institution,
     @Default(false) bool areWe
 }) = _User;
 
