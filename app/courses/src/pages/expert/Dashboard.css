@@ -1,0 +1,247 @@
+﻿/* Dashboard.css */
+:root {
+  --ink: #1e1b2e;
+  --muted: #6b6b7a;
+  --panel: #ffffff;
+  --surface: #faf9fe;
+  --accent: #6d28d9;
+  --accent-light: #7c3aed;
+  --accent-dark: #5b21b6;
+  --accent-subtle: #ede9fe;
+  --border: #e9e7f2;
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 12px 24px rgba(109, 40, 217, 0.08);
+  --shadow-lg: 0 20px 40px rgba(109, 40, 217, 0.12);
+}
+
+.expert-dashboard {
+  display: flex;
+  min-height: 100vh;
+  font-family: "Inter", "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background-color: var(--surface);
+  color: var(--ink);
+}
+
+.dashboard-main {
+  flex: 1;
+  padding: 36px 44px 60px;
+  overflow-y: auto;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 32px;
+  margin-bottom: 36px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--border);
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  margin: 0 0 10px;
+}
+
+.dashboard-header h1 {
+  margin: 0 0 10px;
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, var(--ink) 0%, var(--accent) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.subtext {
+  margin: 0;
+  color: var(--muted);
+  max-width: 460px;
+  line-height: 1.5;
+  font-size: 14px;
+}
+
+/* Create Course Button - Compact and Attractive */
+.primary-btn {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 40px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: var(--shadow-md);
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  width: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.primary-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  background: linear-gradient(135deg, var(--accent-light) 0%, var(--accent) 100%);
+}
+
+.primary-btn:active {
+  transform: translateY(0);
+}
+
+/* Stats Section - Professional Layout */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-bottom: 40px;
+  max-width: 100%;
+}
+
+.stat-card {
+  background-color: var(--panel);
+  border: 1px solid var(--border);
+  padding: 24px 20px;
+  border-radius: 20px;
+  transition: all 0.25s ease;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--accent-light);
+}
+
+.stat-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.stat-value {
+  font-size: 42px;
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  line-height: 1;
+  margin: 0;
+}
+
+/* Section Header */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.section-header h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  position: relative;
+  padding-left: 14px;
+}
+
+.section-header h2::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 20px;
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+/* View All Button - Updated to match Create Course (Compact & Attractive) */
+.ghost-btn {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 40px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: var(--shadow-md);
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  width: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ghost-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  background: linear-gradient(135deg, var(--accent-light) 0%, var(--accent) 100%);
+}
+
+.ghost-btn:active {
+  transform: translateY(0);
+}
+
+.courses {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
+@media (max-width: 1024px) {
+  .dashboard-main {
+    padding: 28px 28px 48px;
+  }
+  
+  .stat-value {
+    font-size: 36px;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-main {
+    padding: 24px 20px 40px;
+  }
+
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
+
+  .dashboard-header h1 {
+    font-size: 28px;
+  }
+
+  .stats {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .stat-value {
+    font-size: 38px;
+  }
+  
+  .primary-btn, 
+  .ghost-btn {
+    padding: 8px 18px;
+    font-size: 12px;
+  }
+}

@@ -1,0 +1,34 @@
+.student-dashboard-page {
+  display: flex;
+  min-height: 100vh;
+  background: #f6f7fb;
+}
+
+.dashboard-main {
+  flex: 1;
+  padding: 32px 40px;
+}
+
+.student-header {
+  margin-bottom: 24px;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 11px;
+  font-weight: 600;
+  color: #7a7f99;
+  margin-bottom: 8px;
+}
+
+.subtext {
+  color: #555b73;
+  margin-top: 8px;
+}
+
+.courses-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+}
