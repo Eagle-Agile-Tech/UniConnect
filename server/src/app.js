@@ -27,7 +27,7 @@ const chatRoutes = require('./modules/chat/chat.route');
 const eventRoutes = require('./modules/event/event.route');
 const communityRoutes = require('./modules/community/community.route');
 
-const recommendationRoutes = require('./modules/ai-recommendation-service/recommendation.route');
+// const recommendationRoutes = require('./modules/ai-recommendation-service/recommendation.route');
 const errorHandler = require('./middlewares/errorhHandler');
 const initAdmin = require('./config/initAdmin');
 const courseRoutes = require('./modules/course/course.routes');
@@ -96,7 +96,7 @@ app.use('/api/saved-courses', savedCourseRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/network', networkRoutes);
 app.use('/api/notifications', notificationRoutes);
-app.use('/api/v1/recommendations', recommendationRoutes);
+// app.use('/api/v1/recommendations', recommendationRoutes);
 app.use('/api/admin/recommendations', trainingDatasetRoutes);
 
 // Error handler
