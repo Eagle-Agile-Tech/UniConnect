@@ -165,7 +165,20 @@ class AuthService {
       throw new AuthError("Unable to issue OTP. Try again.", 503);
     }
 
-    await this.sendVerificationEmail(email, otpCode);
+    try {
+      await this.sendVerificationEmail(email, otpCode);
+    } catch (error) {
+      await redisClient.del(
+        this.otpKey(email),
+        this.otpAttemptsKey(email),
+        this.otpResendKey(email),
+      ).catch(() => {});
+
+      throw new AuthError(
+        error?.message || "Unable to send OTP email. Try again.",
+        503,
+      );
+    }
   }
 
   detectUniversity(email) {

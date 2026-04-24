@@ -165,10 +165,16 @@ class AuthController {
   // ========================
   async submitIdVerification(req, res, next) {
     try {
+      const userId = req.user?.id || req.user?.sub;
+      if (!userId) {
+        return res.status(401).json({
+          message: 'Access denied. No authenticated user found.',
+        });
+      }
 
       const result = await authService.submitIdVerification({
         ...req.body,
-        userId: req.user?.id,
+        userId,
       });
 
       res.status(201).json(result);
