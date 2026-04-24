@@ -1,42 +1,20 @@
-// server/src/modules/post/post.routes.js
 const router = require("express").Router();
-const postController = require("./post.controller"); // ← NO .default here
+const postController = require("./post.controller");
 const authenticate = require("../../middlewares/authMiddleware");
 const upload = require("../../config/multer");
 
-// ===== PUBLIC ROUTES =====
-// ===== PUBLIC ROUTES =====
+// ===== PUBLIC =====
 router.get("/", postController.listPosts);
-router.get("/trending", postController.getTrendingPosts);
-router.get("/search", postController.searchPosts);
-router.get("/feed/:userId", postController.getFeed);
-router.get("/:postId/comments", postController.getComments);
 router.get("/:postId", postController.getPostById);
 
-// Protected routes
+// ===== AUTH =====
 router.use(authenticate);
 
-// Create routes
-router.post("/", postController.createPost);
-router.post("/:userId", postController.createPost);
-router.post(
-  "/createPost/:userId",
-  upload.array("media", 10),
-  postController.createPostFromFlutter,
-);
+// ===== CREATE =====
+router.post("/", upload.array("media", 10), postController.createPost);
 
-// Interactions
-router.post("/:postId/reactions", postController.likePost);
-router.post("/:postId/comments", postController.commentOnPost);
-router.post("/:postId/favorite", postController.bookmarkPost);
-
-// Management
+// ===== UPDATE / DELETE =====
 router.patch("/:postId", postController.updatePost);
 router.delete("/:postId", postController.deletePost);
-router.post("/:postId/restore", postController.restorePost);
-
-// Analytics
-router.get("/:postId/analytics", postController.getPostAnalytics);
-router.get("/users/:userId/favorites", postController.getBookmarks);
 
 module.exports = router;
