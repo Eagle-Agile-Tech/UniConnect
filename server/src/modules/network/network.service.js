@@ -1,4 +1,35 @@
 const repo = require("./network.repository");
+const prisma = require("../../lib/prisma");
+
+async function syncProfileNetworkState(userId) {
+  if (!userId) return null;
+
+  const [networkCount, incomingCount, outgoingCount] = await Promise.all([
+    repo.countUserNetworks(userId),
+    repo.countIncomingRequests(userId),
+    repo.countOutgoingRequests(userId),
+  ]);
+
+  const isNetworkedBy = networkCount > 0 || incomingCount > 0;
+
+  await prisma.userProfile.updateMany({
+    where: { userId },
+    data: {
+      networkCount,
+      isNetworkedBy,
+    },
+  });
+
+  return {
+    networkCount,
+    isNetworkedBy,
+    pendingNetworks: {
+      incoming: incomingCount,
+      outgoing: outgoingCount,
+      total: incomingCount + outgoingCount,
+    },
+  };
+}
 
 // ========================
 // SEND REQUEST
@@ -24,7 +55,18 @@ async function sendRequest(senderId, receiverId) {
     throw new Error("Request already exists");
   }
 
-  return repo.createRequest(senderId, receiverId);
+  const request = await repo.createRequest(senderId, receiverId);
+  const senderState = await syncProfileNetworkState(senderId);
+  const receiverState = await syncProfileNetworkState(receiverId);
+
+  return {
+    request,
+    networkState: {
+      sender: senderState,
+      receiver: receiverState,
+    },
+    status: "PENDING",
+  };
 }
 
 // ========================
@@ -47,8 +89,18 @@ async function acceptRequest(requestId, userId) {
   }
 
   await repo.deleteRequest(requestId);
+  const network = await repo.createNetwork(request.senderId, request.receiverId);
+  const senderState = await syncProfileNetworkState(request.senderId);
+  const receiverState = await syncProfileNetworkState(request.receiverId);
 
-  return repo.createNetwork(request.senderId, request.receiverId);
+  return {
+    network,
+    networkState: {
+      sender: senderState,
+      receiver: receiverState,
+    },
+    status: "CONNECTED",
+  };
 }
 async function getUserNetwork(userId) {
   if (!userId) throw new Error("userId is required");
@@ -74,7 +126,18 @@ async function rejectRequest(requestId, userId) {
     throw new Error("Not authorized to reject this request");
   }
 
-  return repo.deleteRequest(requestId);
+  const deleted = await repo.deleteRequest(requestId);
+  const senderState = await syncProfileNetworkState(request.senderId);
+  const receiverState = await syncProfileNetworkState(request.receiverId);
+
+  return {
+    request: deleted,
+    networkState: {
+      sender: senderState,
+      receiver: receiverState,
+    },
+    status: "REJECTED",
+  };
 }
 async function cancelRequest(senderId, receiverId) {
   if (!senderId || !receiverId) {
@@ -108,7 +171,18 @@ async function removeNetwork(userId, targetId) {
     throw new Error("Network does not exist");
   }
 
-  return repo.deleteNetwork(userId, targetId);
+  const removed = await repo.deleteNetwork(userId, targetId);
+  const userState = await syncProfileNetworkState(userId);
+  const targetState = await syncProfileNetworkState(targetId);
+
+  return {
+    removed,
+    networkState: {
+      user: userState,
+      target: targetState,
+    },
+    status: "REMOVED",
+  };
 }
 
 // ========================
@@ -116,7 +190,22 @@ async function removeNetwork(userId, targetId) {
 // ========================
 async function getMyNetwork(userId) {
   if (!userId) throw new Error("userId is required");
-  return repo.getMyNetwork(userId);
+  const [connected, incoming, outgoing, profileState] = await Promise.all([
+    repo.getMyNetwork(userId),
+    repo.getIncomingRequests(userId),
+    repo.getOutgoingRequests(userId),
+    syncProfileNetworkState(userId),
+  ]);
+
+  return {
+    connected,
+    pending: {
+      incoming,
+      outgoing,
+      total: incoming.length + outgoing.length,
+    },
+    summary: profileState,
+  };
 }
 
 async function getIncomingRequests(userId) {

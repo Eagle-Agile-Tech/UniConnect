@@ -88,11 +88,11 @@ async function rejectRequest(req, res) {
       });
     }
 
-    await service.rejectRequest(requestId, userId);
+    const result = await service.rejectRequest(requestId, userId);
 
     return res.status(200).json({
       success: true,
-      message: "Request rejected",
+      data: result,
     });
   } catch (err) {
     return res.status(400).json({
@@ -121,11 +121,11 @@ async function removeNetwork(req, res) {
       });
     }
 
-    await service.removeNetwork(userId, targetId);
+    const result = await service.removeNetwork(userId, targetId);
 
     return res.status(200).json({
       success: true,
-      message: "Network removed",
+      data: result,
     });
   } catch (err) {
     return res.status(400).json({

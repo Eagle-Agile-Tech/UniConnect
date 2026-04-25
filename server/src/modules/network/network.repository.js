@@ -21,6 +21,12 @@ async function createRequest(senderId, receiverId) {
   });
 }
 
+async function getRequestById(requestId) {
+  return prisma.networkRequest.findUnique({
+    where: { id: requestId },
+  });
+}
+
 async function deleteRequest(requestId) {
   return prisma.networkRequest.delete({
     where: { id: requestId },
@@ -51,11 +57,6 @@ async function findNetwork(userAId, userBId) {
         { userAId: userBId, userBId: userAId },
       ],
     },
-  });
-}
-async function getRequestById(requestId) {
-  return prisma.networkRequest.findUnique({
-    where: { id: requestId },
   });
 }
 async function getUserNetwork(userId) {
@@ -96,17 +97,40 @@ async function getMyNetwork(userId) {
   });
 }
 
+async function countIncomingRequests(userId) {
+  return prisma.networkRequest.count({
+    where: { receiverId: userId },
+  });
+}
+
+async function countOutgoingRequests(userId) {
+  return prisma.networkRequest.count({
+    where: { senderId: userId },
+  });
+}
+
+async function countUserNetworks(userId) {
+  return prisma.network.count({
+    where: {
+      OR: [{ userAId: userId }, { userBId: userId }],
+    },
+  });
+}
+
 module.exports = {
   findRequest,
   createRequest,
+  getRequestById,
   deleteRequest,
   getIncomingRequests,
   getOutgoingRequests,
+  countIncomingRequests,
+  countOutgoingRequests,
+  countUserNetworks,
 
   findNetwork,
   createNetwork,
   deleteNetwork,
   getMyNetwork,
-  getRequestById,
   getUserNetwork,
 };
