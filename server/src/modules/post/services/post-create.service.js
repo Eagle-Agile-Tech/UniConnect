@@ -1,5 +1,6 @@
 const prisma = require("../../../lib/prisma");
 const postFeedService = require("./post-feed.service");
+const aiModerationService = require("../../ai/ai-moderation.service");
 
 // ✅ USE YOUR EXISTING MEDIA SERVICE
 const storageService = require("../../media/services/supabase-storage.service");
@@ -14,6 +15,33 @@ class PostCreateService {
     if (!content && files.length === 0) {
       throw new Error("Post must have content or media");
     }
+    // =========================
+// AI MODERATION (NEW)
+// =========================
+const moderationResult = await aiModerationService.moderatePost({
+  content,
+  tags,
+});
+
+// REJECT → STOP EVERYTHING
+if (moderationResult.moderationStatus === "REJECTED") {
+  return {
+    success: false,
+    status: "REJECTED",
+    message: "Post rejected by content moderation",
+    details: moderationResult.details,
+  };
+}
+
+// SAFETY CHECK (if API fails or returns unknown)
+if (moderationResult.moderationStatus !== "APPROVED") {
+  return {
+    success: false,
+    status: "PENDING",
+    message: "Post could not be verified right now",
+    details: moderationResult.details,
+  };
+}
 
     // =========================
     // UPLOAD MEDIA VIA MEDIA MODULE

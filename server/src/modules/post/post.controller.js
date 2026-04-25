@@ -4,25 +4,104 @@ const postUpdateService = require("./services/post-update.service");
 const { formatPostDTO } = require("../../utils/postDTO");
 
 // ================= CREATE POST =================
+// post.controller.js
 async function createPost(req, res, next) {
   try {
     const userId = req.user.id;
 
+    let tags = req.body.tags;
+    if (typeof tags === "string") {
+      try {
+        tags = JSON.parse(tags);
+      } catch (e) {
+        tags = tags.split(",").map((t) => t.trim());
+      }
+    } else if (!tags) {
+      tags = [];
+    }
+
     const data = {
-      content: req.body.content,
-      tags: req.body.tags ? JSON.parse(req.body.tags) : [],
-      // ❌ REMOVE createdAt completely (let DB handle it)
+      content: req.body.content || "",
+      tags: tags,
     };
 
     const files = req.files || [];
 
     const result = await postCreateService.createPost(userId, data, files);
 
-    return res.status(201).json(formatPostDTO(result.post, userId));
+    // 🔥 CHECK THE STATUS FIRST
+    if (result.status === "REJECTED") {
+      return res.status(403).json({
+        success: false,
+        status: "REJECTED",
+        message: result.message,
+        details: result.details,
+      });
+    }
+
+    if (result.status === "PENDING") {
+      return res.status(202).json({
+        success: false,
+        status: "PENDING",
+        message: result.message,
+        details: result.details,
+      });
+    }
+
+    // Only APPROVED posts have the 'post' property
+    if (!result.post) {
+      throw new Error("Invalid response from post creation service");
+    }
+
+    const formattedPost = formatPostDTO(result.post, userId);
+    return res.status(201).json(formattedPost);
+  } catch (err) {
+    console.error("Create post error:", err);
+    next(err);
+  }
+}
+
+// ================= GET MY POSTS =================
+async function getMyPosts(req, res, next) {
+  try {
+    const userId = req.user.id; // Get logged-in user's ID
+    
+    const result = await postFeedService.listPosts(
+      {
+        cursor: req.query.cursor,
+        limit: req.query.limit,
+        authorId: userId, // Filter by current user
+      },
+      userId,
+    );
+
+    return res.json(result.data.map((p) => formatPostDTO(p, userId)));
   } catch (err) {
     next(err);
   }
 }
+
+// ================= GET USER'S POSTS =================
+async function getUserPosts(req, res, next) {
+  try {
+     console.log("✅ getMyPosts called"); 
+    const { userId } = req.params; // Get userId from URL parameter
+    
+    const result = await postFeedService.listPosts(
+      {
+        cursor: req.query.cursor,
+        limit: req.query.limit,
+        authorId: userId, // Filter by specified user
+      },
+      req.user?.id, // Pass current user for reactions (if logged in)
+    );
+
+    return res.json(result.data.map((p) => formatPostDTO(p, req.user?.id)));
+  } catch (err) {
+    next(err);
+  }
+}
+
 // ================= LIST POSTS =================
 async function listPosts(req, res, next) {
   try {
@@ -94,4 +173,6 @@ module.exports = {
   getPostById,
   updatePost,
   deletePost,
+   getMyPosts,      
+  getUserPosts,
 };

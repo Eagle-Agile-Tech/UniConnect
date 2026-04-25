@@ -3,11 +3,13 @@ const postController = require("./post.controller");
 const authenticate = require("../../middlewares/authMiddleware");
 const upload = require("../../config/multer");
 
-// ===== PUBLIC =====
+// ===== PUBLIC ROUTES (SPECIFIC ROUTES FIRST) =====
 router.get("/", postController.listPosts);
-router.get("/:postId", postController.getPostById);
+router.get("/me", authenticate, postController.getMyPosts); // ✅ MUST be before /:postId
+router.get("/user/:userId", postController.getUserPosts); // ✅ MUST be before /:postId
+router.get("/:postId", postController.getPostById); // ⚠️ This MUST be LAST
 
-// ===== AUTH =====
+// ===== AUTHENTICATED ROUTES =====
 router.use(authenticate);
 
 // ===== CREATE =====
