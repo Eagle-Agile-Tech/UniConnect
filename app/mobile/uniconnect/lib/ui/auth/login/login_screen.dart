@@ -1,7 +1,10 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:uniconnect/utils/validator.dart';
 
+import '../../../routing/routes.dart';
 import '../../core/common/styles/spacing_style.dart';
 import '../../core/common/widgets/form_divider.dart';
 import '../../core/common/widgets/signin_with_button.dart';
@@ -52,12 +55,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   icon: Icon(_isPassVisible ? Icons.visibility : Icons.visibility_off),
                 )),
               ),
-              SizedBox(height: Dimens.defaultSpace),
+              SizedBox(height: Dimens.sm),
               Align(
                 alignment: Alignment.topRight,
                 child: TextButton(
                   child: Text('Forgot Password?'),
-                  onPressed: () {},
+                  onPressed: () {
+                    if(_email.text.trim().isEmpty){
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Please enter your email')));
+                      return;
+                    }
+                    auth.sendOtp(_email.text.trim());
+                    context.push(Routes.forgetEmailPath, extra: _email.text.trim());
+                  },
                 ),
               ),
               SizedBox(height: Dimens.defaultSpace),
@@ -79,6 +89,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               FormDivider(),
               SizedBox(height: Dimens.defaultSpace),
               SignInWith(),
+              SizedBox(height: Dimens.spaceBtwItems),
+              SignInWith(isGoogle: false),
               SizedBox(height: Dimens.spaceBtwSections),
               Text.rich(
                 TextSpan(
@@ -91,7 +103,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         fontWeight: FontWeight.bold,
                         color: Colors.blue,
                       ),
-                      recognizer: null,
+                      recognizer: TapGestureRecognizer()
+                  ..onTap = () {
+                    DefaultTabController.of(context).animateTo(1);
+                  },
                     ),
                   ],
                 ),

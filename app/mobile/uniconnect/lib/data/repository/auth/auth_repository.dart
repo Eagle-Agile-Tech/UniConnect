@@ -33,6 +33,8 @@ abstract class AuthRepository {
 
   Future<Result<User>> login(String username, String password);
 
+  Future<Result<User?>> googleLogin(String idToken);
+
   Future<Result> registerExpert(
     String firstName,
     String lastName,
@@ -49,4 +51,8 @@ abstract class AuthRepository {
     String? bio,
     File? profilePicture,
   );
+
+  Future<Result> sendOtp(String email);
+
+  Future<Result> changePassword(String email, String otp, String password, String confirmPassword);
 }

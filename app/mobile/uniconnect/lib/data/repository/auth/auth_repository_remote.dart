@@ -134,6 +134,35 @@ class AuthRepositoryRemote implements AuthRepository {
     );
   }
 
+  @override
+  Future<Result<User?>> googleLogin(String idToken) async {
+    final result = await _authClient.googleLogin(idToken);
+    return result.fold(
+      (data) async {
+        if(data.containsKey('university')){
+          final token = OAuth2Token(
+            accessToken: data['accessToken'],
+            refreshToken: data['refreshToken'],
+            expiresIn: data['accessTokenExpiresIn'],
+            issuedAt: DateTime.fromMillisecondsSinceEpoch(
+              data['accessTokenIssuedAt'] * 1000,
+            ),
+          );
+          await _fresh.setToken(token);
+
+          await Future.delayed(const Duration(milliseconds: 500));
+
+          return Result.ok(User.fromJson(data));
+        } else {
+          return Result.ok(null);
+        }
+      },
+      (error, _) {
+        return Result.error(error);
+      },
+    );
+  }
+
   Future<bool> logout() async {
     await _fresh.setToken(null);
     final result = await _authClient.logoutUser();
@@ -196,4 +225,21 @@ class AuthRepositoryRemote implements AuthRepository {
       },
     );
   }
+
+  @override
+  Future<Result<dynamic>> sendOtp(String email) async {
+    final result = await _authClient.forgetPassword(email);
+    return result.fold((data) async {
+      return Result.ok('');
+    }, (error, stackTrace) => Result.error(error));
+  }
+
+  @override
+  Future<Result> changePassword(String email, String otp, String password, String confirmPassword) async {
+    final result = await _authClient.changePassword(email, otp, password, confirmPassword);
+    return result.fold((data) async {
+      return Result.ok('');
+    }, (error, stackTrace) => Result.error(error));
+  }
+
 }

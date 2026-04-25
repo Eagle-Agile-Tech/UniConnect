@@ -105,12 +105,12 @@ class AuthApiClient {
     try {
       final Map<String, dynamic> userData = {
         'universityName': university,
-        'department': degree,
+        'degree': degree,
         'username': username,
         'yearOfStudy': currentYear,
         'graduationYear': expectedGraduationYear.year,
-        'bio': ?bio,
-        'interests': ?interests,
+        'bio': bio,
+        'interests': interests,
       };
 
       if (profilePicture != null) {
@@ -144,6 +144,18 @@ class AuthApiClient {
     }
   }
 
+  Future<Result<Map<String, dynamic>>> googleLogin(String idToken) async {
+    try {
+      final response = await _client.post(
+        '/auth/social-login',
+        data: {'idToken': idToken},
+      );
+      return Result.ok(response.data);
+    } on DioException catch (e) {
+      return Result.error(e);
+    }
+  }
+
   Future<bool> isLoggedIn() async {
     final token = await SecureTokenStorage().read();
     if (token == null) {
@@ -159,6 +171,33 @@ class AuthApiClient {
       return true;
     } catch (e) {
       return false;
+    }
+  }
+
+  Future<Result> forgetPassword(String email) async {
+    try{
+      await _client.post("/auth/forgot-password", data: {"email":email});
+      return Result.ok('');
+    } on DioException catch (e) {
+      return Result.error(e);
+    } catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result> changePassword(String email, String otp, String password, String confirmPassword) async {
+    try{
+      final response = await _client.post("/auth/reset-password", data : {
+        "email": email,
+        "otp": otp,
+        "newPassword": password,
+        "passwordConfirm": confirmPassword
+      });
+      return Result.ok('');
+    } on DioException catch (e) {
+      return Result.error(e);
+    } catch (e) {
+      return Result.error(e);
     }
   }
 

@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -89,7 +90,8 @@ class _VerifyEmailScreen extends ConsumerState<VerifyEmailScreen>{
               SizedBox(height: Dimens.spaceBtwItems),
               Text.rich(
                 TextSpan(
-                  text: 'Didn\'t receive the code?',
+                  text: "Didn't receive the code?",
+                  style: TextStyle(color: Colors.black),
                   children: [
                     TextSpan(
                       text: ' Resend',
@@ -97,10 +99,14 @@ class _VerifyEmailScreen extends ConsumerState<VerifyEmailScreen>{
                         color: Theme.of(context).primaryColor,
                         fontWeight: FontWeight.bold,
                       ),
+                      recognizer: TapGestureRecognizer()
+                        ..onTap = () {
+                          ref.read(onboardingProvider.notifier).sendOtp(onboard.email);
+                        },
                     ),
                   ],
                 ),
-              ),
+              )
             ],
           ),
         ),

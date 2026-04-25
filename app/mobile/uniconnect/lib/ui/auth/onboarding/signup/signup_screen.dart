@@ -11,6 +11,7 @@ import 'package:uniconnect/utils/validator.dart';
 
 import '../../../../routing/routes.dart';
 import '../../../core/common/widgets/form_divider.dart';
+import '../../auth_state_provider.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
@@ -165,7 +166,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               SizedBox(height: Dimens.spaceBtwSections),
               FormDivider(),
               SizedBox(height: Dimens.defaultSpace),
-              SignInWith(),
+              SignInWith(
+                onPressed: () => ref.read(authNotifierProvider.notifier).signInWithGoogle(),
+              ),
+              SizedBox(height: Dimens.spaceBtwItems,),
+              SignInWith(isGoogle: false, onPressed: () {}),
               SizedBox(height: Dimens.spaceBtwSections),
               Text.rich(
                 TextSpan(
@@ -180,7 +185,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       ),
                       recognizer: TapGestureRecognizer()
                         ..onTap = () {
-                          context.go(Routes.signin);
+                          DefaultTabController.of(context).animateTo(0);
                         },
                     ),
                   ],

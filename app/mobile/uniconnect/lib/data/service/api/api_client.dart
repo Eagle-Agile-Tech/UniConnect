@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -146,7 +147,7 @@ class ApiClient {
       final Map<String, dynamic> postData = {
         'content': content,
         'createdAt': createdAt.toIso8601String(),
-        'hashtags': hashtags,
+        'tags': jsonEncode(hashtags),
       };
 
       if (media != null && media.isNotEmpty) {
@@ -162,7 +163,7 @@ class ApiClient {
 
       final formData = FormData.fromMap(postData);
       final response = await _client.post(
-        '/v1/posts/createPost/$userId',
+        '/v1/posts/',
         data: formData,
       );
 
@@ -175,8 +176,7 @@ class ApiClient {
   Future<Result<List<Map<String, dynamic>>>> fetchFeed(String userId) async {
     try {
       final response = await _client.get('/v1/posts/feed/$userId');
-      // final List data = response.data['data'];
-       final List data = response.data;
+      final List data = response.data['data'];
       return Result.ok(data.cast<Map<String, dynamic>>());
     } on DioException catch (e) {
       return Result.error(e);
@@ -279,6 +279,7 @@ class ApiClient {
 
   Future<Result> bookmarkPost(String postId) async {
     try {
+      await _client.post('/v1/posts/bookmarkPost/:$postId');
       await _client.post('/v1/posts/bookmarkPost/:$postId');
       return Result.ok(null);
     } on DioException catch (e) {

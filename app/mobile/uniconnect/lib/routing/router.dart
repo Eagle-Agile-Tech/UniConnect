@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uniconnect/routing/routes.dart';
 import 'package:uniconnect/ui/auth/auth_screen.dart';
+import 'package:uniconnect/ui/auth/login/widgets/forget_email_screen.dart';
 import 'package:uniconnect/ui/auth/onboarding/academic_profile/academic_profile.dart';
 import 'package:uniconnect/ui/auth/onboarding/personalization/create_profile.dart';
 import 'package:uniconnect/ui/auth/onboarding/verify_email/verify_email_screen.dart';
@@ -49,6 +50,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             Routes.verifyIdentity,
             Routes.onboardingAcademic,
             Routes.onBoardingProfile,
+            Routes.forgetEmailPath,
           ];
 
           final isPublicRoute = publicRoutes.contains(state.matchedLocation);
@@ -74,6 +76,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.verifyEmail,
         builder: (context, state) => const VerifyEmailScreen(),
+      ),
+
+      GoRoute(
+          path: Routes.forgetEmailPath,
+          builder: (context, state) {
+            final email = state.extra as String;
+            return ForgetEmailScreen(email: email);
+          }
       ),
 
       GoRoute(
@@ -171,7 +181,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: Routes.eventsScreen,
-        builder: (context, state){
+        builder: (context, state) {
           final id = state.uri.queryParameters['userId'];
           return EventScreen(userId: id);
         },

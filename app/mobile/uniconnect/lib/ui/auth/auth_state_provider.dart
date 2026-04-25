@@ -1,13 +1,13 @@
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:uniconnect/data/repository/user/user_repository_remote.dart';
 
 import '../../data/repository/auth/auth_repository_remote.dart';
 import '../../data/service/socket/chat_service.dart';
 import '../../domain/models/user/user.dart';
 import '../../utils/result.dart';
-import '../chat/viewmodels/chat_provider.dart';
 import 'onboarding/view_models/onboarding_viewmodel_provider.dart';
 import 'onboarding_experts/viewmodel/expert_onboarding_provider.dart';
 
@@ -28,6 +28,8 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   late final UserRepositoryRemote _userRepo;
   late final ChatService _chat;
   late final ExpertOnboardingViewModel _onBoardExpert;
+  late final OnboardingViewmodel _onborader;
+
 
 
   @override
@@ -35,6 +37,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     try {
       _userRepo = ref.read(userRepoProvider);
       _repo = ref.read(authProvider);
+      _onborader = ref.read(onboardingProvider.notifier);
 
       final isAuth = await _repo.isAuthenticated;
       if (!isAuth) return const AuthState(user: null);
@@ -47,6 +50,13 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     } catch (e) {
       return const AuthState(user: null);
     }
+  }
+
+  Future<Result> sendOtp(String email) async {
+    final result =  await _repo.sendOtp(email);
+    return result.fold((data) async {
+      return Result.ok('');
+    }, (error, stackTrace) => Result.error(error));
   }
 
   Future<void> login(String email, String password) async {
@@ -64,6 +74,77 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     );
   }
 
+  Future<Result<String?>> signInWithGoogle() async {
+    state = const AsyncLoading();
+    try {
+      const String androidClient =
+          "986632048471-94ssepv0ha12q6e944golr3hr7srqkts.apps.googleusercontent.com";
+      const String serverClient =
+          "986632048471-j0diers30nqi8lq9jf67485a9fmtgo05.apps.googleusercontent.com";
+      final GoogleSignIn signIn = GoogleSignIn.instance;
+      await signIn.initialize(
+        serverClientId: serverClient,
+        clientId: androidClient,
+      );
+
+      final GoogleSignInAccount googleUser = await signIn.authenticate();
+
+      final auth = await googleUser.authentication;
+
+      final idToken = auth.idToken;
+
+      if (idToken == null) {
+        state = const AsyncData(AuthState(user: null));
+        return Result.error('Failed to authenticate');
+      }
+
+      final result = await _onborader.signInWithGoogle(idToken);
+
+      return result.fold(
+            (user) async {
+          if (user != null) {
+            state = AsyncData(AuthState(user: user));
+            await Future.delayed(const Duration(milliseconds: 500));
+            _chat.initialize();
+            return Result.ok(null);
+          } else {
+            state = const AsyncData(AuthState(user: null));
+            return Result.ok('Proceed');
+          }
+        },
+            (error, _) {
+          state = const AsyncData(AuthState(user: null));
+          return Result.error(error);
+        },
+      );
+    } catch (e) {
+      state = const AsyncData(AuthState(user: null));
+      return Result.error(e.toString());
+    }
+  }
+
+  Future<Result<String?>> signInWithMicrosoft() async {
+    state = const AsyncLoading();
+    final result = await _onborader.signInWithMicrosoft();
+    return result.fold(
+          (user) async {
+        if (user != null) {
+          state = AsyncData(AuthState(user: user));
+          await Future.delayed(const Duration(milliseconds: 500));
+          _chat.initialize();
+          return Result.ok(null);
+        } else {
+          state = const AsyncData(AuthState(user: null));
+          return Result.ok('Proceed');
+        }
+      },
+          (error, _) {
+        state = const AsyncData(AuthState(user: null));
+        return Result.error(error);
+      },
+    );
+  }
+
   Future<bool> logout() async {
     final result = await _repo.logout();
     if (result) {
@@ -73,8 +154,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   }
 
   Future<Err?> registerStudent() async {
-    final onborader = ref.read(onboardingProvider.notifier);
-    final result = await onborader.completeOnboarding();
+    final result = await _onborader.completeOnboarding();
     return result.fold((user) async {
       state = AsyncData(AuthState(user: user));
       await Future.delayed(Duration(milliseconds: 500));

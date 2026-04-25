@@ -7,7 +7,10 @@ abstract final class UCHelperFunctions {
     if (matches.isEmpty) {
       return null;
     }
-    return matches.map((match) => match.group(0)!).toList();
+
+    return matches
+        .map((match) => match.group(0)!.substring(1))
+        .toList();
   }
 
   static String formatDateTime(DateTime dateTime) {
