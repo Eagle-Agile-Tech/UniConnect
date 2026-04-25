@@ -11,6 +11,12 @@ async function syncProfileNetworkState(userId) {
   ]);
 
   const isNetworkedBy = networkCount > 0 || incomingCount > 0;
+  const networkStatus =
+    networkCount > 0
+      ? "CONNECTED"
+      : incomingCount > 0 || outgoingCount > 0
+        ? "PENDING"
+        : null;
 
   await prisma.userProfile.updateMany({
     where: { userId },
@@ -22,12 +28,7 @@ async function syncProfileNetworkState(userId) {
 
   return {
     networkCount,
-    isNetworkedBy,
-    pendingNetworks: {
-      incoming: incomingCount,
-      outgoing: outgoingCount,
-      total: incomingCount + outgoingCount,
-    },
+    networkStatus,
   };
 }
 

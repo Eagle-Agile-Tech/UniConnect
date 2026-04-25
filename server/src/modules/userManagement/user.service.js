@@ -116,12 +116,7 @@ async function loadNetworkStatus(userId) {
     if (!userId) {
         return {
             networkCount: 0,
-            isNetworkedBy: false,
-            pendingNetworks: {
-                incoming: 0,
-                outgoing: 0,
-                total: 0,
-            },
+            networkStatus: null,
         };
     }
 
@@ -133,12 +128,12 @@ async function loadNetworkStatus(userId) {
 
     return {
         networkCount,
-        isNetworkedBy: networkCount > 0 || incoming > 0,
-        pendingNetworks: {
-            incoming,
-            outgoing,
-            total: incoming + outgoing,
-        },
+        networkStatus:
+            networkCount > 0
+                ? "CONNECTED"
+                : incoming > 0 || outgoing > 0
+                    ? "PENDING"
+                    : null,
     };
 }
 

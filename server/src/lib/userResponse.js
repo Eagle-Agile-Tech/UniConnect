@@ -17,6 +17,30 @@ function normalizeInterests(interests) {
   return cleaned.length > 0 ? cleaned : null;
 }
 
+function resolveNetworkStatus(networkStatus, profile, networkCount) {
+  if (typeof networkStatus?.networkStatus === 'string' && networkStatus.networkStatus.trim()) {
+    return networkStatus.networkStatus.trim().toUpperCase();
+  }
+
+  if (typeof networkStatus?.status === 'string' && networkStatus.status.trim()) {
+    return networkStatus.status.trim().toUpperCase();
+  }
+
+  if (typeof profile?.networkStatus === 'string' && profile.networkStatus.trim()) {
+    return profile.networkStatus.trim().toUpperCase();
+  }
+
+  const resolvedNetworkCount =
+    typeof networkCount === 'number'
+      ? networkCount
+      : typeof profile?.networkCount === 'number'
+        ? profile.networkCount
+        : 0;
+
+  if (resolvedNetworkCount > 0) return 'CONNECTED';
+  return null;
+}
+
 function buildUserResponse({
   user,
   profile,
@@ -37,18 +61,11 @@ function buildUserResponse({
       : typeof profile?.networkCount === 'number'
         ? profile.networkCount
         : 0;
-  const resolvedIsNetworkedBy =
-    typeof networkStatus?.isNetworkedBy === 'boolean'
-      ? networkStatus.isNetworkedBy
-      : typeof profile?.isNetworkedBy === 'boolean'
-        ? profile.isNetworkedBy
-        : false;
-  const resolvedPendingNetworks =
-    networkStatus?.pendingNetworks || {
-      incoming: 0,
-      outgoing: 0,
-      total: 0,
-    };
+  const resolvedNetworkStatus = resolveNetworkStatus(
+    networkStatus,
+    profile,
+    resolvedNetworkCount,
+  );
 
   const response = {
     id: normalizeString(user?.id),
@@ -61,8 +78,7 @@ function buildUserResponse({
     bio: normalizeString(profile?.bio ?? expertProfile?.bio ?? null),
     profilePicture: normalizeString(profile?.profileImage ?? expertProfile?.profileImage ?? null),
     networkCount: resolvedNetworkCount,
-    isNetworkedBy: resolvedIsNetworkedBy,
-    pendingNetworks: resolvedPendingNetworks,
+    networkStatus: resolvedNetworkStatus,
   };
 
   const currentYearValue =
