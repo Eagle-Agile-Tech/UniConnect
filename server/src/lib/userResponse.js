@@ -26,6 +26,7 @@ function buildUserResponse({
   refreshToken,
   sessionId,
   networkCount,
+  networkStatus,
 }) {
   const resolvedUniversity =
     universityName || profile?.university?.name || profile?.universityName || null;
@@ -36,6 +37,18 @@ function buildUserResponse({
       : typeof profile?.networkCount === 'number'
         ? profile.networkCount
         : 0;
+  const resolvedIsNetworkedBy =
+    typeof networkStatus?.isNetworkedBy === 'boolean'
+      ? networkStatus.isNetworkedBy
+      : typeof profile?.isNetworkedBy === 'boolean'
+        ? profile.isNetworkedBy
+        : false;
+  const resolvedPendingNetworks =
+    networkStatus?.pendingNetworks || {
+      incoming: 0,
+      outgoing: 0,
+      total: 0,
+    };
 
   const response = {
     id: normalizeString(user?.id),
@@ -48,6 +61,8 @@ function buildUserResponse({
     bio: normalizeString(profile?.bio ?? expertProfile?.bio ?? null),
     profilePicture: normalizeString(profile?.profileImage ?? expertProfile?.profileImage ?? null),
     networkCount: resolvedNetworkCount,
+    isNetworkedBy: resolvedIsNetworkedBy,
+    pendingNetworks: resolvedPendingNetworks,
   };
 
   const currentYearValue =

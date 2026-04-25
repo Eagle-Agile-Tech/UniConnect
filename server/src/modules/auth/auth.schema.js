@@ -74,6 +74,11 @@ const googleLoginSchema = zod.object({
   fcmToken: zod.string().trim().min(1, 'FCM token cannot be empty').max(4096).optional(),
 });
 
+const microsoftLoginSchema = zod.object({
+  idToken: zod.string().min(1, 'ID token is required'),
+  fcmToken: zod.string().trim().min(1, 'FCM token cannot be empty').max(4096).optional(),
+});
+
 const submitIdVerificationSchema = zod.object({
   documentFrontImage: zod.string().min(1, 'Front document image URL is required'),
   documentBackImage: zod.string().min(1, 'Back document image URL is required'),
@@ -91,5 +96,6 @@ module.exports = {
   logoutSchema,
   refreshTokenSchema,
   googleLoginSchema,
+  microsoftLoginSchema,
   submitIdVerificationSchema,
 };
