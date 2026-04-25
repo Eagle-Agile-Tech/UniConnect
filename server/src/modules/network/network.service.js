@@ -1,6 +1,11 @@
 const repo = require("./network.repository");
 const prisma = require("../../lib/prisma");
 
+function normalizeId(value) {
+  if (typeof value !== "string") return value;
+  return value.trim().replace(/^\{+|\}+$/g, "");
+}
+
 async function syncProfileNetworkState(userId) {
   if (!userId) return null;
 
@@ -36,29 +41,47 @@ async function syncProfileNetworkState(userId) {
 // SEND REQUEST
 // ========================
 async function sendRequest(senderId, receiverId) {
-  if (!senderId || !receiverId) {
+  const normalizedSenderId = normalizeId(senderId);
+  const normalizedReceiverId = normalizeId(receiverId);
+
+  if (!normalizedSenderId || !normalizedReceiverId) {
     throw new Error("senderId and receiverId are required");
   }
 
-  if (senderId === receiverId) {
+  if (normalizedSenderId === normalizedReceiverId) {
     throw new Error("You cannot send a request to yourself");
   }
 
+  const receiver = await prisma.user.findUnique({
+    where: { id: normalizedReceiverId },
+    select: { id: true },
+  });
+
+  if (!receiver) {
+    throw new Error("Receiver user not found");
+  }
+
   // Check existing connection (both directions)
-  const existingNetwork = await repo.findNetwork(senderId, receiverId);
+  const existingNetwork = await repo.findNetwork(
+    normalizedSenderId,
+    normalizedReceiverId,
+  );
   if (existingNetwork) {
     throw new Error("You are already connected");
   }
 
   // Check existing request (both directions)
-  const existingRequest = await repo.findRequest(senderId, receiverId);
+  const existingRequest = await repo.findRequest(
+    normalizedSenderId,
+    normalizedReceiverId,
+  );
   if (existingRequest) {
     throw new Error("Request already exists");
   }
 
-  const request = await repo.createRequest(senderId, receiverId);
-  const senderState = await syncProfileNetworkState(senderId);
-  const receiverState = await syncProfileNetworkState(receiverId);
+  const request = await repo.createRequest(normalizedSenderId, normalizedReceiverId);
+  const senderState = await syncProfileNetworkState(normalizedSenderId);
+  const receiverState = await syncProfileNetworkState(normalizedReceiverId);
 
   return {
     request,
@@ -141,18 +164,21 @@ async function rejectRequest(requestId, userId) {
   };
 }
 async function cancelRequest(senderId, receiverId) {
-  if (!senderId || !receiverId) {
+  const normalizedSenderId = normalizeId(senderId);
+  const normalizedReceiverId = normalizeId(receiverId);
+
+  if (!normalizedSenderId || !normalizedReceiverId) {
     throw new Error("senderId and receiverId are required");
   }
 
-  const request = await repo.findRequest(senderId, receiverId);
+  const request = await repo.findRequest(normalizedSenderId, normalizedReceiverId);
 
   if (!request) {
     throw new Error("Request not found");
   }
 
   // ✅ make sure it's actually sent by this user
-  if (request.senderId !== senderId) {
+  if (request.senderId !== normalizedSenderId) {
     throw new Error("You can only cancel your own request");
   }
 
