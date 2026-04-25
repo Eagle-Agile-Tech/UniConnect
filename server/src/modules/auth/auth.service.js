@@ -11,6 +11,7 @@ const passwordResetTemplate = require("../../templates/passwordResetEmail");
 const idVerificationSubmittedTemplate = require("../../templates/idVerificationSubmitted");
 const universityDomains = require("../../lib/data/universities.json");
 const verifyGoogleToken = require("../../lib/googleAuth");
+const verifyMicrosoftToken = require("../../lib/microsoftAuth");
 const buildUserResponse = require("../../lib/userResponse");
 
 class AuthError extends AppError {
@@ -165,7 +166,20 @@ class AuthService {
       throw new AuthError("Unable to issue OTP. Try again.", 503);
     }
 
-    await this.sendVerificationEmail(email, otpCode);
+    try {
+      await this.sendVerificationEmail(email, otpCode);
+    } catch (error) {
+      await redisClient.del(
+        this.otpKey(email),
+        this.otpAttemptsKey(email),
+        this.otpResendKey(email),
+      ).catch(() => {});
+
+      throw new AuthError(
+        error?.message || "Unable to send OTP email. Try again.",
+        503,
+      );
+    }
   }
 
   detectUniversity(email) {
@@ -494,7 +508,7 @@ class AuthService {
   async sendVerificationEmail(email, otpCode) {
     const template = verificationTemplate(otpCode);
 
-    await mailer.sendEmail({
+    return mailer.sendEmail({
       to: email,
       subject: template.subject,
       text: template.text,
@@ -610,7 +624,7 @@ class AuthService {
   async sendPasswordResetEmail(email, otpCode) {
     const template = passwordResetTemplate(otpCode);
 
-    await mailer.sendEmail({
+    return mailer.sendEmail({
       to: email,
       subject: template.subject,
       text: template.text,
@@ -620,7 +634,7 @@ class AuthService {
 
   async sendIdVerificationSubmittedEmail(email, name) {
     const template = idVerificationSubmittedTemplate(name);
-    await mailer.sendEmail({
+    return mailer.sendEmail({
       to: email,
       subject: template.subject,
       text: template.text,
@@ -742,19 +756,59 @@ class AuthService {
     } catch {
       throw new AuthError("Invalid Google ID token");
     }
-    if (!googleUser.emailVerified)
+    if (!googleUser.emailVerified) {
       throw new AuthError("Google email not verified");
+    }
 
-    const email = this.normalizeEmail(googleUser.email);
+    return this.completeUniversityOAuthLogin({
+      providerLabel: "Google",
+      providerIdField: "googleId",
+      providerUser: googleUser,
+      deviceInfo,
+      rawFcmToken,
+    });
+  }
+
+  // ==========================
+  // MICROSOFT AUTH
+  // ==========================
+  async microsoftAuth(idToken, deviceInfo, rawFcmToken) {
+    let microsoftUser;
+    try {
+      microsoftUser = await verifyMicrosoftToken(idToken);
+    } catch {
+      throw new AuthError("Invalid Microsoft ID token");
+    }
+
+    return this.completeUniversityOAuthLogin({
+      providerLabel: "Microsoft",
+      providerIdField: null,
+      providerUser: microsoftUser,
+      deviceInfo,
+      rawFcmToken,
+    });
+  }
+
+  async completeUniversityOAuthLogin({
+    providerLabel,
+    providerIdField = null,
+    providerUser,
+    deviceInfo,
+    rawFcmToken,
+  }) {
+    const email = this.normalizeEmail(providerUser.email);
     const fcmToken = this.normalizeFcmToken(rawFcmToken);
     const university = this.detectUniversity(email);
-    if (!university)
+
+    if (!university) {
       throw new AuthError(
-        "Only university emails allowed for Google login",
+        `Only university emails allowed for ${providerLabel} login`,
         403,
       );
+    }
 
     const universityRecord = await this.getOrCreateUniversity(university);
+    const providerId = providerIdField ? providerUser[providerIdField] : null;
 
     let user = await prisma.user.findUnique({ where: { email } });
 
@@ -762,28 +816,32 @@ class AuthService {
       user = await prisma.$transaction(async (tx) => {
         const newUser = await tx.user.create({
           data: {
-            firstName: googleUser.firstName || "",
-            lastName: googleUser.lastName || "",
+            firstName: providerUser.firstName || "",
+            lastName: providerUser.lastName || "",
             email,
-            googleId: googleUser.googleId,
-            verificationStatus: 'EMAIL_VERIFIED',
-            verificationMethod: 'UNIVERSITY_EMAIL',
+            ...(providerIdField && providerId
+              ? { [providerIdField]: providerId }
+              : {}),
+            verificationStatus: "EMAIL_VERIFIED",
+            verificationMethod: "UNIVERSITY_EMAIL",
+            ...(fcmToken ? { fcmToken } : {}),
           },
         });
 
         const username = await this.resolveUniqueUsername(
           this.getUsernameSeed({
             email,
-            firstName: googleUser.firstName,
-            lastName: googleUser.lastName,
+            firstName: providerUser.firstName,
+            lastName: providerUser.lastName,
           }),
           tx,
         );
+
         await tx.userProfile.create({
           data: {
             userId: newUser.id,
             universityId: universityRecord?.id,
-            profileImage: googleUser.picture,
+            profileImage: providerUser.picture,
             username,
           },
         });
@@ -792,11 +850,18 @@ class AuthService {
       });
     }
 
-    if (user.googleId && user.googleId !== googleUser.googleId)
-      throw new AuthError("Google account does not match this user", 403);
+    if (providerIdField && providerId && user[providerIdField] && user[providerIdField] !== providerId) {
+      throw new AuthError(
+        `${providerLabel} account does not match this user`,
+        403,
+      );
+    }
 
-    if (!user.googleId) {
-      user = await prisma.user.update({ where: { id: user.id }, data: { googleId: googleUser.googleId } });
+    if (providerIdField && providerId && !user[providerIdField]) {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { [providerIdField]: providerId },
+      });
     }
 
     const sessionId = crypto.randomUUID();

@@ -14,6 +14,7 @@ const {
   resetPasswordSchema,
   refreshTokenSchema,
   googleLoginSchema,
+  microsoftLoginSchema,
   submitIdVerificationSchema,
   logoutSchema,
 } = require('./auth.schema');
@@ -30,6 +31,9 @@ router.post('/login', validateRequest(loginSchema), authController.login);
 
 // Google OAuth login
 router.post('/google', validateRequest(googleLoginSchema), authController.googleLogin);
+
+// Microsoft OAuth login
+router.post('/microsoft', validateRequest(microsoftLoginSchema), authController.microsoftLogin);
 
 // Verify OTP
 router.post('/verify-otp', validateRequest(verifyOtpSchema), authController.verifyOtp);

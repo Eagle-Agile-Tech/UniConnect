@@ -11,6 +11,7 @@ const registerInstitutionSchema = zod.object({
         .regex(/[0-9]/, 'Password must contain at least one number')
         .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character'),
     passwordConfirm: zod.string(),
+    username: zod.string().trim().min(3, 'username is required').max(30),
     name: zod.string().trim().min(2, 'name is required').max(150),
     type: zod.enum([
         'UNIVERSITY',
@@ -39,6 +40,7 @@ const resendInstitutionOtpSchema = zod.object({
 }).strict();
 
 const updateInstitutionSchema = zod.object({
+    username: zod.string().trim().min(3).max(30).optional(),
     name: zod.string().min(2).max(150).optional(),
     type: zod.enum([
         'UNIVERSITY',
@@ -54,6 +56,7 @@ const updateInstitutionSchema = zod.object({
     logoUri: zod.string().url().optional(),
 }).strict().superRefine((data, ctx) => {
     const hasAny =
+        data.username ||
         data.name ||
         data.type ||
         data.description ||

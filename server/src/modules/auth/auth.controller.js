@@ -161,14 +161,43 @@ class AuthController {
   }
 
   // ========================
+  // MICROSOFT LOGIN
+  // ========================
+  async microsoftLogin(req, res, next) {
+    try {
+      const { idToken, fcmToken } = req.body;
+
+      const result = await authService.microsoftAuth(
+        idToken,
+        {
+          ip: req.ip,
+          userAgent: req.headers["user-agent"],
+          device: req.headers['sec-ch-ua-platform'] || "Unknown"
+        },
+        fcmToken
+      );
+
+      res.status(200).json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // ========================
   // SUBMIT ID VERIFICATION
   // ========================
   async submitIdVerification(req, res, next) {
     try {
+      const userId = req.user?.id || req.user?.sub;
+      if (!userId) {
+        return res.status(401).json({
+          message: 'Access denied. No authenticated user found.',
+        });
+      }
 
       const result = await authService.submitIdVerification({
         ...req.body,
-        userId: req.user?.id,
+        userId,
       });
 
       res.status(201).json(result);

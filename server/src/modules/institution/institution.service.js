@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
 const prisma = require('../../lib/prisma');
 const authService = require('../auth/auth.service');
@@ -48,6 +49,170 @@ function generateSecretCode() {
   return crypto.randomBytes(4).toString('hex').toUpperCase();
 }
 
+function normalizeInstitutionUsername(username) {
+  return (username || '').trim().toLowerCase();
+}
+
+function stripKeysDeep(value, keysToRemove) {
+  if (Array.isArray(value)) {
+    return value.map((item) => stripKeysDeep(item, keysToRemove));
+  }
+
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+
+  return Object.entries(value).reduce((acc, [key, nestedValue]) => {
+    if (keysToRemove.has(key)) return acc;
+    acc[key] = stripKeysDeep(nestedValue, keysToRemove);
+    return acc;
+  }, {});
+}
+
+async function ensureInstitutionNameAvailable(name, options = {}) {
+  const {
+    excludeInstitutionId = null,
+    excludeUserId = null,
+  } = options;
+
+  const existingInstitution = await prisma.institution.findFirst({
+    where: {
+      name: { equals: name, mode: 'insensitive' },
+    },
+    select: { id: true, userId: true },
+  });
+
+  if (!existingInstitution) return;
+  if (excludeInstitutionId && existingInstitution.id === excludeInstitutionId) return;
+  if (excludeUserId && existingInstitution.userId === excludeUserId) return;
+
+  throw new ConflictError('Institution name already exists. Please use a different name.');
+}
+
+async function ensureInstitutionUsernameAvailable(username, options = {}) {
+  const {
+    excludeInstitutionId = null,
+    excludeUserId = null,
+  } = options;
+
+  const normalized = normalizeInstitutionUsername(username);
+  const existingInstitution = await prisma.institution.findFirst({
+    where: {
+      username: { equals: normalized, mode: 'insensitive' },
+    },
+    select: { id: true, userId: true },
+  });
+
+  if (!existingInstitution) return;
+  if (excludeInstitutionId && existingInstitution.id === excludeInstitutionId) return;
+  if (excludeUserId && existingInstitution.userId === excludeUserId) return;
+
+  throw new ConflictError('Institution username already exists. Please use a different username.');
+}
+
+async function formatInstitutionResponse(institution, options = {}) {
+  const {
+    rootId = institution?.id ?? null,
+    email = null,
+    includeExperts = false,
+  } = options;
+
+  let affiliatedExperts = [];
+  if (includeExperts && Array.isArray(institution?.affiliatedExperts) && institution.affiliatedExperts.length > 0) {
+    const expertIds = institution.affiliatedExperts.map((expertProfile) => expertProfile.expertId);
+    const userProfiles = await prisma.userProfile.findMany({
+      where: { userId: { in: expertIds } },
+      include: { university: { select: { name: true } } },
+    });
+    const profileByUserId = new Map(userProfiles.map((profile) => [profile.userId, profile]));
+
+    affiliatedExperts = institution.affiliatedExperts.map((expertProfile) =>
+      buildUserResponse({
+        user: expertProfile.expert,
+        profile: profileByUserId.get(expertProfile.expertId),
+        expertProfile,
+      })
+    );
+  }
+
+  return stripKeysDeep({
+    id: rootId,
+    firstName: institution?.name ?? null,
+    lastName: '',
+    role: 'INSTITUTION',
+    email,
+    username: institution?.username ?? null,
+    university: institution?.name ?? null,
+    networkCount: affiliatedExperts.length || (institution?.affiliatedExperts?.length ?? 0),
+    bio: institution?.description ?? null,
+    profilePicture: institution?.logoUri ?? null,
+    areWe: institution?.verificationStatus === 'VERIFIED',
+    INSTITUTION: {
+      id: institution?.id ?? null,
+      type: institution?.type ?? null,
+      username: institution?.username ?? null,
+      website: institution?.website ?? null,
+      verificationStatus: institution?.verificationStatus ?? null,
+      verificationDocument: institution?.verificationDocument ?? null,
+      userId: institution?.userId ?? null,
+      secretCode: institution?.secretCode ?? null,
+      secretCodeExpiresAt: institution?.secretCodeExpiresAt ?? null,
+      createdAt: institution?.createdAt ?? null,
+      updatedAt: institution?.updatedAt ?? null,
+      verifiedAt: institution?.verifiedAt ?? null,
+      verifiedById: institution?.verifiedById ?? null,
+      profileUserId: institution?.profileUserId ?? null,
+      affiliatedExperts,
+    },
+  }, new Set(['name']));
+}
+
+async function buildInstitutionAuthResponse({ user, institution, auth, message }) {
+  const institutionResponse = await formatInstitutionResponse(institution, {
+    rootId: user?.id ?? null,
+    email: user?.email ?? null,
+  });
+
+  const response = {
+    message,
+    ...institutionResponse,
+  };
+
+  if (auth?.accessToken) {
+    try {
+      const decodedAccessToken = jwt.decode(auth.accessToken, { complete: true });
+      const accessPayload = decodedAccessToken?.payload;
+      if (accessPayload) {
+        response.issuedAt = accessPayload.iat ?? null;
+        response.expiredAt = accessPayload.exp ?? null;
+        response.accessTokenIssuedAt = accessPayload.iat ?? null;
+        response.accessTokenExpiresIn =
+          accessPayload.iat && accessPayload.exp ? accessPayload.exp - accessPayload.iat : null;
+      }
+    } catch {
+      // Fall back to the explicit auth fields below.
+    }
+  }
+
+  if (auth?.accessToken !== undefined) response.accessToken = auth.accessToken ?? null;
+  if (auth?.refreshToken !== undefined) response.refreshToken = auth.refreshToken ?? null;
+  if (auth?.sessionId !== undefined) response.sessionId = auth.sessionId ?? null;
+  if (auth?.accessTokenExpiresIn !== undefined) {
+    response.accessTokenExpiresIn = auth.accessTokenExpiresIn ?? null;
+  }
+  if (auth?.accessTokenIssuedAt !== undefined) {
+    response.accessTokenIssuedAt = auth.accessTokenIssuedAt ?? null;
+  }
+  if (auth?.refreshTokenExpiresIn !== undefined) {
+    response.refreshTokenExpiresIn = auth.refreshTokenExpiresIn ?? null;
+  }
+  if (auth?.refreshTokenIssuedAt !== undefined) {
+    response.refreshTokenIssuedAt = auth.refreshTokenIssuedAt ?? null;
+  }
+
+  return response;
+}
+
 class InstitutionService {
   async verifyInstitutionOtp(data) {
     const email = normalizeEmail(data.email);
@@ -68,10 +233,26 @@ class InstitutionService {
       where: { userId: user.id },
     });
 
-    return {
-      ...result,
+    return await buildInstitutionAuthResponse({
+      message: result.message,
+      user: {
+        id: result.id,
+        role: result.role,
+        firstName: result.firstName,
+        lastName: result.lastName,
+        email: result.email,
+      },
       institution: institution || null,
-    };
+      auth: {
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
+        sessionId: result.sessionId,
+        accessTokenExpiresIn: result.accessTokenExpiresIn,
+        accessTokenIssuedAt: result.accessTokenIssuedAt,
+        refreshTokenExpiresIn: result.refreshTokenExpiresIn,
+        refreshTokenIssuedAt: result.refreshTokenIssuedAt,
+      },
+    });
   }
 
   async resendInstitutionOtp(data) {
@@ -93,6 +274,7 @@ class InstitutionService {
   async registerInstitution(data, deviceInfo) {
     const parsed = registerInstitutionSchema.parse(data);
     const email = normalizeEmail(parsed.email);
+    const username = normalizeInstitutionUsername(parsed.username);
     const name = parsed.name.trim();
 
     if (isPersonalEmail(email)) {
@@ -108,66 +290,58 @@ class InstitutionService {
         throw new ConflictError('Email already registered. Please log in or reset your password.');
       }
 
-      const existingInstitutionByName = await prisma.institution.findFirst({
-        where: { name: { equals: name, mode: 'insensitive' } },
-        select: { id: true, userId: true },
-      });
-      if (existingInstitutionByName && existingInstitutionByName.userId !== existingUser.id) {
-        throw new ConflictError('Institution name already exists. Please use a different name.');
-      }
+      await ensureInstitutionNameAvailable(name, { excludeUserId: existingUser.id });
+      await ensureInstitutionUsernameAvailable(username, { excludeUserId: existingUser.id });
 
       const hashedPassword = await bcrypt.hash(parsed.password, 12);
 
-      const { user, institution } = await prisma.$transaction(async (tx) => {
-        const user = await tx.user.update({
-          where: { id: existingUser.id },
-          data: {
-            firstName: name,
-            lastName: 'Institution',
-            passwordHash: hashedPassword,
-          },
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            role: true,
-            verificationStatus: true,
-          },
-        });
+     let user, institution;
 
-        const managedInstitution = await tx.institution.findFirst({
-          where: { userId: user.id },
-          select: { id: true },
-        });
+try {
+  const result = await prisma.$transaction(async (tx) => {
+    const user = await tx.user.create({
+      data: {
+        firstName: name,
+        lastName: 'Institution',
+        email,
+        passwordHash: hashedPassword,
+        role: 'INSTITUTION',
+        verificationStatus: 'PENDING',
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        role: true,
+        verificationStatus: true,
+      },
+    });
 
-        let institution;
-        if (managedInstitution) {
-          institution = await tx.institution.update({
-            where: { id: managedInstitution.id },
-            data: {
-              name,
-              type: parsed.type,
-              description: parsed.description,
-              website: parsed.website,
-              logoUri: parsed.logoUri,
-            },
-          });
-        } else {
-          institution = await tx.institution.create({
-            data: {
-              name,
-              type: parsed.type,
-              description: parsed.description,
-              website: parsed.website,
-              logoUri: parsed.logoUri,
-              userId: user.id,
-            },
-          });
-        }
+    const institution = await tx.institution.create({
+      data: {
+        username,
+        name,
+        type: parsed.type,
+        description: parsed.description,
+        website: parsed.website,
+        logoUri: parsed.logoUri,
+        userId: user.id,
+      },
+    });
 
-        return { user, institution };
-      });
+    return { user, institution };
+  });
+
+  user = result.user;
+  institution = result.institution;
+
+} catch (error) {
+  if (error.code === 'P2002') {
+    throw new ConflictError('Institution name already exists.');
+  }
+  throw error;
+}
 
       await authService.issueEmailOtp(email);
 
@@ -176,18 +350,16 @@ class InstitutionService {
       const accessToken = authService.signAccessToken(user);
       await authService.createSession({ userId: user.id, refreshToken, deviceInfo, sessionId });
 
-      const userResponse = buildUserResponse({
-        user,
-        accessToken,
-        refreshToken,
-        sessionId,
-      });
-
-      return {
+      return await buildInstitutionAuthResponse({
         message: 'Registration successful. Please verify email with the OTP sent.',
-        ...userResponse,
+        user,
         institution,
-      };
+        auth: {
+          accessToken,
+          refreshToken,
+          sessionId,
+        },
+      });
     }
 
     const existingInstitution = await prisma.institution.findFirst({
@@ -197,6 +369,8 @@ class InstitutionService {
     if (existingInstitution) {
       throw new ConflictError('Institution name already exists. Please use a different name.');
     }
+
+    await ensureInstitutionUsernameAvailable(username);
 
     const hashedPassword = await bcrypt.hash(parsed.password, 12);
 
@@ -222,6 +396,7 @@ class InstitutionService {
 
       const institution = await tx.institution.create({
         data: {
+          username,
           name,
           type: parsed.type,
           description: parsed.description,
@@ -241,18 +416,16 @@ class InstitutionService {
     const accessToken = authService.signAccessToken(user);
     await authService.createSession({ userId: user.id, refreshToken, deviceInfo, sessionId });
 
-    const userResponse = buildUserResponse({
-      user,
-      accessToken,
-      refreshToken,
-      sessionId,
-    });
-
-    return {
+    return await buildInstitutionAuthResponse({
       message: 'Registration successful. Please verify email with the OTP sent.',
-      ...userResponse,
+      user,
       institution,
-    };
+      auth: {
+        accessToken,
+        refreshToken,
+        sessionId,
+      },
+    });
   }
 
   async listInstitutions(query) {
@@ -273,7 +446,7 @@ class InstitutionService {
       where.type = parsed.type;
     }
 
-    const [items, total] = await prisma.$transaction([
+    const [itemsRaw, total] = await prisma.$transaction([
       prisma.institution.findMany({
         where,
         orderBy: { createdAt: 'desc' },
@@ -282,6 +455,11 @@ class InstitutionService {
       }),
       prisma.institution.count({ where }),
     ]);
+
+    const items = [];
+    for (const item of itemsRaw) {
+      items.push(await formatInstitutionResponse(item));
+    }
 
     return {
       items,
@@ -298,19 +476,33 @@ class InstitutionService {
     const institution = await prisma.institution.findUnique({
       where: { id: institutionId },
       include: {
-        affiliatedExperts: true,
+        affiliatedExperts: {
+          include: {
+            expert: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                role: true,
+                verificationStatus: true,
+              },
+            },
+          },
+        },
       },
     });
 
     if (!institution) throw new NotFoundError('Institution not found');
 
-    return institution;
+    return formatInstitutionResponse(institution, { includeExperts: true });
   }
 
   async updateInstitution(institutionId, data) {
     if (!institutionId) throw new BadRequestError('institutionId is required');
 
     const parsed = updateInstitutionSchema.parse(data);
+    const username = parsed.username ? normalizeInstitutionUsername(parsed.username) : null;
 
     const existing = await prisma.institution.findUnique({
       where: { id: institutionId },
@@ -319,10 +511,22 @@ class InstitutionService {
 
     if (!existing) throw new NotFoundError('Institution not found');
 
-    return prisma.institution.update({
+    if (parsed.name) {
+      await ensureInstitutionNameAvailable(parsed.name.trim(), { excludeInstitutionId: institutionId });
+    }
+    if (username) {
+      await ensureInstitutionUsernameAvailable(username, { excludeInstitutionId: institutionId });
+    }
+
+    const updated = await prisma.institution.update({
       where: { id: institutionId },
-      data: parsed,
+      data: {
+        ...parsed,
+        ...(username ? { username } : {}),
+      },
     });
+
+    return formatInstitutionResponse(updated);
   }
 
   async loginInstitution(data, deviceInfo) {
@@ -345,7 +549,26 @@ class InstitutionService {
     }
 
     const auth = await authService.login(data, deviceInfo);
-    return { ...auth, institution };
+    return await buildInstitutionAuthResponse({
+      message: 'Login successful',
+      user: {
+        id: auth.id,
+        role: auth.role,
+        firstName: auth.firstName,
+        lastName: auth.lastName,
+        email: auth.email,
+      },
+      institution,
+      auth: {
+        accessToken: auth.accessToken,
+        refreshToken: auth.refreshToken,
+        sessionId: auth.sessionId,
+        accessTokenExpiresIn: auth.accessTokenExpiresIn,
+        accessTokenIssuedAt: auth.accessTokenIssuedAt,
+        refreshTokenExpiresIn: auth.refreshTokenExpiresIn,
+        refreshTokenIssuedAt: auth.refreshTokenIssuedAt,
+      },
+    });
   }
 
   async submitVerification(institutionId, data) {
@@ -377,7 +600,10 @@ class InstitutionService {
       },
     });
 
-    return { institution: updatedInstitution, request };
+    return {
+      institution: await formatInstitutionResponse(updatedInstitution),
+      request,
+    };
   }
 
   async verifyInstitution(institutionId, data, adminId) {
@@ -423,7 +649,7 @@ class InstitutionService {
     });
 
     return {
-      institution: updated,
+      institution: await formatInstitutionResponse(updated),
       status: parsed.status,
       rejectionReason: parsed.rejectionReason || null,
       secretCode: secretCode || undefined,
@@ -472,7 +698,7 @@ class InstitutionService {
     });
 
     return {
-      institution: updated,
+      institution: await formatInstitutionResponse(updated),
       secretCode,
       secretCodeExpiresAt,
     };

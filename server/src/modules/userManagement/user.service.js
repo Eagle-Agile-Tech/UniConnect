@@ -2,6 +2,7 @@ const prisma = require("./../../lib/prisma");
 const { createUserSchema } = require("./user.schema");
 const crypto = require("crypto");
 const buildUserResponse = require("../../lib/userResponse");
+const networkRepo = require("../network/network.repository");
 
 function normalizeFullName(profile) {
     const directFullName =
@@ -109,6 +110,36 @@ function mapStudentFields(input) {
     if (interests !== undefined) mapped.interests = interests;
 
     return mapped;
+}
+
+async function loadNetworkStatus(userId) {
+    if (!userId) {
+        return {
+            networkCount: 0,
+            isNetworkedBy: false,
+            pendingNetworks: {
+                incoming: 0,
+                outgoing: 0,
+                total: 0,
+            },
+        };
+    }
+
+    const [networkCount, incoming, outgoing] = await Promise.all([
+        networkRepo.countUserNetworks(userId),
+        networkRepo.countIncomingRequests(userId),
+        networkRepo.countOutgoingRequests(userId),
+    ]);
+
+    return {
+        networkCount,
+        isNetworkedBy: networkCount > 0 || incoming > 0,
+        pendingNetworks: {
+            incoming,
+            outgoing,
+            total: incoming + outgoing,
+        },
+    };
 }
 
 class userService {
@@ -310,9 +341,11 @@ class userService {
                 where: { userId },
                 include: { university: { select: { name: true } } },
             });
+            const networkStatus = await loadNetworkStatus(userId);
             return buildUserResponse({
                 user: freshUser,
                 profile,
+                networkStatus,
             });
         }
 
@@ -355,9 +388,11 @@ class userService {
             where: { userId },
             include: { university: { select: { name: true } } },
         });
+        const networkStatus = await loadNetworkStatus(userId);
         return buildUserResponse({
             user: freshUser,
             profile,
+            networkStatus,
         });
     }
 
@@ -389,12 +424,14 @@ class userService {
         }
 
         const { university, user, ...restProfile } = userProfile;
+        const networkStatus = await loadNetworkStatus(userId);
         return buildUserResponse({
             user,
             profile: {
                 ...restProfile,
                 university,
             },
+            networkStatus,
         });
     }
 
@@ -563,14 +600,16 @@ class userService {
             where: { id: userId },
             select: { id: true, firstName: true, lastName: true, email: true, role: true },
         });
-        const profile = await prisma.userProfile.findUnique({
-            where: { userId },
-            include: { university: { select: { name: true } } },
-        });
-        return buildUserResponse({
-            user: freshUser,
-            profile,
-        });
+            const profile = await prisma.userProfile.findUnique({
+                where: { userId },
+                include: { university: { select: { name: true } } },
+            });
+            const networkStatus = await loadNetworkStatus(userId);
+            return buildUserResponse({
+                user: freshUser,
+                profile,
+                networkStatus,
+            });
     }
 
     async updateProfileImage(userId, profileImage){
@@ -593,9 +632,11 @@ class userService {
             where: { userId },
             include: { university: { select: { name: true } } },
         });
+        const networkStatus = await loadNetworkStatus(userId);
         return buildUserResponse({
             user: freshUser,
             profile,
+            networkStatus,
         });
     }
 
@@ -638,12 +679,14 @@ class userService {
         }
 
         const { university, user, ...restProfile } = userProfile;
+        const networkStatus = await loadNetworkStatus(userId);
         return buildUserResponse({
             user,
             profile: {
                 ...restProfile,
                 university,
             },
+            networkStatus,
         });
     }
 
