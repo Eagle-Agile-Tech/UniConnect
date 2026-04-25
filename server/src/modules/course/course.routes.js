@@ -7,6 +7,8 @@ const {
   getCourseById,
   updateCourse,
   getAllCourses,
+  getCoursesByExpertId,
+  getTopCourses,
 } = require("./course.controller");
 
 const router = express.Router();
@@ -14,6 +16,13 @@ const router = express.Router();
 // ✅ IMPORTANT: static routes first
 router.get("/", authMiddleware, getAllCourses);
 router.get("/my", authMiddleware, getMyCourses);
+router.get("/", authMiddleware, getAllCourses);
+router.get("/my", authMiddleware, getMyCourses);
+router.get("/expert/:expertId", authMiddleware, getCoursesByExpertId);
+router.get("/top/enrolled", authMiddleware, getTopCourses);
+
+// ❗ keep this last
+router.get("/:id", authMiddleware, getCourseById);
 
 // ✅ dynamic routes last
 router.get("/:id", authMiddleware, getCourseById);

@@ -159,6 +159,52 @@ async function getMyNetwork(req, res) {
     });
   }
 }
+async function cancelRequest(req, res) {
+  try {
+    const userId = req.user?.id;
+    const { receiverId } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
+    if (!receiverId) {
+      return res.status(400).json({
+        success: false,
+        message: "receiverId is required",
+      });
+    }
+
+    await service.cancelRequest(userId, receiverId);
+
+    return res.status(200).json({
+      success: true,
+      message: "Request cancelled",
+    });
+  } catch (err) {
+    return res.status(400).json({
+      success: false,
+      message: err.message,
+    });
+  }
+}
+async function getUserNetwork(req, res) {
+  try {
+    const { userId } = req.params;
+
+    const data = await service.getUserNetwork(userId);
+
+    return res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (err) {
+    return res.status(400).json({
+      success: false,
+      message: err.message,
+    });
+  }
+}
 
 async function getIncoming(req, res) {
   try {
@@ -212,4 +258,6 @@ module.exports = {
   getMyNetwork,
   getIncoming,
   getOutgoing,
+  cancelRequest,
+  getUserNetwork,
 };

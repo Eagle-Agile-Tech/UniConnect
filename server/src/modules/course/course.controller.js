@@ -12,6 +12,7 @@ const {
   getCoursesByExpert,
   getCourseById: getCourseByIdService,
   updateCourse: updateCourseService,
+  getTopEnrolledCourses,
 } = require("./course.service");
 
 // ✅ GET COURSE BY ID (FIXED)
@@ -163,7 +164,32 @@ const getMyCourses = asyncHandler(async (req, res) => {
     data: courses,
   });
 });
+const getCoursesByExpertId = asyncHandler(async (req, res) => {
+  const expertId = req.params.expertId;
 
+  if (!expertId) {
+    return res.status(400).json({
+      success: false,
+      message: "Expert ID is required",
+    });
+  }
+
+  const courses = await getCoursesByExpert(expertId);
+
+  // ✅ FORMAT FOR FRONTEND
+  const formattedCourses = courses.map((course) => ({
+    id: course.id,
+    title: course.title,
+    description: course.description,
+    enrolled: course._count?.purchases || 0,
+    price: Math.round(course.price),
+  }));
+
+  return res.status(200).json({
+    success: true,
+    data: formattedCourses,
+  });
+});
 // (UNCHANGED - KEEP YOUR EXISTING CODE)
 const getAllCourses = asyncHandler(async (req, res) => {
   const courses = await prisma.course.findMany({
@@ -181,6 +207,14 @@ const getAllCourses = asyncHandler(async (req, res) => {
 
   res.status(200).json({ success: true, data: courses });
 });
+const getTopCourses = asyncHandler(async (req, res) => {
+  const courses = await getTopEnrolledCourses();
+
+  return res.status(200).json({
+    success: true,
+    data: courses,
+  });
+});
 
 module.exports = {
   uploadCourse,
@@ -188,4 +222,6 @@ module.exports = {
   getCourseById,
   updateCourse,
   getAllCourses,
+  getCoursesByExpertId,
+  getTopCourses,
 };

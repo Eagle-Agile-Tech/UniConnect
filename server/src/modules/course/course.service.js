@@ -38,6 +38,62 @@ const getCoursesByExpert = async (userId) => {
     },
   });
 };
+// GET TOP 10 MOST ENROLLED COURSES
+const getTopEnrolledCourses = async () => {
+  const courses = await prisma.course.findMany({
+    include: {
+      expert: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          expertProfile: {
+            select: {
+              bio: true,
+              profileImage: true,
+            },
+          },
+          profile: {
+            select: {
+              username: true,
+              profileImage: true,
+            },
+          },
+        },
+      },
+      purchases: {
+        where: { paid: true },
+        select: { id: true },
+      },
+    },
+  });
+
+  // compute + sort
+  const ranked = courses
+    .map((course) => ({
+      id: course.id,
+      title: course.title,
+      link: `https://www.youtube.com/watch?v=${course.videoId}`,
+      description: course.description,
+      enrolled: course.purchases.length,
+      price: Math.round(course.price),
+
+      expert: {
+        id: course.expert.id,
+        firstName: course.expert.firstName,
+        lastName: course.expert.lastName,
+        userName: course.expert.profile?.username || null,
+        profileImage:
+          course.expert.profile?.profileImage ||
+          course.expert.expertProfile?.profileImage ||
+          null,
+      },
+    }))
+    .sort((a, b) => b.enrolled - a.enrolled)
+    .slice(0, 10);
+
+  return ranked;
+};
 
 // GET BY ID
 const getCourseById = async (courseId) => {
@@ -79,4 +135,5 @@ module.exports = {
   getCoursesByExpert,
   getCourseById,
   updateCourse,
+  getTopEnrolledCourses,
 };

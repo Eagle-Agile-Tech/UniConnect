@@ -53,7 +53,18 @@ async function findNetwork(userAId, userBId) {
     },
   });
 }
-
+async function getRequestById(requestId) {
+  return prisma.networkRequest.findUnique({
+    where: { id: requestId },
+  });
+}
+async function getUserNetwork(userId) {
+  return prisma.network.findMany({
+    where: {
+      OR: [{ userAId: userId }, { userBId: userId }],
+    },
+  });
+}
 async function createNetwork(userAId, userBId) {
   // normalize ordering to avoid duplicates
   const sorted = [userAId, userBId].sort();
@@ -96,4 +107,6 @@ module.exports = {
   createNetwork,
   deleteNetwork,
   getMyNetwork,
+  getRequestById,
+  getUserNetwork,
 };
