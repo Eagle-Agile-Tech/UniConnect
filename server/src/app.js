@@ -26,6 +26,7 @@ const expertRoutes = require('./modules/expert/expert.route');
 const chatRoutes = require('./modules/chat/chat.route');
 const eventRoutes = require('./modules/event/event.route');
 const communityRoutes = require('./modules/community/community.route');
+const reportRoutes = require("./modules/report/report.routes");
 
 // const recommendationRoutes = require('./modules/ai-recommendation-service/recommendation.route');
 const errorHandler = require('./middlewares/errorhHandler');
@@ -96,6 +97,7 @@ app.use('/api/saved-courses', savedCourseRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/network', networkRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use("/api/reports", reportRoutes);
 // app.use('/api/v1/recommendations', recommendationRoutes);
 app.use('/api/admin/recommendations', trainingDatasetRoutes);
 

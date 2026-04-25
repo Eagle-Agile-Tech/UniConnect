@@ -50,6 +50,11 @@ async function acceptRequest(requestId, userId) {
 
   return repo.createNetwork(request.senderId, request.receiverId);
 }
+async function getUserNetwork(userId) {
+  if (!userId) throw new Error("userId is required");
+
+  return repo.getUserNetwork(userId);
+}
 
 // ========================
 // REJECT REQUEST
@@ -71,7 +76,24 @@ async function rejectRequest(requestId, userId) {
 
   return repo.deleteRequest(requestId);
 }
+async function cancelRequest(senderId, receiverId) {
+  if (!senderId || !receiverId) {
+    throw new Error("senderId and receiverId are required");
+  }
 
+  const request = await repo.findRequest(senderId, receiverId);
+
+  if (!request) {
+    throw new Error("Request not found");
+  }
+
+  // ✅ make sure it's actually sent by this user
+  if (request.senderId !== senderId) {
+    throw new Error("You can only cancel your own request");
+  }
+
+  return repo.deleteRequest(request.id);
+}
 // ========================
 // REMOVE CONNECTION
 // ========================
@@ -115,4 +137,6 @@ module.exports = {
   getMyNetwork,
   getIncomingRequests,
   getOutgoingRequests,
+  cancelRequest,
+  getUserNetwork,
 };
