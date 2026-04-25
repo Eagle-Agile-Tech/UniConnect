@@ -1,6 +1,7 @@
 const commentService = require("../services/comment.service");
 const commentPaginationService = require("../services/comment-pagination.service");
 const commentReactionService = require("../services/comment-reaction.service");
+const CommentMapper = require("../mappers/comment.mapper");
 
 class CommentController {
   async addComment(req, res, next) {
@@ -18,7 +19,7 @@ class CommentController {
 
       res.status(201).json({
         message: "Comment added successfully",
-        data: result.comment,
+        data: CommentMapper.toDTO(result.comment),
         commentCount: result.commentCount,
       });
     } catch (error) {
@@ -37,7 +38,10 @@ class CommentController {
         parseInt(limit || 20),
       );
 
-      res.json(result);
+      res.json({
+        data: CommentMapper.toList(result.data),
+        nextCursor: result.nextCursor,
+      });
     } catch (error) {
       next(error);
     }

@@ -8,8 +8,7 @@ class EngagementCacheService {
    */
   async get(key) {
     try {
-      const data = await redis.get(key);
-      return data ? JSON.parse(data) : null;
+      return await redis.get(key);
     } catch (error) {
       console.error("Redis get error:", error);
       return null;
@@ -21,7 +20,7 @@ class EngagementCacheService {
    */
   async set(key, value, ttl = 300) {
     try {
-      await redis.setex(key, ttl, JSON.stringify(value));
+      await redis.set(key, value, ttl);
     } catch (error) {
       console.error("Redis set error:", error);
     }
@@ -67,9 +66,20 @@ class EngagementCacheService {
    */
   async invalidatePattern(pattern) {
     try {
-      const keys = await redis.keys(pattern);
+      if (!redis?.isConnected || !redis?.client) {
+        return;
+      }
+
+      const keys = [];
+      for await (const key of redis.client.scanIterator({
+        MATCH: pattern,
+        COUNT: 100,
+      })) {
+        keys.push(key);
+      }
+
       if (keys.length > 0) {
-        await redis.del(...keys);
+        await redis.client.del(keys);
       }
     } catch (error) {
       console.error("Redis pattern invalidation error:", error);

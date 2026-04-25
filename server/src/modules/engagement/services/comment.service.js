@@ -30,6 +30,26 @@ class CommentService {
           createdAt: createdAt ? new Date(createdAt) : new Date(),
           moderationStatus,
         },
+        include: {
+          commenter: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              profile: {
+                select: {
+                  profileImage: true,
+                },
+              },
+            },
+          },
+          _count: {
+            select: {
+              commentReactions: true,
+              replies: true,
+            },
+          },
+        },
       });
 
       await interactionService.logPostComment(
@@ -89,6 +109,26 @@ class CommentService {
       skip: cursor ? 1 : 0,
       cursor: cursor ? { id: cursor } : undefined,
       orderBy: { createdAt: "desc" },
+      include: {
+        commenter: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profile: {
+              select: {
+                profileImage: true,
+              },
+            },
+          },
+        },
+        _count: {
+          select: {
+            commentReactions: true,
+            replies: true,
+          },
+        },
+      },
     });
 
     return {

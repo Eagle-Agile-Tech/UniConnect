@@ -5,6 +5,7 @@ class CommentMapper {
 
     return {
       id: comment.id,
+      parentCommentId: comment.parentCommentId || null,
       postId: comment.postId,
       authorProfilePicUrl: comment.commenter?.profile?.profileImage || null,
       content: comment.content,
