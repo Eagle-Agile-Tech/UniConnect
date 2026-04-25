@@ -24,7 +24,8 @@ abstract class User with _$User{
     required UserRole role,
     @JsonKey(name:'STUDENT') Student? student,
     @JsonKey(name:'EXPERT') Expert? expert,
-    @Default(false) bool areWe
+    @JsonKey(name:'INSTITUTION') Institution? institution,
+    NetworkStatus? networkStatus,
 }) = _User;
 
   String get fullName => '$firstName $lastName';

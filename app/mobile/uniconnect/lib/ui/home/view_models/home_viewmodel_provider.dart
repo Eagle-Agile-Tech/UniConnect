@@ -48,6 +48,10 @@ class HomeViewmodelProvider extends AsyncNotifier<List<Post>> {
   }
 
   Future<void> toggleLike({required String postId}) async {
+    final auth = ref.read(authNotifierProvider).value;
+    final currentUserId = auth?.user?.id;
+    if (currentUserId == null) return;
+
     final previous = state.value;
     if (previous == null) return;
     final updatedPost = previous.map((post) {
@@ -62,11 +66,38 @@ class HomeViewmodelProvider extends AsyncNotifier<List<Post>> {
     }).toList();
 
     state = AsyncValue.data(updatedPost);
-    final result = await _postRepo.likePost(postId: postId);
+    final result = await _postRepo.likePost(postId: postId, userId: currentUserId);
     result.fold((success) => null, (error, _) {
       // todo: notify user of the error
       state = AsyncValue.data(previous);
     });
+  }
+
+  Future<void> refreshFeed() async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(_fetchPosts);
+  }
+
+  Future<void> removePost(String postId) async {
+    final previous = state.value;
+    if (previous == null) return;
+
+    state = AsyncValue.data(previous.where((post) => post.id != postId).toList());
+    final result = await _postRepo.deletePost(postId: postId);
+    result.fold(
+      (_) => null,
+      (error, _) => state = AsyncValue.data(previous),
+    );
+  }
+
+  Future<void> addPostToFeed(Post post) async {
+    final previous = state.value ?? const <Post>[];
+    state = AsyncValue.data([post, ...previous]);
+  }
+
+  Future<Post?> fetchSinglePost(String postId) async {
+    final result = await _postRepo.getPostById(postId);
+    return result.fold((post) => post, (_, __) => null);
   }
 
   Future<void> bookmarkPost({required String postId}) async {

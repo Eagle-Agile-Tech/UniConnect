@@ -48,16 +48,29 @@ class HomeScreen extends ConsumerWidget {
         child: const DrawerContent(),
       ),
       body: RefreshIndicator(
-        onRefresh: () => ref.read(homeViewModelProvider.future),
+        onRefresh: () => ref.read(homeViewModelProvider.notifier).refreshFeed(),
         child: postAsync.when(
-          data: (posts) => ListView.builder(
-            itemCount: posts.length,
-            itemBuilder: (context, index) {
-              return UCPostCard(
-                post: posts[index],
+          data: (posts) {
+            if (posts.isEmpty) {
+              return ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: const [
+                  SizedBox(
+                    height: 300,
+                    child: Center(child: Text('No posts yet')),
+                  ),
+                ],
               );
-            },
-          ),
+            }
+            return ListView.builder(
+              itemCount: posts.length,
+              itemBuilder: (context, index) {
+                return UCPostCard(
+                  post: posts[index],
+                );
+              },
+            );
+          },
           // Todo: make the error widget better
           error: (error, stackTrace) => Center(child: Text('Oops: $error')),
           loading: () => const Center(child: CircularProgressIndicator()),

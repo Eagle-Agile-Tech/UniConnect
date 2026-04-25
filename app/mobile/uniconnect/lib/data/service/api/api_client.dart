@@ -17,14 +17,18 @@ class ApiClient {
     :
       _client = client ?? Dio(BaseOptions(baseUrl: baseUrl));
 
+  dynamic _payload(dynamic responseData) {
+    if (responseData is Map<String, dynamic> && responseData.containsKey('data')) {
+      return responseData['data'];
+    }
+    return responseData;
+  }
 
-  Future<Result<List<Map<String, dynamic>>>> fetchUserPost(
-    String userId,
-  ) async {
+
+  Future<Result<List<Map<String, dynamic>>>> fetchUserPost() async {
     try {
-      //todo: pagination
-      final response = await _client.get('/posts/fetch/$userId');
-      final List data = response.data;
+      final response = await _client.get('/v1/posts/me');
+      final List data = response.data['data'];
       return Result.ok(data.cast<Map<String, dynamic>>());
     } on DioException catch (e) {
       return Result.error(e);
@@ -57,6 +61,58 @@ class ApiClient {
     }
   }
 
+  Future<Result> makeNetwork(String receiverId) async {
+    try {
+      await _client.post("/network/request", data: {
+        "receiverId" : receiverId
+      });
+      return Result.ok('');
+    } on DioException catch (e) {
+      return Result.error(e);
+    } catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result> acceptNetwork(String requestId) async {
+    try {
+      await _client.post("/network/accept", data: {
+        "receiverId" : requestId
+      });
+      return Result.ok('');
+    } on DioException catch (e) {
+      return Result.error(e);
+    } catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result> rejectNetwork(String requestId) async {
+    try {
+      await _client.post("/network/reject", data: {
+        "requestId" : requestId
+      });
+      return Result.ok('');
+    } on DioException catch (e) {
+      return Result.error(e);
+    } catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result> removeNetwork(String receiverId) async {
+    try {
+      await _client.delete("/network", data: {
+        "targetId" : receiverId
+      });
+      return Result.ok('');
+    } on DioException catch (e) {
+      return Result.error(e);
+    } catch (e) {
+      return Result.error(e);
+    }
+  }
+
   Future<Result<List<Map<String,dynamic>>>> fetchUserNetworks(String userId) async {
     try{
       final response = await _client.get('/networks/$userId');
@@ -69,9 +125,8 @@ class ApiClient {
 
   Future<Result<List<Map<String, dynamic>>>> fetchFriends() async {
     try {
-      final response = await _client.get('/getFriends/');
-      await Future.delayed(Duration(seconds: 3));
-      final List data = response.data;
+      final response = await _client.get('/network');
+      final List data = response.data['data'];
       return Result.ok(data.cast<Map<String, dynamic>>());
     } on DioException catch (e) {
       return Result.error(e);
@@ -82,6 +137,7 @@ class ApiClient {
 
   Future<Result> createPost({
     required String content,
+    required String userId,
     List<File>? media,
     required DateTime createdAt,
     List<String>? hashtags,
@@ -90,7 +146,7 @@ class ApiClient {
       final Map<String, dynamic> postData = {
         'content': content,
         'createdAt': createdAt.toIso8601String(),
-        'tags': ?hashtags,
+        'hashtags': hashtags,
       };
 
       if (media != null && media.isNotEmpty) {
@@ -106,33 +162,55 @@ class ApiClient {
 
       final formData = FormData.fromMap(postData);
       final response = await _client.post(
-        '/posts/createPost',
+        '/v1/posts/createPost/$userId',
         data: formData,
       );
 
-      return Result.ok(response.data);
+      return Result.ok(_payload(response.data));
     } on DioException catch (e) {
-      // todo: staus code rejected
       return Result.error(e);
     }
   }
 
-  Future<Result<dynamic>> fetchFeed() async {
+  Future<Result<List<Map<String, dynamic>>>> fetchFeed(String userId) async {
     try {
-      //todo: pagination
-      final response = await _client.get('/feed/');
-      return Result.ok(response.data);
+      final response = await _client.get('/v1/posts/feed/$userId');
+      // final List data = response.data['data'];
+       final List data = response.data;
+      return Result.ok(data.cast<Map<String, dynamic>>());
     } on DioException catch (e) {
       return Result.error(e);
     }
   }
 
-  Future<Result> likePost(String postId) async {
+  Future<Result<Map<String, dynamic>>> fetchPostById(String postId) async {
+    try {
+      final response = await _client.get('/v1/posts/$postId');
+      final payload = _payload(response.data);
+      if (payload is Map<String, dynamic>) {
+        return Result.ok(payload);
+      }
+      return Result.error(StateError('Invalid post payload')); 
+    } on DioException catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<Map<String, dynamic>>> likePost({
+    required String postId,
+    required String userId,
+  }) async {
     //todo: reaction type
     try {
-      await _client.post('/v1/posts/likePost/:$postId',);
-      //todo: like count is returned
-      return Result.ok(null);
+      final response = await _client.post(
+        '/v1/posts/likePost/$postId',
+        data: {'userId': userId, 'type': 'LIKE'},
+      );
+      final payload = _payload(response.data);
+      if (payload is Map<String, dynamic>) {
+        return Result.ok(payload);
+      }
+      return Result.error(StateError('Invalid like payload'));
     } on DioException catch (e) {
       return Result.error(e);
     }
@@ -146,7 +224,7 @@ class ApiClient {
   }) async {
     try {
       await _client.post(
-        'v1/posts/commentPost/:$postId',
+        '/v1/posts/commentPost/$postId',
         data: {
           'comment': comment,
           'createdAt': createdAt.toIso8601String(),
@@ -160,8 +238,17 @@ class ApiClient {
 
   Future<Result<dynamic>> fetchComments(String postId) async {
     try {
-      final response = await _client.get('/v1/posts/comments/:$postId');
-      return Result.ok(response.data);
+      final response = await _client.get('/v1/posts/comments/$postId');
+      return Result.ok(_payload(response.data));
+    } on DioException catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<void>> deletePost(String postId) async {
+    try {
+      await _client.delete('/v1/posts/$postId');
+      return Result.ok(null);
     } on DioException catch (e) {
       return Result.error(e);
     }
@@ -170,10 +257,10 @@ class ApiClient {
   Future<Result> updateProfile(String? firstName, String? lastName, String? username, String? bio, File? profilePic) async {
     try {
       final Map<String,dynamic> change = {
-        'firstName': ?firstName,
-        'lastName': ?lastName,
-        'username': ?username,
-        'bio': ?bio,
+        'firstName': firstName,
+        'lastName': lastName,
+        'username': username,
+        'bio': bio,
       };
       if (profilePic != null){
         final file = MultipartFile.fromFile(

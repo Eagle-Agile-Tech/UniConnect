@@ -28,13 +28,14 @@ class CreatePostViewModel extends AsyncNotifier<void> {
     state = const AsyncValue.loading();
     final result = await _postRepo.createPost(
       content: content,
+      userId: userId,
       mediaUrls: mediaUrls,
       createdAt: createdAt,
       hashtags: hashtags,
     );
     state = result.fold(
-      (data) => state = const AsyncValue.data(null),
-      (error, stackTrace) => AsyncError(error, stackTrace!),
+      (data) => const AsyncValue.data(null),
+      (error, stackTrace) => AsyncError(error, stackTrace ?? StackTrace.current),
     );
   }
 }

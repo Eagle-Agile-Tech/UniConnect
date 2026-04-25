@@ -13,7 +13,6 @@ abstract class Post with _$Post {
     required String authorName,
     final List<String>? mediaUrls,
     required DateTime createdAt,
-    //todo: hashtags -> tags
     final List<String>? tags,
     required final int likeCount,
     required final int commentCount,

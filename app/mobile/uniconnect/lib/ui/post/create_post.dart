@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
+import 'package:uniconnect/ui/home/view_models/home_viewmodel_provider.dart';
 import 'package:uniconnect/ui/post/view_models/create_post_viewmodel_provider.dart';
 import 'package:uniconnect/utils/helper_functions.dart';
 
@@ -43,6 +44,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
     ref.listen(createPostViewModelProvider, (previous, next) {
       next.whenOrNull(
         data: (_) {
+          ref.read(homeViewModelProvider.notifier).refreshFeed();
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(const SnackBar(content: Text('Post shared!')));
@@ -75,15 +77,25 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                   onPressed: isLoading
                       ? null
                       : () async {
+                          final content = _contentController.text.trim();
+                          if (content.isEmpty && mediaUrls.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Add text or image before posting.'),
+                              ),
+                            );
+                            return;
+                          }
+
                           await ref
                               .read(createPostViewModelProvider.notifier)
                               .createPost(
-                                content: _contentController.text.trim(),
+                                content: content,
                                 mediaUrls: mediaUrls,
                                 userId: ref.read(authNotifierProvider).value!.user!.id,
                                 createdAt: DateTime.now(),
                                 hashtags: UCHelperFunctions.extractHashtags(
-                                  _contentController.text.trim(),
+                                  content,
                                 ),
                               );
                         },
