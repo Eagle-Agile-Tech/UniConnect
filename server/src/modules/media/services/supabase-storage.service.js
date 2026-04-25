@@ -1,17 +1,22 @@
 // server/src/modules/media/services/supabase-storage.service.js
-const supabase = require("../../../config/supabase");
+const { getSupabaseClient } = require("../../../config/supabase");
 const crypto = require("crypto");
 
 class SupabaseStorageService {
   constructor() {
-    this.bucketName = process.env.SUPABASE_BUCKET || "media";
+    this.bucketName =
+      process.env.SUPABASE_MEDIA_BUCKET || process.env.SUPABASE_BUCKET || "media";
   }
 
   /**
    * Check if Supabase is configured
    */
   isConfigured() {
-    return supabase && supabase.storage && !process.env.SKIP_SUPABASE;
+    if (process.env.SKIP_SUPABASE) return false;
+    return Boolean(
+      process.env.SUPABASE_URL &&
+        (process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY),
+    );
   }
 
   /**
@@ -32,6 +37,8 @@ class SupabaseStorageService {
     }
 
     try {
+      const supabase = getSupabaseClient();
+
       // Generate unique filename
       const fileExt = file.originalname.split(".").pop();
       const fileName = `${userId}/${Date.now()}-${crypto.randomUUID()}.${fileExt}`;
@@ -48,6 +55,11 @@ class SupabaseStorageService {
 
       if (error) {
         console.error("Supabase upload error:", error);
+        if (error.message === "Bucket not found") {
+          throw new Error(
+            `Failed to upload file: Bucket '${this.bucketName}' not found. Set SUPABASE_MEDIA_BUCKET to an existing bucket or create it in Supabase Storage.`,
+          );
+        }
         throw new Error(`Failed to upload file: ${error.message}`);
       }
 
@@ -102,6 +114,8 @@ class SupabaseStorageService {
     }
 
     try {
+      const supabase = getSupabaseClient();
+
       const { error } = await supabase.storage
         .from(this.bucketName)
         .remove([filePath]);

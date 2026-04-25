@@ -58,7 +58,7 @@ class BookmarkController {
         parseInt(limit),
       );
 
-      res.json(result);
+      res.json(result.data);
     } catch (error) {
       next(error);
     }

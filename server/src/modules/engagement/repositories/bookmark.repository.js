@@ -50,7 +50,11 @@ class BookmarkRepository {
       include: {
         post: {
           include: {
-            media: true,
+            media: {
+              select: {
+                fileUrl: true,
+              },
+            },
             author: {
               select: {
                 id: true,
@@ -62,6 +66,18 @@ class BookmarkRepository {
                     profileImage: true,
                   },
                 },
+              },
+            },
+            postReactions: {
+              where: { userId },
+              select: {
+                userId: true,
+              },
+            },
+            favorites: {
+              where: { userId },
+              select: {
+                userId: true,
               },
             },
             _count: {

@@ -5,6 +5,7 @@ const engagementCache = require("./engagement-cache.service");
 const {
   interactionService,
 } = require("../../ai-recommendation-service/interaction.service");
+const { formatPostDTO } = require("../../../utils/postDTO");
 
 class BookmarkService {
   /**
@@ -82,10 +83,15 @@ class BookmarkService {
       limit,
     );
 
-    // Cache for 5 minutes
-    await engagementCache.set(cacheKey, result, 300);
+    const formattedResult = {
+      data: result.data.map((post) => formatPostDTO(post, userId)),
+      nextCursor: result.nextCursor,
+    };
 
-    return result;
+    // Cache for 5 minutes
+    await engagementCache.set(cacheKey, formattedResult, 300);
+
+    return formattedResult;
   }
 
   /**
