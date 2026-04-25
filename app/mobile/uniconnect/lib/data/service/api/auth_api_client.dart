@@ -105,10 +105,10 @@ class AuthApiClient {
     try {
       final Map<String, dynamic> userData = {
         'universityName': university,
-        'degree': degree,
+        'department': degree,
         'username': username,
         'yearOfStudy': currentYear,
-        'graduationYear': expectedGraduationYear.year,
+        'expectedGraduationYear': expectedGraduationYear.toIso8601String(),
         'bio': bio,
         'interests': interests,
       };

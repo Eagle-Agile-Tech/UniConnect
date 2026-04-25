@@ -8,12 +8,15 @@ import '../../../data/repository/post/post_repository_remote.dart';
 import '../../auth/auth_state_provider.dart';
 
 final homeViewModelProvider =
-    AsyncNotifierProvider<HomeViewmodelProvider, List<Post>>(
+    AsyncNotifierProvider.family<HomeViewmodelProvider, List<Post>, String>(
       HomeViewmodelProvider.new,
     );
 
 class HomeViewmodelProvider extends AsyncNotifier<List<Post>> {
   late PostRepository _postRepo;
+  final String userId;
+
+  HomeViewmodelProvider(this.userId);
 
   @override
   FutureOr<List<Post>> build() {
@@ -22,36 +25,18 @@ class HomeViewmodelProvider extends AsyncNotifier<List<Post>> {
   }
 
   Future<List<Post>> _fetchPosts() async {
-    final authAsync = ref.read(authNotifierProvider);
+    final result = await _postRepo.getOtherUserPost(userId);
 
-    return authAsync.when(
-      data: (auth) async {
-        final currentUser = auth.user;
-
-        if (currentUser == null) {
-          throw Exception('User is not authenticated');
-        }
-
-        final result = await _postRepo.getFeed(currentUser.id);
-
-        return result.fold(
-              (posts) => posts,
-              (error, stackTrace) => Error.throwWithStackTrace(
-            error,
-            stackTrace ?? StackTrace.current,
-          ),
-        );
-      },
-      loading: () => throw Exception('Auth state still loading'),
-      error: (err, stack) => Error.throwWithStackTrace(err, stack),
+    return result.fold(
+          (posts) => posts,
+          (error, stackTrace) => Error.throwWithStackTrace(
+        error,
+        stackTrace ?? StackTrace.current,
+      ),
     );
   }
 
   Future<void> toggleLike({required String postId}) async {
-    final auth = ref.read(authNotifierProvider).value;
-    final currentUserId = auth?.user?.id;
-    if (currentUserId == null) return;
-
     final previous = state.value;
     if (previous == null) return;
     final updatedPost = previous.map((post) {
@@ -66,10 +51,10 @@ class HomeViewmodelProvider extends AsyncNotifier<List<Post>> {
     }).toList();
 
     state = AsyncValue.data(updatedPost);
-    final result = await _postRepo.likePost(postId: postId, userId: currentUserId);
+    final result = await _postRepo.likePost(postId: postId, userId: userId);
     result.fold((success) => null, (error, _) {
       // todo: notify user of the error
-      state = AsyncValue.data(previous);
+      state = AsyncValue.data(state.value!);
     });
   }
 

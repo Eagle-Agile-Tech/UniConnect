@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
+import 'package:uniconnect/ui/home/view_models/home_viewmodel_provider.dart';
 import 'package:uniconnect/ui/profile/view_models/course_viewmodel_provider.dart';
 import 'package:uniconnect/ui/profile/view_models/profile_viewmodel_provider.dart';
 import 'package:uniconnect/ui/profile/view_models/user_provider.dart';
@@ -42,7 +43,8 @@ class ProfileScreen extends ConsumerWidget {
           loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
           error: (err, stack) => Scaffold(body: Center(child: Text('Error loading profile: $err'))),
           data: (user) {
-            final postsAsync = ref.watch(profileViewModelProvider(activeId));
+            final postsAsync = ref.watch(homeViewModelProvider(activeId));
+            final postsNotifier = ref.watch(homeViewModelProvider(activeId).notifier);
             final courseAsync = ref.watch(courseProvider(activeId));
 
             return DefaultTabController(
@@ -78,11 +80,11 @@ class ProfileScreen extends ConsumerWidget {
                     body: user.isExpert
                         ? TabBarView(
                       children: [
-                        _buildPostList(postsAsync),
+                        _buildPostList(postsAsync,postsNotifier),
                         _buildCourseGrid(courseAsync),
                       ],
                     )
-                        : _buildPostList(postsAsync),
+                        : _buildPostList(postsAsync, postsNotifier),
                   ),
                 ),
               ),
@@ -93,11 +95,11 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildPostList(AsyncValue<List<dynamic>> postAsync) {
+  Widget _buildPostList(AsyncValue<List<dynamic>> postAsync, HomeViewmodelProvider postsNotifier) {
     return postAsync.when(
       data: (posts) => ListView.builder(
         itemCount: posts.length,
-        itemBuilder: (context, index) => UCPostCard(post: posts[index]),
+        itemBuilder: (context, index) => UCPostCard(post: posts[index], onLike: () => postsNotifier.toggleLike(postId: posts[index].id,), onBookmark: () => postsNotifier.bookmarkPost(postId: posts[index].id),),
       ),
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, stack) => Center(child: Text('Error loading posts: $err')),

@@ -144,6 +144,15 @@ class PostRepositoryRemote implements PostRepository {
       return Result.ok(posts);
     }, (error, stackTrace) => Result.error(error));
   }
+  @override
+  Future<Result<List<Post>>> getOtherUserPost(String userId) async {
+    final result = await _apiClient.fetchOtherUserPost(userId);
+
+    return result.fold((data) {
+      final posts = data.map((post) => Post.fromJson(post)).toList();
+      return Result.ok(posts);
+    }, (error, stackTrace) => Result.error(error));
+  }
 
   @override
   Future<Result> createPost({
@@ -243,7 +252,7 @@ class PostRepositoryRemote implements PostRepository {
 
   @override
   Future<Result<List<Post>>> getBookmarks(String userId) async {
-    final result = await _apiClient.fetchBookmarks();
+    final result = await _apiClient.fetchBookmarks(userId);
     return result.fold((data) {
       final posts = (data as List).map((post) => Post.fromJson(post)).toList();
       return Result.ok(posts);

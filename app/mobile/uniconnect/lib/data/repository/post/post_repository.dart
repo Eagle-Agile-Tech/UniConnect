@@ -6,6 +6,7 @@ import '../../../utils/result.dart';
 
 abstract class PostRepository {
   Future<Result<List<Post>>> getUserPost();
+  Future<Result<List<Post>>> getOtherUserPost(String userId);
   Future<Result> createPost({
     required String content,
     required String userId,

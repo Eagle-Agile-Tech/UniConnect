@@ -29,7 +29,19 @@ class ApiClient {
   Future<Result<List<Map<String, dynamic>>>> fetchUserPost() async {
     try {
       final response = await _client.get('/v1/posts/me');
-      final List data = response.data['data'];
+      final List data = response.data;
+      return Result.ok(data.cast<Map<String, dynamic>>());
+    } on DioException catch (e) {
+      return Result.error(e);
+    } catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<List<Map<String, dynamic>>>> fetchOtherUserPost(String userId) async {
+    try {
+      final response = await _client.get('/v1/posts/user/$userId');
+      final List data = response.data;
       return Result.ok(data.cast<Map<String, dynamic>>());
     } on DioException catch (e) {
       return Result.error(e);
@@ -236,10 +248,11 @@ class ApiClient {
     }
   }
 
-  Future<Result<dynamic>> fetchComments(String postId) async {
+  Future<Result<List<Map<String,dynamic>>>> fetchComments(String postId) async {
     try {
       final response = await _client.get('/v1/posts/comments/$postId');
-      return Result.ok(_payload(response.data));
+      final List data = response.data['data'];
+      return Result.ok(data.cast<Map<String, dynamic>>());
     } on DioException catch (e) {
       return Result.error(e);
     }
@@ -279,18 +292,18 @@ class ApiClient {
 
   Future<Result> bookmarkPost(String postId) async {
     try {
-      await _client.post('/v1/posts/bookmarkPost/:$postId');
-      await _client.post('/v1/posts/bookmarkPost/:$postId');
+      await _client.post('/v1/posts/bookmarkPost/$postId');
       return Result.ok(null);
     } on DioException catch (e) {
       return Result.error(e);
     }
   }
 
-  Future<Result<dynamic>> fetchBookmarks() async {
+  Future<Result<List<Map<String, dynamic>>>> fetchBookmarks(String userId) async {
     try {
-      final response = await _client.get('/bookmarks/');
-      return Result.ok(response.data);
+      final response = await _client.get('/v1/posts/bookmarks/$userId');
+      final List data = response.data['data'];
+      return Result.ok(data.cast<Map<String, dynamic>>());
     } on DioException catch (e) {
       return Result.error(e);
     }

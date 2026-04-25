@@ -12,8 +12,10 @@ import '../../../../../domain/models/post/post.dart';
 import '../../../theme/colors.dart';
 
 class UCPostCard extends ConsumerStatefulWidget {
-  const UCPostCard({required this.post, super.key});
+  const UCPostCard({required this.post, super.key, this.onLike, this.onBookmark});
   final Post post;
+  final VoidCallback? onLike;
+  final VoidCallback? onBookmark;
 
   @override
   ConsumerState<UCPostCard> createState() => _UCPostCardState();
@@ -50,7 +52,6 @@ class _UCPostCardState extends ConsumerState<UCPostCard> {
 
   @override
   Widget build(BuildContext context) {
-    final viewModel = ref.read(homeViewModelProvider.notifier);
     return Card(
       borderOnForeground: true,
       color: UCColors.background,
@@ -109,8 +110,7 @@ class _UCPostCardState extends ConsumerState<UCPostCard> {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     IconButton(
-                      onPressed: () =>
-                          viewModel.toggleLike(postId: widget.post.id),
+                      onPressed: widget.onLike,
                       icon: Icon(
                         widget.post.isLikedByMe == true
                             ? Icons.thumb_up
@@ -193,8 +193,7 @@ class _UCPostCardState extends ConsumerState<UCPostCard> {
                     // ),
                     Spacer(),
                     IconButton(
-                      onPressed: () =>
-                          viewModel.bookmarkPost(postId: widget.post.id),
+                      onPressed: widget.onBookmark,
                       icon: widget.post.isBookmarkedByMe ? Icon(Icons.bookmark) : Icon(Icons.bookmark_border_outlined),
                     ),
                   ],

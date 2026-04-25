@@ -7,13 +7,14 @@ import 'package:uniconnect/ui/home/view_models/home_viewmodel_provider.dart';
 import 'package:uniconnect/ui/home/widgets/drawer_content.dart';
 
 import '../../routing/routes.dart';
+import '../auth/auth_state_provider.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final postAsync = ref.watch(homeViewModelProvider);
+    final postAsync = ref.watch(homeViewModelProvider(ref.read(authNotifierProvider).value!.user!.id));
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 0,
@@ -48,7 +49,7 @@ class HomeScreen extends ConsumerWidget {
         child: const DrawerContent(),
       ),
       body: RefreshIndicator(
-        onRefresh: () => ref.read(homeViewModelProvider.notifier).refreshFeed(),
+        onRefresh: () => ref.watch(homeViewModelProvider(ref.read(authNotifierProvider).value!.user!.id).notifier).refreshFeed(),
         child: postAsync.when(
           data: (posts) {
             if (posts.isEmpty) {
