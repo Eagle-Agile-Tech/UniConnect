@@ -5,7 +5,7 @@ import 'package:uniconnect/domain/models/post/post.dart';
 
 final profileViewModelProvider = FutureProvider.family<List<Post>, String>((ref, userId) async {
   final repo = ref.watch(postRemoteProvider);
-  final result = await repo.getUserPost(userId);
+  final result = await repo.getUserPost();
   return result.fold(
         (data) => data,
         (error, stackTrace) => throw error,

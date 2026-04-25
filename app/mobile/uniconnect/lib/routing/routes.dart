@@ -13,6 +13,7 @@ abstract final class Routes {
   static const String setting = '/setting';
   static const String manageProfile = '/setting/manageProfile';
   static const String saved = '/saved';
+  static const String affiliate = '/affiliate';
   static const String post = '/createPost';
   static const String networks = '/network';
   static String events({String? userId}) =>

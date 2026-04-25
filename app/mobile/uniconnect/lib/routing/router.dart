@@ -14,6 +14,7 @@ import 'package:uniconnect/ui/message/message_screen.dart';
 import 'package:uniconnect/ui/post/create_post.dart';
 import 'package:uniconnect/ui/profile/widgets/event_form.dart';
 import 'package:uniconnect/ui/setting/widgets/add_course_form_screen.dart';
+import 'package:uniconnect/ui/setting/widgets/affilate_screen.dart';
 import 'package:uniconnect/ui/setting/widgets/saved_screen.dart';
 import 'package:uniconnect/utils/navigation_wrapper.dart';
 
@@ -109,13 +110,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: Routes.messaging,
         builder: (context, state) {
           final data = state.extra as Map<String, dynamic>;
-          String chatId = 'hey';
           return MessageScreen(
-            receiverId: data['receiverId']!,
-            receiverName: data['username']!,
-            profileImage: data['profileImage'],
-            chatId: chatId,
-            //chatId: data['chatId']!,
+            receiverId: data['receiverId'] as String,
+            receiverName: data['username'] as String,
+            profileImage: data['profileImage'] as String?,
+            chatId: data['chatId'] as String?,
           );
         },
       ),
@@ -130,6 +129,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.saved,
         builder: (context, state) => const SavedScreen(),
+      ),
+      GoRoute(
+        path: Routes.affiliate,
+        builder: (context, state) => const AffiliateScreen(),
       ),
       GoRoute(
         path: Routes.post,

@@ -9,13 +9,19 @@ part 'institution.g.dart';
 @freezed
 abstract class Institution with _$Institution {
   const factory Institution({
-    String? description,
+    // required String id,
+    // make the firstname -> name and the lastname empty
+    // required String name,
+    // make this bio
+    // String? description,
     required InstitutionType type,
     String? website,
-    String? logoUri,
+    // give me this as a profileimage
+    // String? logoUri,
     required InstitutionVerificationStatus verificationStatus,
     String? secretCode,
-    required DateTime createdAt,
+    // honestly unnecessary for me
+    // required DateTime createdAt,
     required List<User> affiliatedExperts,
   }) = _Institution;
 

@@ -1,4 +1,7 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -8,7 +11,7 @@ import '../../../routing/routes.dart';
 import '../../../utils/enums.dart';
 import '../../core/theme/dimens.dart';
 import 'my_network.dart';
-import 'others_network.dart';
+import 'others_network.dart' hide MyNetwork;
 
 class ProfileHeader extends ConsumerWidget {
   const ProfileHeader({super.key, required this.user, required this.isMe});
@@ -44,15 +47,16 @@ class ProfileHeader extends ConsumerWidget {
                 PopupMenuButton(
                   icon: Icon(Icons.more_vert),
                   itemBuilder: (BuildContext context) => [
-                    if (user.areWe)
+                    if (user.networkStatus == NetworkStatus.CONNECTED)
                       PopupMenuItem(
                         value: 'unlink',
                         child: Text('Unlink'),
                       ),
-                    PopupMenuItem(
-                      value: 'block',
-                      child: Text('Block'),
-                    ),
+                    if (user.networkStatus == NetworkStatus.PENDING)
+                      PopupMenuItem(
+                        value: 'request',
+                        child: Text('Cancel Request'),
+                      ),
                     PopupMenuItem(
                       value: 'report',
                       child: Text('Report User 🚩'),
@@ -111,12 +115,15 @@ class ProfileHeader extends ConsumerWidget {
                           style: Theme.of(context).textTheme.headlineSmall
                               ?.copyWith(fontWeight: FontWeight.bold),
                         ),
+                        if(user.role != UserRole.INSTITUTION)
                         Text(
                           user.university,
                           style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(color: Theme.of(context).hintColor),
                         ),
+                        if(user.role != UserRole.INSTITUTION)
                         const SizedBox(height: Dimens.xs),
+                        if(user.role != UserRole.INSTITUTION)
                         Text(
                           user.role == UserRole.STUDENT
                               ? user.student!.degree
@@ -124,11 +131,15 @@ class ProfileHeader extends ConsumerWidget {
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                         const SizedBox(height: Dimens.sm),
-                        Text(
-                          user.bio ?? 'No bio available',
-                          style: Theme.of(context).textTheme.bodySmall,
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
+
+                        GestureDetector(
+                          onTap: () => _showBioDialog(context),
+                          child: Text(
+                            user.bio ?? 'No bio available',
+                            style: Theme.of(context).textTheme.bodySmall,
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                         const SizedBox(height: Dimens.md),
                         if (isMe) MyNetwork(),
@@ -187,6 +198,85 @@ class ProfileHeader extends ConsumerWidget {
             ),
           ),
       ],
+    );
+  }
+
+  void _showBioDialog(BuildContext context) {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: "Bio",
+      barrierColor: Colors.black.withOpacity(0.4),
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return Stack(
+          children: [
+            // 🔥 Blur background
+            BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+              child: Container(color: Colors.transparent),
+            ),
+
+            // 🔥 Center popup
+            Center(
+              child: Material(
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  constraints: const BoxConstraints(maxHeight: 400),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Top row with ellipsis
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            "Bio",
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          PopupMenuButton(
+                            itemBuilder: (_) => [
+                              const PopupMenuItem(
+                                value: 'copy',
+                                child: Text('Copy'),
+                              ),
+                              const PopupMenuItem(
+                                value: 'report',
+                                child: Text('Report 🚩'),
+                              ),
+                            ],
+                            onSelected: (value) {
+                              if (value == 'copy') {
+                                Clipboard.setData(
+                                  ClipboardData(text: user.bio ?? ''),
+                                );
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      // Full bio (scrollable if long)
+                      Expanded(
+                        child: SingleChildScrollView(
+                          child: Text(
+                            user.bio ?? 'No bio available',
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uniconnect/ui/auth/auth_state_provider.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
+import 'package:uniconnect/utils/enums.dart';
 
 import '../../routing/routes.dart';
 
@@ -59,7 +60,7 @@ class SettingScreen extends ConsumerWidget {
               onTap: () => context.push(Routes.saved),
             ),
             ListTile(
-              leading: Icon(Icons.bookmark_border_outlined),
+              leading: Icon(Icons.event_available_outlined),
               title: Text('Events'),
               trailing: Icon(Icons.keyboard_arrow_right_outlined),
               onTap: () => context.push(Routes.events()),
@@ -88,6 +89,30 @@ class SettingScreen extends ConsumerWidget {
                 trailing: Icon(Icons.keyboard_arrow_right_outlined),
                 onTap: () => context.push(Routes.addCourse),
               ),
+            if (user.role == UserRole.INSTITUTION)
+            SizedBox(
+              width: double.infinity,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: Dimens.defaultSpace,
+                  vertical: Dimens.sm,
+                ),
+                child: Text(
+                  'Affiliation',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.headlineSmall!.copyWith(color: Colors.grey),
+                ),
+              ),
+            ),
+            // Activity
+            if (user.role == UserRole.INSTITUTION)
+              ListTile(
+              leading: Icon(Icons.people_outline),
+              title: Text('Affiliates'),
+              trailing: Icon(Icons.keyboard_arrow_right_outlined),
+              onTap: () => context.push(Routes.affiliate),
+            ),
           ],
         ),
       ),
