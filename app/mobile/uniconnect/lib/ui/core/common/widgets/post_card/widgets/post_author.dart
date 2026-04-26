@@ -60,10 +60,6 @@ class PostAuthor extends StatelessWidget {
                           widget.onDelete?.call();
                         },
                       ),
-                    const ListTile(
-                      leading: Text('😞'),
-                      title: Text('Not Interested'),
-                    ),
                     ListTile(
                       leading: const Text('🚩'),
                       title: const Text('Report Post'),
