@@ -162,18 +162,6 @@ class ApiClient {
     }
   }
 
-  Future<Result<List<Map<String, dynamic>>>> fetchFriends() async {
-    try {
-      final response = await _client.get('/network');
-      final List data = response.data['data']['connected'];
-      return Result.ok(data.cast<Map<String, dynamic>>());
-    } on DioException catch (e) {
-      return Result.error(e);
-    } catch (e) {
-      return Result.error(e);
-    }
-  }
-
   Future<Result> createPost({
     required String content,
     required String userId,
@@ -235,7 +223,6 @@ class ApiClient {
     required String postId,
     required String userId,
   }) async {
-    //todo: reaction type
     try {
       final response = await _client.post(
         '/v1/posts/likePost/$postId',

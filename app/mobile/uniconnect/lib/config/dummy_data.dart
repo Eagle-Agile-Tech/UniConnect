@@ -77,7 +77,7 @@ abstract final class UCDummyData {
         universities.map<University>(
           (university) => University(
             value: university,
-            label: '${university.acronomy} ${university.name}',
+            label: university.name,
             labelWidget: Row(
               children: [
                 Container(

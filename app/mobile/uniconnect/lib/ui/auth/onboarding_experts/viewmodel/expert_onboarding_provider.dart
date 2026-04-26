@@ -46,9 +46,10 @@ class ExpertOnboardingViewModel extends Notifier<ExpertOnboardingState> {
       confirmPassword,
     );
     return result.fold((data){
-      state = state.copyWith(id: data);
+      final response = data is Map<String, dynamic> ? data : <String, dynamic>{};
+      state = state.copyWith(id: (response['id'] ?? '').toString());
       return null;
-    }, (error, stackTrace) => error as Err);
+    }, (error, stackTrace) => Result.error(error, stackTrace) as Err);
   }
 
   Future<Err?> verifyEmail(String otp) async {
@@ -101,7 +102,7 @@ class ExpertOnboardingViewModel extends Notifier<ExpertOnboardingState> {
                 networkCount: 0
               ),
             ),
-            (error, stackTrace) => Result.error(error.toString),
+            (error, stackTrace) => Result.error(error.toString()),
       );
     } catch (e) {
       return Result.error('Failed to complete onboarding');

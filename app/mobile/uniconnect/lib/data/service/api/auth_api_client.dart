@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
@@ -187,7 +186,7 @@ class AuthApiClient {
 
   Future<Result> changePassword(String email, String otp, String password, String confirmPassword) async {
     try{
-      final response = await _client.post("/auth/reset-password", data : {
+      await _client.post("/auth/reset-password", data : {
         "email": email,
         "otp": otp,
         "newPassword": password,
@@ -215,16 +214,14 @@ class AuthApiClient {
       // Note: Expert registration might need checking in backend
       // Using /auth/register as a general registration point if experts register there
       final response = await _client.post(
-        '/auth/register',
+        '/experts/join',
         data: {
           'firstName': firstName,
           'lastName': lastName,
           'email': email,
-          'university': university,
-          'uniCode': uniCode,
           'password': password,
-          'passwordConfirm': confirmPassword,
-          'role': 'expert',
+          'secretCode': uniCode,
+          'institutionName': university,
         },
       );
       return Result.ok(response.data);
@@ -241,21 +238,31 @@ class AuthApiClient {
     File? profilePicture,
   ) async {
     try {
-      final Map<String, dynamic> userData = {
-        'expertise': expertise,
-        'honor': honor,
+      final Map<String, dynamic> accountData = {
         'username': username,
         'bio': bio,
       };
       if (profilePicture != null) {
-        userData['profilePicture'] = await MultipartFile.fromFile(
+        accountData['profileImage'] = await MultipartFile.fromFile(
           profilePicture.path,
           filename: profilePicture.path.split('/').last,
         );
       }
-      final formData = FormData.fromMap(userData);
-      final response = await _client.patch('/experts/profile', data: formData);
-      // Response contains tokens plus profile picture url
+      final accountFormData = FormData.fromMap(accountData);
+      await _client.patch('/users/profile', data: accountFormData);
+
+      final Map<String, dynamic> expertData = {
+        'expertise': expertise,
+        if (bio case final value?) 'bio': value,
+      };
+      if (profilePicture != null) {
+        expertData['profileImage'] = await MultipartFile.fromFile(
+          profilePicture.path,
+          filename: profilePicture.path.split('/').last,
+        );
+      }
+      final expertFormData = FormData.fromMap(expertData);
+      final response = await _client.patch('/experts/profile', data: expertFormData);
       return Result.ok(response.data);
     } on DioException catch (e) {
       return Result.error(e);

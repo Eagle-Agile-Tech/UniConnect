@@ -2,14 +2,12 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fresh_dio/fresh_dio.dart';
-import 'package:uniconnect/ui/chat/viewmodels/chat_provider.dart';
 
 import 'package:uniconnect/utils/result.dart';
 
 import '../../../domain/models/user/user.dart';
 import '../../service/api/auth_api_client.dart';
 import '../../service/api/token_refresher.dart';
-import '../../service/socket/chat_service.dart';
 import 'auth_repository.dart';
 
 final authProvider = Provider<AuthRepositoryRemote>((ref) {
@@ -189,7 +187,21 @@ class AuthRepositoryRemote implements AuthRepository {
       password,
       confirmPassword,
     );
-    return result;
+    return result.fold((data) async {
+      final loginResult = await _authClient.loginUser(email, password);
+      return loginResult.fold((loginData) async {
+        final token = OAuth2Token(
+          accessToken: loginData['accessToken'],
+          refreshToken: loginData['refreshToken'],
+          expiresIn: loginData['accessTokenExpiresIn'],
+          issuedAt: DateTime.fromMillisecondsSinceEpoch(
+            loginData['accessTokenIssuedAt'] * 1000,
+          ),
+        );
+        await _fresh.setToken(token);
+        return Result.ok(data);
+      }, (error, stackTrace) => Result.error(error, stackTrace));
+    }, (error, stackTrace) => Result.error(error, stackTrace));
   }
 
   @override
@@ -209,15 +221,8 @@ class AuthRepositoryRemote implements AuthRepository {
     );
     return result.fold(
       (data) async {
-        final token = OAuth2Token(
-          accessToken: data['accessToken'],
-          refreshToken: data['refreshToken'],
-          expiresIn: data['accessTokenExpiresIn'].toInt(),
-          issuedAt: DateTime.now(),
-        );
-        await _fresh.setToken(token);
         await Future.delayed(const Duration(milliseconds: 500));
-        return Result.ok(data['profilePicture'] as String);
+        return Result.ok((data['username'] ?? username).toString());
       },
       (error, _) {
         return Result.error(error);

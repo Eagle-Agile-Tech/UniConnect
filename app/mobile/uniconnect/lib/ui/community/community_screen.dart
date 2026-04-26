@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:uniconnect/ui/auth/auth_state_provider.dart';
 import 'package:uniconnect/ui/community/view_models/community_viewmodel.dart';
 
 import '../../config/assets.dart';
@@ -69,6 +70,7 @@ class CommunityScreen extends ConsumerWidget {
                   PopupMenuButton(
                     icon: Icon(Icons.more_vert),
                     itemBuilder: (BuildContext context) => [
+                      if(ref.read(authNotifierProvider).value!.user!.id == communityAsync.value?.ownerId)
                       PopupMenuItem(value: 'post', child: Text('Create Post')),
                       PopupMenuItem(value: 'leave', child: Text('Leave')),
                     ],
@@ -142,6 +144,17 @@ class CommunityScreen extends ConsumerWidget {
             children: [
               postAsync.when(
                 data: (List<Post> data) {
+                  if (data.isEmpty) {
+                    return ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: const [
+                        SizedBox(
+                          height: 300,
+                          child: Center(child: Text('No posts yet')),
+                        ),
+                      ],
+                    );
+                  }
                   return ListView.builder(
                     padding: const EdgeInsets.only(top: 10),
                     itemCount: data.length,
@@ -161,6 +174,7 @@ class CommunityScreen extends ConsumerWidget {
                     itemBuilder: (context, index) => Padding(
                       padding: const EdgeInsets.all(Dimens.md),
                       child: ListTile(
+                        onTap: () => context.push(Routes.userProfile(user[index].id)),
                         leading: CircleAvatar(
                           backgroundImage: user[index].profilePicture != null
                               ? NetworkImage(user[index].profilePicture!)

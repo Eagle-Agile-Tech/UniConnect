@@ -20,19 +20,19 @@ class NetworksViewModel extends AsyncNotifier<List<User>> {
 
   late UserRepository _repo;
 
+
   @override
   FutureOr<List<User>> build() async {
     _repo = ref.read(userRepoProvider);
     String currentUserId = ref.read(authNotifierProvider).value!.user!.id;
 
     if (currentUserId == userId) {
-      final result = await _repo.getFriends();
+      final result = await _repo.getUserNetworks(userId);
       return result.fold((data) => data, (error, stackTrace) => throw error);
 
     } else {
       final result = await _repo.getUserNetworks(userId);
       return result.fold((data) => data, (error, stackTrace) => throw error);
-
     }
   }
 

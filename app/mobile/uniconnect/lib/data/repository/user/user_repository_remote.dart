@@ -82,19 +82,27 @@ class UserRepositoryRemote implements UserRepository {
   @override
   Future<Result<List<User>>> getUserNetworks(String userId) async {
     final result = await _client.fetchUserNetworks(userId);
-    return result.fold((data) {
-      final users = data.map((user) => User.fromJson(user)).toList();
-      return Result.ok(users);
-    }, (error, stackTrace) => Result.error(error));
-  }
 
-  @override
-  Future<Result<List<User>>> getFriends() async {
-    final result = await _client.fetchFriends();
-    return result.fold((data) {
-      final users = data.map((user) => User.fromJson(user)).toList();
-      return Result.ok(users);
-    }, (error, _) => Result.error(error));
+    return result.fold((data) async {
+      try {
+        final users = await Future.wait(
+          data.map((item) async {
+            final otherUserId = item['userBId'];
+
+            final userResult = await _client.fetchUser(otherUserId);
+
+            return userResult.fold(
+                  (userData) => User.fromJson(userData),
+                  (error, stack) => throw error,
+            );
+          }),
+        );
+
+        return Result.ok(users);
+      } catch (e) {
+        return Result.error(e);
+      }
+    }, (error, stackTrace) => Result.error(error));
   }
 
   @override

@@ -56,7 +56,6 @@ class NetworkScreen extends ConsumerWidget {
                                   content: Text('Connection removed'),
                                 ),
                               );
-                              ref.invalidate(authNotifierProvider);
                             },
                             (error, _) {
                               ScaffoldMessenger.of(context).showSnackBar(

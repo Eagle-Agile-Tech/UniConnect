@@ -1,8 +1,6 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:uniconnect/ui/core/common/widgets/app_bar.dart';
 import 'package:uniconnect/utils/enums.dart';
 import 'package:uniconnect/utils/validator.dart';
 
@@ -249,6 +247,10 @@ class _SignupScreenState extends ConsumerState<ExpertSignupScreen> {
     if (status != null) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(status.toString())));
     } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Account created successfully. Verify Your Email.')),
+      );
+      onboarding.verifyEmail(      _emailController.text.trim(),);
       context.push(Routes.expertVerifyUni);
     }
   }
