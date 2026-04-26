@@ -20,9 +20,7 @@ class EventViewModel extends AsyncNotifier<List<Event>> {
   @override
   FutureOr<List<Event>> build() async {
     _repo = ref.watch(eventRepoProvider);
-    final eventData = await _repo.getEvents(userId);
-    return eventData.fold((events) => events,(error, stackTrace) => throw error, );
+    final eventData = await _repo.getPublicUserEvents(userId);
+    return eventData.fold((events) => events, (error, stackTrace) => throw error);
   }
-
-
 }

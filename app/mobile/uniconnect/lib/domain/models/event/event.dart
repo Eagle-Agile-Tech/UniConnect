@@ -13,6 +13,9 @@ abstract class Event with _$Event {
     required String authorId,
     required DateTime eventDay,
     required String location,
+    @Default(0) int view,
+    required String university,
+    required String id,
   }) = _Event;
 
   factory Event.fromJson(Map<String, dynamic> json) => _$EventFromJson(json);
