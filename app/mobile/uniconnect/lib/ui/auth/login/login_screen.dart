@@ -89,8 +89,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               FormDivider(),
               SizedBox(height: Dimens.defaultSpace),
               SignInWith(),
-              SizedBox(height: Dimens.spaceBtwItems),
-              SignInWith(isGoogle: false),
               SizedBox(height: Dimens.spaceBtwSections),
               Text.rich(
                 TextSpan(
