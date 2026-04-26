@@ -1,25 +1,107 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uniconnect/data/service/api/api_client.dart';
-import 'package:uniconnect/domain/models/chat/chat_message/chat_message.dart';
+import 'package:uniconnect/data/chat_api.dart';
+import 'package:uniconnect/data/chat_failure.dart';
+import 'package:uniconnect/domain/models/chat/chat_conversation_model.dart';
+import 'package:uniconnect/domain/models/chat/chat_message_model.dart';
+import 'package:uniconnect/ui/auth/auth_state_provider.dart';
 
 import '../../../utils/result.dart';
+import 'chat_repository.dart';
 
-final chatRepoProvider = Provider((ref) => ChatRepositoryRemote(ref.watch(apiClientProvider)));
+final chatRepoProvider = Provider<ChatRepositoryRemote>((ref) {
+  final currentUserId = ref.watch(authNotifierProvider).value?.user?.id ?? '';
+  return ChatRepositoryRemote(
+    ref.watch(chatApiProvider),
+    currentUserId: currentUserId,
+  );
+});
 
-class ChatRepositoryRemote {
-  ChatRepositoryRemote(this._apiClient);
-  final ApiClient _apiClient;
+class ChatRepositoryRemote implements ChatRepository {
+  const ChatRepositoryRemote(this._chatApi, {required String currentUserId})
+    : _currentUserId = currentUserId;
 
-  Future<Result<Map<String, dynamic>>> getChatId(String receiverId, String userId) async {
-    final result = await _apiClient.getChatId(receiverId);
-    return result.fold(
-          (data) {
-        final List messages = data['messages'].map((message) => ChatMessage.fromMap(message, userId)).toList();
-        return Result.ok({
-          'chatId': data['chatId'],
-          'messages': messages
-        });
-      }, (error, stackTrace) => Result.error(error),
-    );
+  final ChatApi _chatApi;
+  final String _currentUserId;
+
+  @override
+  Future<Result<(String chatId, List<ChatMessageModel> messages)>>
+  getConversationMessagesByUser({
+    required String otherUserId,
+    required String currentUserId,
+  }) async {
+    try {
+      final data = await _chatApi.getOrCreateConversation(otherUserId);
+      final messagesRaw = (data['messages'] as List<dynamic>? ?? const []);
+      final messages = messagesRaw
+          .map(
+            (item) => ChatMessageModel.fromApi(
+              Map<String, dynamic>.from(item as Map),
+              currentUserId,
+            ),
+          )
+          .toList()
+          .reversed
+          .toList();
+
+      return Result.ok(((data['chatId'] as String), messages));
+    } catch (error, stackTrace) {
+      return Result.error(ChatFailure.fromException(error), stackTrace);
+    }
+  }
+
+  @override
+  Future<Result<List<ChatConversationModel>>> listConversations() async {
+    try {
+      final chats = await _chatApi.listConversations();
+      final conversations = chats
+          .map((chat) => ChatConversationModel.fromApi(chat, _currentUserId))
+          .toList();
+      return Result.ok(conversations);
+    } catch (error, stackTrace) {
+      return Result.error(ChatFailure.fromException(error), stackTrace);
+    }
+  }
+
+  @override
+  Future<Result<List<ChatMessageModel>>> listMessages({
+    required String chatId,
+    required String currentUserId,
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    try {
+      final messages = await _chatApi.listMessages(
+        chatId: chatId,
+        limit: limit,
+        offset: offset,
+      );
+      final items = messages
+          .map((item) => ChatMessageModel.fromApi(item, currentUserId))
+          .toList()
+          .reversed
+          .toList();
+      return Result.ok(items);
+    } catch (error, stackTrace) {
+      return Result.error(ChatFailure.fromException(error), stackTrace);
+    }
+  }
+
+  @override
+  Future<Result<ChatMessageModel>> sendMessage({
+    required String chatId,
+    required String content,
+    required String currentUserId,
+    required String clientMessageId,
+  }) async {
+    try {
+      final data = await _chatApi.sendMessage(
+        chatId: chatId,
+        content: content,
+        clientMessageId: clientMessageId,
+      );
+      return Result.ok(ChatMessageModel.fromApi(data, currentUserId));
+    } catch (error, stackTrace) {
+      return Result.error(ChatFailure.fromException(error), stackTrace);
+    }
   }
 }
