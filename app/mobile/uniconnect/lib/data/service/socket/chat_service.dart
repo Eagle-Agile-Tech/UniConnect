@@ -80,12 +80,8 @@ class ChatService {
       _handleMessageSent(data);
     });
 
-    _socketService.addEventListener('typing:start', (data) {
-      _handleTypingStart(data);
-    });
-
-    _socketService.addEventListener('typing:stop', (data) {
-      _handleTypingStop(data);
+    _socketService.addEventListener('typing:update', (data) {
+      _handleTypingUpdate(data);
     });
 
     _socketService.addEventListener('user:online', (data) {
@@ -133,28 +129,21 @@ class ChatService {
     }
   }
 
-  void _handleTypingStart(Map<String, dynamic> data) {
-    if (data['senderId'] == _currentReceiverId) {
-      _typingStatuses[data['chatId']] = TypingStatus(
-        chatId: data['chatId'],
-        userId: data['senderId'],
-        isTyping: true,
-        timestamp: DateTime.now(),
-      );
-      _notifyListeners('typingStatusChanged', true);
+  void _handleTypingUpdate(Map<String, dynamic> data) {
+    final senderId = (data['userId'] ?? data['senderId'])?.toString();
+    final chatId = data['chatId']?.toString();
+    if (senderId == null || chatId == null || senderId != _currentReceiverId) {
+      return;
     }
-  }
 
-  void _handleTypingStop(Map<String, dynamic> data) {
-    if (data['senderId'] == _currentReceiverId) {
-      _typingStatuses[data['chatId']] = TypingStatus(
-        chatId: data['chatId'],
-        userId: data['senderId'],
-        isTyping: false,
-        timestamp: DateTime.now(),
-      );
-      _notifyListeners('typingStatusChanged', false);
-    }
+    final isTyping = data['isTyping'] == true;
+    _typingStatuses[chatId] = TypingStatus(
+      chatId: chatId,
+      userId: senderId,
+      isTyping: isTyping,
+      timestamp: DateTime.now(),
+    );
+    _notifyListeners('typingStatusChanged', isTyping);
   }
 
   void _handleUserOnline(Map<String, dynamic> data) {
@@ -169,10 +158,13 @@ class ChatService {
   }
 
   void _handleUserOffline(Map<String, dynamic> data) {
+    final lastSeenRaw = data['lastSeenAt'] ?? data['lastSeen'];
     _userStatuses[data['userId']] = UserStatus(
       userId: data['userId'],
       isOnline: false,
-      lastSeen: DateTime.parse(data['lastSeen']),
+      lastSeen: lastSeenRaw != null
+          ? DateTime.tryParse(lastSeenRaw.toString())
+          : null,
     );
     if (data['userId'] == _currentReceiverId) {
       _notifyListeners('onlineStatusChanged', false);
@@ -180,35 +172,83 @@ class ChatService {
   }
 
   void _handleMessageRead(Map<String, dynamic> data) {
-    final messageIndex = _messages.indexWhere((m) => m.messageId == data['messageId']);
-    if (messageIndex != -1 && _messages[messageIndex].status != 'read') {
-      _messages[messageIndex] = ChatMessage(
-        messageId: _messages[messageIndex].messageId,
-        chatId: _messages[messageIndex].chatId,
-        senderId: _messages[messageIndex].senderId,
-        receiverId: _messages[messageIndex].receiverId,
-        content: _messages[messageIndex].content,
-        createdAt: _messages[messageIndex].createdAt,
-        status: 'read',
-        isMine: _messages[messageIndex].isMine,
-      );
+    final chatId = data['chatId']?.toString();
+    final messageId = data['messageId']?.toString();
+
+    if (messageId != null && messageId.isNotEmpty) {
+      final messageIndex = _messages.indexWhere((m) => m.messageId == messageId);
+      if (messageIndex != -1 && _messages[messageIndex].status != 'read') {
+        _messages[messageIndex] = ChatMessage(
+          messageId: _messages[messageIndex].messageId,
+          chatId: _messages[messageIndex].chatId,
+          senderId: _messages[messageIndex].senderId,
+          receiverId: _messages[messageIndex].receiverId,
+          content: _messages[messageIndex].content,
+          createdAt: _messages[messageIndex].createdAt,
+          status: 'read',
+          isMine: _messages[messageIndex].isMine,
+        );
+        _notifyListeners('messageStatusChanged', null);
+      }
+      return;
+    }
+
+    if (chatId == null || chatId.isEmpty) return;
+
+    var changed = false;
+    for (var i = 0; i < _messages.length; i++) {
+      if (_messages[i].chatId == chatId && _messages[i].status != 'read') {
+        _messages[i] = ChatMessage(
+          messageId: _messages[i].messageId,
+          chatId: _messages[i].chatId,
+          senderId: _messages[i].senderId,
+          receiverId: _messages[i].receiverId,
+          content: _messages[i].content,
+          createdAt: _messages[i].createdAt,
+          status: 'read',
+          isMine: _messages[i].isMine,
+        );
+        changed = true;
+      }
+    }
+    if (changed) {
       _notifyListeners('messageStatusChanged', null);
     }
   }
 
   void _handleMessageDelivered(Map<String, dynamic> data) {
-    final messageIndex = _messages.indexWhere((m) => m.messageId == data['messageId']);
-    if (messageIndex != -1 && _messages[messageIndex].status == 'sent') {
-      _messages[messageIndex] = ChatMessage(
-        messageId: _messages[messageIndex].messageId,
-        chatId: _messages[messageIndex].chatId,
-        senderId: _messages[messageIndex].senderId,
-        receiverId: _messages[messageIndex].receiverId,
-        content: _messages[messageIndex].content,
-        createdAt: _messages[messageIndex].createdAt,
+    final rawMessageIds = data['messageIds'];
+    final messageIds = rawMessageIds is List
+        ? rawMessageIds.map((id) => id.toString()).toSet()
+        : <String>{};
+
+    if (messageIds.isEmpty) {
+      final singleId = data['messageId']?.toString();
+      if (singleId != null && singleId.isNotEmpty) {
+        messageIds.add(singleId);
+      }
+    }
+
+    if (messageIds.isEmpty) return;
+
+    var changed = false;
+    for (var i = 0; i < _messages.length; i++) {
+      if (!messageIds.contains(_messages[i].messageId)) continue;
+      if (_messages[i].status != 'sent') continue;
+
+      _messages[i] = ChatMessage(
+        messageId: _messages[i].messageId,
+        chatId: _messages[i].chatId,
+        senderId: _messages[i].senderId,
+        receiverId: _messages[i].receiverId,
+        content: _messages[i].content,
+        createdAt: _messages[i].createdAt,
         status: 'delivered',
-        isMine: _messages[messageIndex].isMine,
+        isMine: _messages[i].isMine,
       );
+      changed = true;
+    }
+    if (changed) {
       _notifyListeners('messageStatusChanged', null);
     }
   }
@@ -374,8 +414,7 @@ class ChatService {
         _socketService.sendMessage(
           chatId: _currentChatId!,
           content: content,
-          receiverId: _currentReceiverId!,
-          messageId: messageId,
+          clientMessageId: messageId,
         );
       } else {
         throw Exception('Failed to send message');
@@ -397,7 +436,7 @@ class ChatService {
 
   void sendTypingIndicator(bool isTyping) {
     if (_currentChatId != null && _currentReceiverId != null) {
-      _socketService.sendTypingIndicator(_currentChatId!, _currentReceiverId!, isTyping);
+      _socketService.sendTypingIndicator(_currentChatId!, isTyping);
     }
   }
 
