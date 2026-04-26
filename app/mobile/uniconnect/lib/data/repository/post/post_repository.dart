@@ -19,13 +19,27 @@ abstract class PostRepository {
   Future<Result<List<Post>>> getFeed(String userId);
   Future<Result<Post>> getPostById(String postId);
   Future<Result> likePost({required String postId, required String userId});
-  Future<Result> commentOnPost({
+  Future<Result<Comment>> commentOnPost({
     required String postId,
     required String comment,
     required DateTime createdAt,
     required String authorId,
+    String? parentCommentId,
   });
-  Future<Result<List<Comment>>> getComments(String postId);
+  Future<Result<Map<String, dynamic>>> getComments(
+    String postId, {
+    String? cursor,
+    int limit,
+  });
+  Future<Result<Map<String, dynamic>>> getReplies({
+    required String commentId,
+    String? cursor,
+    int limit,
+  });
+  Future<Result<Map<String, dynamic>>> toggleCommentReaction({
+    required String commentId,
+    String type,
+  });
   Future<Result> bookmarkPost({required String postId});
   Future<Result<void>> deletePost({required String postId});
 

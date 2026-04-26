@@ -6,13 +6,19 @@ import 'package:uniconnect/ui/core/common/widgets/post_card/widgets/image_carous
 import 'package:uniconnect/ui/core/common/widgets/post_card/widgets/post_author.dart';
 import 'package:uniconnect/ui/core/common/widgets/post_card/widgets/post_carousel.dart';
 import 'package:uniconnect/ui/home/view_models/comment_provider.dart';
-import 'package:uniconnect/ui/home/view_models/home_viewmodel_provider.dart';
 
 import '../../../../../domain/models/post/post.dart';
 import '../../../theme/colors.dart';
 
 class UCPostCard extends ConsumerStatefulWidget {
-  const UCPostCard({required this.post, super.key, this.onLike, this.onBookmark, this.onDelete});
+  const UCPostCard({
+    required this.post,
+    super.key,
+    this.onLike,
+    this.onBookmark,
+    this.onDelete,
+  });
+
   final Post post;
   final VoidCallback? onLike;
   final VoidCallback? onBookmark;
@@ -126,65 +132,71 @@ class _UCPostCardState extends ConsumerState<UCPostCard> {
                       icon: const Icon(Icons.mode_comment_outlined),
                       //todo: make the comments lazily load when the button is pressed
                       //todo: use animation effect when the modal appears then the comments are loaded
-                      onPressed: () => showModalBottomSheet(
-                        context: context,
-                        showDragHandle: true,
-                        useSafeArea: true,
-                        isScrollControlled: true,
-                        builder: (context) {
-                          return Consumer(
-                            builder:
-                                (
-                                  BuildContext context,
-                                  WidgetRef ref,
-                                  Widget? child,
-                                ) {
-                                  final commentAsync = ref.watch(
-                                    commentProvider(widget.post.id),
-                                  );
-                                  return Padding(
-                                    padding: EdgeInsets.only(
-                                      bottom: MediaQuery.of(
-                                        context,
-                                      ).viewInsets.bottom,
-                                    ),
-                                    child: Column(
-                                      children: [
-                                        Expanded(
-                                          child: commentAsync.when(
-                                            data: (comments) =>
-                                                ListView.separated(
-                                                  itemCount: comments.length,
-                                                  separatorBuilder: (_, _) =>
-                                                      const Divider(
-                                                        indent: 70,
-                                                        height: 1,
-                                                        color: Colors.black12,
-                                                      ),
-                                                  itemBuilder:
-                                                      (context, index) =>
-                                                          CommentTile(
-                                                            comment:
-                                                                comments[index],
-                                                          ),
-                                                ),
-                                            error: (error, _) => Center(
-                                              child: Text(error.toString()),
-                                            ),
-                                            loading: () => const Center(
-                                              child:
-                                                  CircularProgressIndicator(),
+                      onPressed: () async {
+                        await showModalBottomSheet(
+                          context: context,
+                          showDragHandle: true,
+                          useSafeArea: true,
+                          isScrollControlled: true,
+                          builder: (context) {
+                            return Consumer(
+                              builder:
+                                  (
+                                    BuildContext context,
+                                    WidgetRef ref,
+                                    Widget? child,
+                                  ) {
+                                    final commentAsync = ref.watch(
+                                      commentProvider(widget.post.id),
+                                    );
+                                    return Padding(
+                                      padding: EdgeInsets.only(
+                                        bottom: MediaQuery.of(
+                                          context,
+                                        ).viewInsets.bottom,
+                                      ),
+                                      child: Column(
+                                        children: [
+                                          Expanded(
+                                            child: commentAsync.when(
+                                              data: (comments) =>
+                                                  ListView.separated(
+                                                    itemCount: comments.length,
+                                                    separatorBuilder: (_, _) =>
+                                                        const Divider(
+                                                          indent: 70,
+                                                          height: 1,
+                                                          color: Colors.black12,
+                                                        ),
+                                                    itemBuilder:
+                                                        (
+                                                          context,
+                                                          index,
+                                                        ) => CommentTile(
+                                                          comment:
+                                                              comments[index],
+                                                          postId:
+                                                              widget.post.id,
+                                                        ),
+                                                  ),
+                                              error: (error, _) => Center(
+                                                child: Text(error.toString()),
+                                              ),
+                                              loading: () => const Center(
+                                                child:
+                                                    CircularProgressIndicator(),
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                        CommentInputArea(widget.post.id),
-                                      ],
-                                    ),
-                                  );
-                                },
-                          );
-                        },
-                      ),
+                                          CommentInputArea(widget.post.id),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                            );
+                          },
+                        );
+                      },
                     ),
                     Text(widget.post.commentCount.toString()),
                     // todo: implement share functionality within the app only
@@ -195,7 +207,9 @@ class _UCPostCardState extends ConsumerState<UCPostCard> {
                     Spacer(),
                     IconButton(
                       onPressed: widget.onBookmark,
-                      icon: widget.post.isBookmarkedByMe ? Icon(Icons.bookmark) : Icon(Icons.bookmark_border_outlined),
+                      icon: widget.post.isBookmarkedByMe
+                          ? Icon(Icons.bookmark)
+                          : Icon(Icons.bookmark_border_outlined),
                     ),
                   ],
                 ),

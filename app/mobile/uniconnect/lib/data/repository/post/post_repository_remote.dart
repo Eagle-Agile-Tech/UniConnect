@@ -18,6 +18,30 @@ class PostRepositoryRemote implements PostRepository {
 
   final ApiClient _apiClient;
 
+  Map<String, dynamic> _normalizeCommentJson(Map<String, dynamic> json) {
+    final normalized = Map<String, dynamic>.from(json);
+
+    final userInteraction = normalized['userInteraction'];
+    if (normalized['isLikedByMe'] == null && userInteraction is Map) {
+      normalized['isLikedByMe'] = userInteraction['hasReacted'] == true;
+    }
+
+    final likeCount = normalized['likeCount'] ?? normalized['reactionCount'];
+    if (likeCount is num) {
+      normalized['likeCount'] = likeCount.toInt();
+    } else {
+      normalized['likeCount'] = 0;
+    }
+
+    if (normalized['replyCount'] is! num) {
+      normalized['replyCount'] = 0;
+    } else {
+      normalized['replyCount'] = (normalized['replyCount'] as num).toInt();
+    }
+
+    return normalized;
+  }
+
   // List<Map<String, dynamic>> _asMapList(dynamic value) {
   //   if (value is List) {
   //     return value.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
@@ -196,19 +220,21 @@ class PostRepositoryRemote implements PostRepository {
   }
 
   @override
-  Future<Result> commentOnPost({
+  Future<Result<Comment>> commentOnPost({
     required String postId,
     required String comment,
     required DateTime createdAt,
     required String authorId,
+    String? parentCommentId,
   }) async {
     final result = await _apiClient.commentOnPost(
       postId: postId,
       comment: comment,
       createdAt: createdAt,
+      parentCommentId: parentCommentId,
     );
     return result.fold(
-      (data) => Result.ok(null),
+      (data) => Result.ok(Comment.fromJson(_normalizeCommentJson(data))),
       (error, stackTrace) => Result.error(error),
     );
   }
@@ -226,14 +252,70 @@ class PostRepositoryRemote implements PostRepository {
   }
 
   @override
-  Future<Result<List<Comment>>> getComments(String postId) async {
-    final result = await _apiClient.fetchComments(postId);
+  Future<Result<Map<String, dynamic>>> getComments(
+    String postId, {
+    String? cursor,
+    int limit = 10,
+  }) async {
+    final result = await _apiClient.fetchPaginatedComments(
+      postId: postId,
+      cursor: cursor,
+      limit: limit,
+    );
     return result.fold((data) {
-      final comments = data
-          .map((comment) => Comment.fromJson(comment))
+      final list = (data['data'] as List? ?? const [])
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
           .toList();
-      return Result.ok(comments);
-    }, (error, _) => Result.error(error));
+
+      return Result.ok({
+        'data': list
+            .map((item) => Comment.fromJson(_normalizeCommentJson(item)))
+            .toList(),
+        'pagination': data['pagination'],
+      });
+    }, (error, stackTrace) => Result.error(error, stackTrace));
+  }
+
+  @override
+  Future<Result<Map<String, dynamic>>> getReplies({
+    required String commentId,
+    String? cursor,
+    int limit = 5,
+  }) async {
+    final result = await _apiClient.fetchCommentReplies(
+      commentId: commentId,
+      cursor: cursor,
+      limit: limit,
+    );
+
+    return result.fold((data) {
+      final list = (data['data'] as List? ?? const [])
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .toList();
+      return Result.ok({
+        'data': list
+            .map((item) => Comment.fromJson(_normalizeCommentJson(item)))
+            .toList(),
+        'pagination': data['pagination'],
+      });
+    }, (error, stackTrace) => Result.error(error, stackTrace));
+  }
+
+  @override
+  Future<Result<Map<String, dynamic>>> toggleCommentReaction({
+    required String commentId,
+    String type = 'LIKE',
+  }) async {
+    final result = await _apiClient.toggleCommentReaction(
+      commentId: commentId,
+      type: type,
+    );
+    return result.fold(
+      (data) => Result.ok(data),
+      (error, stackTrace) => Result.error(error, stackTrace),
+    );
   }
 
   @override
