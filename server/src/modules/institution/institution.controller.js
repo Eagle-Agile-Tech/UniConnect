@@ -55,7 +55,14 @@ class InstitutionController {
   async updateInstitution(req, res, next) {
     try {
       const { institutionId } = req.params;
-      const result = await institutionService.updateInstitution(institutionId, req.body);
+      const actorId = req.user?.sub || req.user?.id;
+      const isAdmin = req.user?.role === 'ADMIN';
+      const result = await institutionService.updateInstitution(
+        institutionId,
+        req.body,
+        actorId,
+        isAdmin
+      );
       res.status(200).json(result);
     } catch (err) {
       next(err);
@@ -79,7 +86,14 @@ class InstitutionController {
   async submitVerification(req, res, next) {
     try {
       const { institutionId } = req.params;
-      const result = await institutionService.submitVerification(institutionId, req.body);
+      const actorId = req.user?.sub || req.user?.id;
+      const isAdmin = req.user?.role === 'ADMIN';
+      const result = await institutionService.submitVerification(
+        institutionId,
+        req.body,
+        actorId,
+        isAdmin
+      );
       res.status(200).json(result);
     } catch (err) {
       next(err);

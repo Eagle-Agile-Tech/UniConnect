@@ -20,6 +20,7 @@ const {
   AppError,
   BadRequestError,
   ConflictError,
+  ForbiddenError,
   NotFoundError,
 } = require('../../errors');
 
@@ -290,58 +291,79 @@ class InstitutionService {
         throw new ConflictError('Email already registered. Please log in or reset your password.');
       }
 
-      await ensureInstitutionNameAvailable(name, { excludeUserId: existingUser.id });
-      await ensureInstitutionUsernameAvailable(username, { excludeUserId: existingUser.id });
+      const existingInstitution = await prisma.institution.findUnique({
+        where: { userId: existingUser.id },
+        select: { id: true },
+      });
+
+      await ensureInstitutionNameAvailable(name, {
+        excludeInstitutionId: existingInstitution?.id ?? null,
+        excludeUserId: existingUser.id,
+      });
+      await ensureInstitutionUsernameAvailable(username, {
+        excludeInstitutionId: existingInstitution?.id ?? null,
+        excludeUserId: existingUser.id,
+      });
 
       const hashedPassword = await bcrypt.hash(parsed.password, 12);
 
-     let user, institution;
+      let user, institution;
+      try {
+        const result = await prisma.$transaction(async (tx) => {
+          const user = await tx.user.update({
+            where: { id: existingUser.id },
+            data: {
+              firstName: name,
+              lastName: 'Institution',
+              passwordHash: hashedPassword,
+              role: 'INSTITUTION',
+              verificationStatus: 'PENDING',
+            },
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              role: true,
+              verificationStatus: true,
+            },
+          });
 
-try {
-  const result = await prisma.$transaction(async (tx) => {
-    const user = await tx.user.create({
-      data: {
-        firstName: name,
-        lastName: 'Institution',
-        email,
-        passwordHash: hashedPassword,
-        role: 'INSTITUTION',
-        verificationStatus: 'PENDING',
-      },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        email: true,
-        role: true,
-        verificationStatus: true,
-      },
-    });
+          const institution = existingInstitution
+            ? await tx.institution.update({
+                where: { id: existingInstitution.id },
+                data: {
+                  username,
+                  name,
+                  type: parsed.type,
+                  description: parsed.description,
+                  website: parsed.website,
+                  logoUri: parsed.logoUri,
+                },
+              })
+            : await tx.institution.create({
+                data: {
+                  username,
+                  name,
+                  type: parsed.type,
+                  description: parsed.description,
+                  website: parsed.website,
+                  logoUri: parsed.logoUri,
+                  userId: user.id,
+                },
+              });
 
-    const institution = await tx.institution.create({
-      data: {
-        username,
-        name,
-        type: parsed.type,
-        description: parsed.description,
-        website: parsed.website,
-        logoUri: parsed.logoUri,
-        userId: user.id,
-      },
-    });
+          return { user, institution };
+        });
 
-    return { user, institution };
-  });
-
-  user = result.user;
-  institution = result.institution;
-
-} catch (error) {
-  if (error.code === 'P2002') {
-    throw new ConflictError('Institution name already exists.');
-  }
-  throw error;
-}
+        user = result.user;
+        institution = result.institution;
+      } catch (error) {
+        if (error.code === 'P2002') {
+          throw new ConflictError('Institution information conflicts with existing records.');
+        }
+        throw error;
+      }
 
       await authService.issueEmailOtp(email);
 
@@ -498,18 +520,24 @@ try {
     return formatInstitutionResponse(institution, { includeExperts: true });
   }
 
-  async updateInstitution(institutionId, data) {
+  async updateInstitution(institutionId, data, actorId, isAdmin = false) {
     if (!institutionId) throw new BadRequestError('institutionId is required');
+    if (!actorId && !isAdmin) {
+      throw new AppError('Unauthorized: Institution account required', 403, true, 'FORBIDDEN');
+    }
 
     const parsed = updateInstitutionSchema.parse(data);
     const username = parsed.username ? normalizeInstitutionUsername(parsed.username) : null;
 
     const existing = await prisma.institution.findUnique({
       where: { id: institutionId },
-      select: { id: true },
+      select: { id: true, userId: true },
     });
 
     if (!existing) throw new NotFoundError('Institution not found');
+    if (!isAdmin && existing.userId !== actorId) {
+      throw new ForbiddenError('You do not have permission to update this institution');
+    }
 
     if (parsed.name) {
       await ensureInstitutionNameAvailable(parsed.name.trim(), { excludeInstitutionId: institutionId });
@@ -571,18 +599,24 @@ try {
     });
   }
 
-  async submitVerification(institutionId, data) {
+  async submitVerification(institutionId, data, actorId, isAdmin = false) {
     if (!institutionId) throw new BadRequestError('institutionId is required');
+    if (!actorId && !isAdmin) {
+      throw new AppError('Unauthorized: Institution account required', 403, true, 'FORBIDDEN');
+    }
 
     const parsed = submitInstitutionVerificationSchema.parse(data);
     const documentUrl = parsed.documentUrl || parsed.verificationDocument;
 
     const existing = await prisma.institution.findUnique({
       where: { id: institutionId },
-      select: { id: true },
+      select: { id: true, userId: true },
     });
 
     if (!existing) throw new NotFoundError('Institution not found');
+    if (!isAdmin && existing.userId !== actorId) {
+      throw new ForbiddenError('You do not have permission to verify this institution');
+    }
 
     const updatedInstitution = await prisma.institution.update({
       where: { id: institutionId },
