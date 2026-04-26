@@ -226,11 +226,14 @@ class ExpertService {
 
       const existingUser = await tx.user.findUnique({
         where: { email },
-        select: { id: true, role: true },
+        select: { id: true, role: true, verificationStatus: true, verificationMethod: true },
       });
       if (existingUser && existingUser.role !== 'EXPERT') {
         throw new ConflictError('Email already registered');
       }
+
+      // If the email already belongs to an approved expert, don't force re-verification.
+      const shouldSendOtp = !existingUser || existingUser.verificationStatus !== 'APPROVED';
 
       const passwordHash = await bcrypt.hash(parsed.password, 12);
       const user = existingUser
@@ -241,7 +244,9 @@ class ExpertService {
               lastName: parsed.lastName,
               passwordHash,
               role: 'EXPERT',
-              verificationStatus: 'APPROVED',
+              verificationStatus: shouldSendOtp ? 'PENDING' : 'APPROVED',
+              // Keep verificationMethod unset so the existing /api/auth/verify-otp flow can set it.
+              ...(shouldSendOtp ? { verificationMethod: null } : {}),
             },
             select: { id: true },
           })
@@ -252,7 +257,7 @@ class ExpertService {
               email,
               passwordHash,
               role: 'EXPERT',
-              verificationStatus: 'APPROVED',
+              verificationStatus: 'PENDING',
             },
             select: { id: true },
           });
@@ -295,8 +300,14 @@ class ExpertService {
         });
       }
 
-      return { userId: user.id };
+      return { userId: user.id, shouldSendOtp };
     });
+
+    if (result.shouldSendOtp) {
+      // Send OTP after the DB transaction commits so we don't hold locks while emailing.
+      // The expert will verify via: POST /api/auth/verify-otp
+      await authService.issueEmailOtp(email);
+    }
 
     const profile = await prisma.expertProfile.findUnique({
       where: { expertId: result.userId },
@@ -326,6 +337,16 @@ class ExpertService {
     });
 
     return {
+      ...(result.shouldSendOtp
+        ? {
+            message:
+              'OTP sent. Please verify your email to activate your expert account.',
+            otpSent: true,
+          }
+        : {
+            message: 'Joined institution successfully.',
+            otpSent: false,
+          }),
       ...userResponse,
       institution: profile?.institution || null,
     };
