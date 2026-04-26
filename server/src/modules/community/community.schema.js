@@ -18,6 +18,9 @@ const getTopCommunitiesQuerySchema = zod.object({
   limit: zod.coerce.number().int().min(1).max(100).optional(),
 });
 
+const getNewCommunitiesQuerySchema = getTopCommunitiesQuerySchema;
+const getPickedCommunitiesQuerySchema = getTopCommunitiesQuerySchema;
+
 const postToCommunityBaseSchema = zod.object({
   communityId: zod.string().uuid(),
   content: zod.string().trim().max(5000).optional().default(""),
@@ -58,6 +61,8 @@ module.exports = {
     updateCommunitySchema,
     communityIdParamSchema,
     getTopCommunitiesQuerySchema,
+    getNewCommunitiesQuerySchema,
+    getPickedCommunitiesQuerySchema,
     postToCommunitySchema,
     updatePostInCommunitySchema,
     getCommunitiesQuerySchema,

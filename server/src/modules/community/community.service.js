@@ -546,6 +546,90 @@ const getTopCommunities = async (userId, limit = 10) => {
         .map((community) => mapCommunityForMobile(community, userId));
 };
 
+const getNewCommunities = async (userId, limit = 10) => {
+    const safeLimit = Math.min(100, Math.max(1, Number(limit) || 10));
+
+    const communities = await prisma.Community.findMany({
+        where: { isDeleted: false },
+        include: {
+            createdBy: {
+                select: {
+                    profile: {
+                        select: {
+                            university: { select: { name: true } },
+                        },
+                    },
+                },
+            },
+            members: {
+                where: { userId },
+                select: { userId: true },
+            },
+            _count: {
+                select: { members: true },
+            },
+        },
+        orderBy: { createdAt: "desc" },
+        take: safeLimit,
+    });
+
+    return communities.map((community) => mapCommunityForMobile(community, userId));
+};
+
+const getPickedCommunities = async (userId, limit = 10) => {
+    const safeLimit = Math.min(100, Math.max(1, Number(limit) || 10));
+
+    const profile = await prisma.UserProfile.findUnique({
+        where: { userId },
+        include: { university: { select: { name: true } } },
+    });
+    const universityName = profile?.university?.name || null;
+
+    if (universityName) {
+        const candidates = await prisma.Community.findMany({
+            where: {
+                isDeleted: false,
+                createdBy: {
+                    profile: {
+                        university: { is: { name: universityName } },
+                    },
+                },
+            },
+            include: {
+                createdBy: {
+                    select: {
+                        profile: {
+                            select: {
+                                university: { select: { name: true } },
+                            },
+                        },
+                    },
+                },
+                members: {
+                    where: { userId },
+                    select: { userId: true },
+                },
+                _count: {
+                    select: { members: true },
+                },
+            },
+            orderBy: { createdAt: "desc" },
+            take: 100,
+        });
+
+        const mapped = candidates
+            .map((community) => mapCommunityForMobile(community, userId))
+            .filter((community) => !community.isMember);
+
+        if (mapped.length > 0) {
+            return mapped.slice(0, safeLimit);
+        }
+    }
+
+    const top = await getTopCommunities(userId, Math.max(20, safeLimit));
+    return top.filter((community) => !community.isMember).slice(0, safeLimit);
+};
+
 const getCommunityMembers = async (communityId) => {
     if (!communityId) {
         throw new ValidationError("communityId is required");
@@ -654,6 +738,8 @@ module.exports = {
     leaveCommunity,
     getCommunityById,
     getTopCommunities,
+    getNewCommunities,
+    getPickedCommunities,
     getCommunityMembers,
     getCommunityPosts,
 };

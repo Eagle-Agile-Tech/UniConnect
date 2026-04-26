@@ -50,6 +50,18 @@ router.get(
 );
 
 router.get(
+  "/picked",
+  validateRequest(communitySchema.getPickedCommunitiesQuerySchema, "query"),
+  communityController.getPickedCommunities,
+);
+
+router.get(
+  "/new",
+  validateRequest(communitySchema.getNewCommunitiesQuerySchema, "query"),
+  communityController.getNewCommunities,
+);
+
+router.get(
   "/:communityId/members",
   validateRequest(communitySchema.communityIdParamSchema, "params"),
   communityController.getCommunityMembers,

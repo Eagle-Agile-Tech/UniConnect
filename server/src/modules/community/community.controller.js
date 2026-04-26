@@ -247,6 +247,54 @@ class CommunityController {
     }
   }
 
+  async getPickedCommunities(req, res, next) {
+    let userId;
+    try {
+      userId = req.user?.sub || req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const communities = await communityService.getPickedCommunities(
+        userId,
+        req.query?.limit,
+      );
+
+      res.status(200).json(communities);
+    } catch (error) {
+      next(
+        attachCommunityErrorContext(error, {
+          operation: "getPickedCommunities",
+          userId,
+        }),
+      );
+    }
+  }
+
+  async getNewCommunities(req, res, next) {
+    let userId;
+    try {
+      userId = req.user?.sub || req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const communities = await communityService.getNewCommunities(
+        userId,
+        req.query?.limit,
+      );
+
+      res.status(200).json(communities);
+    } catch (error) {
+      next(
+        attachCommunityErrorContext(error, {
+          operation: "getNewCommunities",
+          userId,
+        }),
+      );
+    }
+  }
+
   async getCommunityMembers(req, res, next) {
     let userId;
     try {
