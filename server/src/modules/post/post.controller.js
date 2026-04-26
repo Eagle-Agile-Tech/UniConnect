@@ -120,6 +120,28 @@ async function listPosts(req, res, next) {
   }
 }
 
+// ================= FEED =================
+// Public-ish feed endpoint used by system tests and some clients.
+// If authenticated, we use the token user id for per-user include fields.
+// Otherwise we accept the path param user id to keep a stable API surface.
+async function getFeed(req, res, next) {
+  try {
+    const viewerId = req.user?.id || req.params.userId || null;
+
+    const result = await postFeedService.listPosts(
+      {
+        cursor: req.query.cursor,
+        limit: req.query.limit,
+      },
+      viewerId,
+    );
+
+    return res.json(result.data.map((p) => formatPostDTO(p, viewerId)));
+  } catch (err) {
+    next(err);
+  }
+}
+
 // ================= SINGLE POST =================
 async function getPostById(req, res, next) {
   try {
@@ -169,6 +191,7 @@ async function deletePost(req, res, next) {
 
 module.exports = {
   createPost,
+  getFeed,
   listPosts,
   getPostById,
   updatePost,

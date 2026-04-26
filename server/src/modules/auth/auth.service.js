@@ -379,7 +379,7 @@ class AuthService {
     const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user) throw new AuthError("User not found", 404);
-    if (user.verificationStatus === "EMAIL_VERIFIED")
+    if (user.verificationStatus === "APPROVED")
       throw new AuthError("Email already verified", 400);
     if (
       user.verificationMethod &&
@@ -419,7 +419,7 @@ class AuthService {
         verificationMethod: "UNIVERSITY_EMAIL",
       },
     });
-    user.verificationStatus = "EMAIL_VERIFIED";
+    user.verificationStatus = "APPROVED";
     await redisClient.del(
       this.otpKey(email),
       this.otpAttemptsKey(email),
@@ -484,7 +484,7 @@ class AuthService {
     const email = this.normalizeEmail(emailInput);
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) throw new AuthError("User not found", 404);
-    if (user.verificationStatus === "EMAIL_VERIFIED")
+    if (user.verificationStatus === "APPROVED")
       throw new AuthError("Email already verified", 400);
     if (
       user.verificationMethod &&
@@ -760,7 +760,7 @@ class AuthService {
       throw new AuthError("Google email not verified");
     }
 
-    return this.completeUniversityOAuthLogin({
+    return this.completeOAuthLogin({
       providerLabel: "Google",
       providerIdField: "googleId",
       providerUser: googleUser,
@@ -780,7 +780,7 @@ class AuthService {
       throw new AuthError("Invalid Microsoft ID token");
     }
 
-    return this.completeUniversityOAuthLogin({
+    return this.completeOAuthLogin({
       providerLabel: "Microsoft",
       providerIdField: null,
       providerUser: microsoftUser,
@@ -789,7 +789,7 @@ class AuthService {
     });
   }
 
-  async completeUniversityOAuthLogin({
+  async completeOAuthLogin({
     providerLabel,
     providerIdField = null,
     providerUser,
@@ -799,15 +799,10 @@ class AuthService {
     const email = this.normalizeEmail(providerUser.email);
     const fcmToken = this.normalizeFcmToken(rawFcmToken);
     const university = this.detectUniversity(email);
-
-    if (!university) {
-      throw new AuthError(
-        `Only university emails allowed for ${providerLabel} login`,
-        403,
-      );
-    }
-
-    const universityRecord = await this.getOrCreateUniversity(university);
+    const universityRecord = university
+      ? await this.getOrCreateUniversity(university)
+      : null;
+    const isUniversityUser = Boolean(universityRecord);
     const providerId = providerIdField ? providerUser[providerIdField] : null;
 
     let user = await prisma.user.findUnique({ where: { email } });
@@ -822,8 +817,10 @@ class AuthService {
             ...(providerIdField && providerId
               ? { [providerIdField]: providerId }
               : {}),
-            verificationStatus: "EMAIL_VERIFIED",
-            verificationMethod: "UNIVERSITY_EMAIL",
+            verificationStatus: isUniversityUser ? "APPROVED" : "PENDING",
+            verificationMethod: isUniversityUser
+              ? "UNIVERSITY_EMAIL"
+              : "ID_DOCUMENT_ADMIN",
             ...(fcmToken ? { fcmToken } : {}),
           },
         });
@@ -840,7 +837,7 @@ class AuthService {
         await tx.userProfile.create({
           data: {
             userId: newUser.id,
-            universityId: universityRecord?.id,
+            universityId: universityRecord?.id || null,
             profileImage: providerUser.picture,
             username,
           },
@@ -857,10 +854,68 @@ class AuthService {
       );
     }
 
+    const userUpdateData = {};
     if (providerIdField && providerId && !user[providerIdField]) {
+      userUpdateData[providerIdField] = providerId;
+    }
+    if (fcmToken) {
+      userUpdateData.fcmToken = fcmToken;
+    }
+    if (isUniversityUser) {
+      if (user.verificationStatus !== "APPROVED") {
+        userUpdateData.verificationStatus = "APPROVED";
+      }
+      if (user.verificationMethod !== "UNIVERSITY_EMAIL") {
+        userUpdateData.verificationMethod = "UNIVERSITY_EMAIL";
+      }
+    } else {
+      const isIdApprovedUser =
+        user.verificationMethod === "ID_DOCUMENT_ADMIN" &&
+        user.verificationStatus === "APPROVED";
+      if (!isIdApprovedUser) {
+        if (user.verificationMethod !== "ID_DOCUMENT_ADMIN") {
+          userUpdateData.verificationMethod = "ID_DOCUMENT_ADMIN";
+        }
+        if (user.verificationStatus !== "PENDING") {
+          userUpdateData.verificationStatus = "PENDING";
+        }
+      }
+    }
+    if (Object.keys(userUpdateData).length > 0) {
       user = await prisma.user.update({
         where: { id: user.id },
-        data: { [providerIdField]: providerId },
+        data: userUpdateData,
+      });
+    }
+
+    const existingProfile = await prisma.userProfile.findUnique({
+      where: { userId: user.id },
+      select: { id: true, universityId: true },
+    });
+
+    if (!existingProfile) {
+      const username = await this.resolveUniqueUsername(
+        this.getUsernameSeed({
+          email,
+          firstName: providerUser.firstName || user.firstName,
+          lastName: providerUser.lastName || user.lastName,
+        }),
+      );
+      await prisma.userProfile.create({
+        data: {
+          userId: user.id,
+          username,
+          profileImage: providerUser.picture || null,
+          universityId: universityRecord?.id || null,
+        },
+      });
+    } else if (
+      universityRecord &&
+      existingProfile.universityId !== universityRecord.id
+    ) {
+      await prisma.userProfile.update({
+        where: { userId: user.id },
+        data: { universityId: universityRecord.id },
       });
     }
 
@@ -882,6 +937,7 @@ class AuthService {
     return buildUserResponse({
       user,
       profile,
+      universityName: universityRecord?.name || "general",
       accessToken,
       refreshToken,
       sessionId,
