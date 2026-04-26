@@ -169,8 +169,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               SignInWith(
                 onPressed: () => ref.read(authNotifierProvider.notifier).signInWithGoogle(),
               ),
-              SizedBox(height: Dimens.spaceBtwItems,),
-              SignInWith(isGoogle: false, onPressed: () {}),
               SizedBox(height: Dimens.spaceBtwSections),
               Text.rich(
                 TextSpan(
@@ -191,6 +189,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   ],
                 ),
               ),
+              SizedBox(height: Dimens.spaceBtwSections),
+              OutlinedButton.icon(
+                onPressed: () => context.push(Routes.expertSignup),
+                icon: Icon(Icons.workspace_premium),
+                label: Text("Register as Expert"),
+              )
             ],
           ),
         ),

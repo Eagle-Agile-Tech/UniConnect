@@ -14,8 +14,7 @@ import '../../core/common/widgets/report/report_sheet.dart';
 import '../../core/theme/dimens.dart';
 import '../../network/viewmodels/network_provider.dart';
 import '../view_models/user_provider.dart';
-import 'my_network.dart';
-import 'others_network.dart' hide MyNetwork;
+import 'network.dart';
 
 class ProfileHeader extends ConsumerWidget {
   const ProfileHeader({super.key, required this.user, required this.isMe});

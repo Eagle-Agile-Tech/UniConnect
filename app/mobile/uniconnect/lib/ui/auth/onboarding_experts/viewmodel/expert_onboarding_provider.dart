@@ -23,13 +23,13 @@ class ExpertOnboardingViewModel extends Notifier<ExpertOnboardingState> {
     return ExpertOnboardingState();
   }
 
-  //todo: I feel like we can refactor this into the student create account method
   Future<Err?> registerExpert(String firstName,
       String lastName,
       String email,
       String university,
       String uniCode,
-      String password,) async {
+      String password,
+      String confirmPassword,) async {
     state = state.copyWith(
       firstName: firstName,
       lastName: lastName,
@@ -43,6 +43,7 @@ class ExpertOnboardingViewModel extends Notifier<ExpertOnboardingState> {
       university,
       uniCode,
       password,
+      confirmPassword,
     );
     return result.fold((data){
       state = state.copyWith(id: data);
@@ -58,12 +59,11 @@ class ExpertOnboardingViewModel extends Notifier<ExpertOnboardingState> {
           university: data
         );
         return null;
-      }, (error, stackTrace) => Result.error(error) as Err,
+      }, (error, stackTrace) => Result.error(error, stackTrace) as Err,
     );
   }
 
   Future<bool> isUsernameAvailable(String username) async {
-    await Future.delayed(Duration(seconds: 5));
     return await _authRepo.isUsernameAvailable(username);
   }
 
@@ -92,11 +92,11 @@ class ExpertOnboardingViewModel extends Notifier<ExpertOnboardingState> {
             Result.ok(
               User(
                 id: state.id,
-                firstName: '',
-                lastName: '',
-                email: '',
-                username: '',
-                university: '',
+                firstName: state.firstName,
+                lastName: state.lastName,
+                email: state.email,
+                username: state.username,
+                university: state.university,
                 role: UserRole.EXPERT,
                 networkCount: 0
               ),

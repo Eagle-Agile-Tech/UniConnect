@@ -7,7 +7,8 @@ import 'package:uniconnect/ui/auth/onboarding/academic_profile/academic_profile.
 import 'package:uniconnect/ui/auth/onboarding/personalization/create_profile.dart';
 import 'package:uniconnect/ui/auth/onboarding/verify_email/verify_email_screen.dart';
 import 'package:uniconnect/ui/auth/onboarding_experts/academic_profile.dart';
-import 'package:uniconnect/ui/auth/onboarding_experts/signup/signup_screen.dart';
+import 'package:uniconnect/ui/auth/onboarding_experts/signup/expert_signup_screen.dart';
+import 'package:uniconnect/ui/auth/onboarding_experts/verify_university/verify_university.dart';
 import 'package:uniconnect/ui/events/detailed_event_screen.dart';
 import 'package:uniconnect/ui/events/explore_events.dart';
 import 'package:uniconnect/ui/mentorship/explore_mentorship.dart';
@@ -51,6 +52,9 @@ final routerProvider = Provider<GoRouter>((ref) {
             Routes.onboardingAcademic,
             Routes.onBoardingProfile,
             Routes.forgetEmailPath,
+            Routes.expertSignup,
+            Routes.expertVerifyUni,
+            Routes.expertProfile,
           ];
 
           final isPublicRoute = publicRoutes.contains(state.matchedLocation);
@@ -207,6 +211,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.expertSignup,
         builder: (context, state) => ExpertSignupScreen(),
+      ),
+      GoRoute(
+        path: Routes.expertVerifyUni,
+        builder: (context, state) => const ExpertVerifyUni(),
       ),
       GoRoute(
         path: Routes.expertProfile,

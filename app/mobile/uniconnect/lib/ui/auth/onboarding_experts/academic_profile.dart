@@ -12,6 +12,7 @@ import 'package:uniconnect/ui/core/common/widgets/app_bar.dart';
 import '../../../config/dummy_data.dart';
 import '../../../routing/routes.dart';
 import '../../../utils/validator.dart';
+import '../auth_state_provider.dart';
 import '../../core/theme/dimens.dart';
 
 class ExpertAcademicProfileScreen extends ConsumerStatefulWidget {
@@ -48,8 +49,17 @@ class _ExpertAcademicProfileScreenState
   }
 
   @override
+  void dispose() {
+    debounce?.cancel();
+    _expertiseController.dispose();
+    _honorController.dispose();
+    _bioController.dispose();
+    _usernameController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final onboarding = ref.watch(expertOnboardingProvider.notifier);
     return Scaffold(
       appBar: UCAppBar('Profile', showBack: false, centerTitle: true),
       body: SingleChildScrollView(
@@ -148,28 +158,23 @@ class _ExpertAcademicProfileScreenState
                 const SizedBox(height: Dimens.defaultSpace),
                 TextFormField(
                   controller: _usernameController,
-                  validator: (value) {
-                    final validate = UCValidator.validateUsername(value);
-                    if (validate != null) return validate;
-                    if (isUsernameAvailable == null) {
-                      return 'Checking username...';
-                    }
-                    if (isUsernameAvailable == false) {
-                      return 'Username is already taken!';
-                    }
-                    return null;
-                  },
+                  validator: (value) => UCValidator.validateUsername(value),
                   onChanged: (value) {
                     if (debounce?.isActive ?? false) {
                       debounce!.cancel();
                     }
                     setState(() => isUsernameAvailable = null);
                     debounce = Timer(Duration(milliseconds: 300), () async {
-                      final isIt = await onboarding.isUsernameAvailable(value);
+                      final isIt = await ref
+                          .read(expertOnboardingProvider.notifier)
+                          .isUsernameAvailable(value);
                       setState(() => isUsernameAvailable = isIt);
                     });
                   },
-                  decoration: const InputDecoration(labelText: 'Username'),
+                  decoration: InputDecoration(
+                    labelText: 'Username',
+                    suffixIcon: _buildSuffixIcon(),
+                  ),
                 ),
                 const SizedBox(height: Dimens.defaultSpace),
                 TextFormField(
@@ -186,14 +191,28 @@ class _ExpertAcademicProfileScreenState
                 ElevatedButton(
                   onPressed: () async {
                     if (!_key.currentState!.validate()) return;
-                    //Todo: what if the profile image is not selected?
-                    onboarding.createExpertProfile(
+
+                    if (isUsernameAvailable != true) return;
+
+                    final status = await ref
+                        .read(authNotifierProvider.notifier)
+                        .registerExpert(
                       _expertiseController.text.trim(),
                       _honorController.text.trim(),
                       _usernameController.text.trim(),
                       _bioController.text.trim(),
-                      File(_profileImage!.path),
+                      _profileImage == null ? null : File(_profileImage!.path),
                     );
+
+                    if (!context.mounted) return;
+
+                    if (status != null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(status.toString())),
+                      );
+                      return;
+                    }
+
                     context.go(Routes.home);
                   },
                   style: ElevatedButton.styleFrom(
@@ -207,5 +226,20 @@ class _ExpertAcademicProfileScreenState
         ),
       ),
     );
+  }
+
+  Widget? _buildSuffixIcon() {
+    if (_usernameController.text.trim().isEmpty) return null;
+
+    if (isUsernameAvailable == null) {
+      return const Padding(
+        padding: EdgeInsets.all(12.0),
+        child: CircularProgressIndicator(strokeWidth: 2),
+      );
+    }
+
+    return isUsernameAvailable!
+        ? const Icon(Icons.check_circle, color: Colors.green)
+        : const Icon(Icons.cancel, color: Colors.red);
   }
 }

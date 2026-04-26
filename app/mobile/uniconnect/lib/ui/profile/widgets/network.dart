@@ -51,22 +51,19 @@ class MyNetwork extends ConsumerWidget {
 
     return _NetworkPill(
       onTap: () {
-        if (currentUser != null) {
-          ref.read(selectedUserProfileProvider.notifier).state = currentUser;
-          context.push(Routes.networks);
-        }
-      },
+        ref.read(selectedUserProfileProvider.notifier).state = currentUser;
+        context.push(Routes.networks);
+            },
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            UCHelperFunctions.formatMembers(50500),
-            style: TextStyle(
-              fontSize: Dimens.fontMd,
-              fontWeight: FontWeight.w800,
-              color: Theme.of(context).primaryColor,
+          if (currentUser!.networkCount > 0) ...[
+            Text(
+              UCHelperFunctions.formatMembers(currentUser.networkCount),
+              style: const TextStyle(fontWeight: FontWeight.w800),
             ),
-          ),
+            const SizedBox(width: Dimens.xs),
+          ],
           const SizedBox(width: Dimens.sm),
           const Text(
             'Network',
