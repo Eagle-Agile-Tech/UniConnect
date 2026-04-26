@@ -26,23 +26,41 @@ abstract class ChatConversationModel with _$ChatConversationModel {
         .cast<Map<dynamic, dynamic>>();
     final otherParticipant = participants.cast<Map>().firstWhere(
       (item) => item['userId'] != currentUserId,
-      orElse: () => participants.isNotEmpty ? participants.first : <dynamic, dynamic>{},
+      orElse: () =>
+          participants.isNotEmpty ? participants.first : <dynamic, dynamic>{},
     );
     final user = otherParticipant['user'] as Map<dynamic, dynamic>?;
 
-    final messages = (json['messages'] as List<dynamic>? ?? const []).cast<Map>();
-    final latest = messages.isNotEmpty ? messages.first : const <dynamic, dynamic>{};
+    final messages = (json['messages'] as List<dynamic>? ?? const [])
+        .cast<Map>();
+    final latest = messages.isNotEmpty
+        ? messages.first
+        : const <dynamic, dynamic>{};
+    final unreadCount = messages.where((message) {
+      final senderId = (message['senderId'] ?? '').toString();
+      if (senderId == currentUserId) {
+        return false;
+      }
+      final receipts = (message['receipts'] as List<dynamic>? ?? const [])
+          .cast<Map>();
+      final myReceipt = receipts.cast<Map>().firstWhere(
+        (receipt) => receipt['userId']?.toString() == currentUserId,
+        orElse: () => const <dynamic, dynamic>{},
+      );
+      return myReceipt.isNotEmpty && myReceipt['readAt'] == null;
+    }).length;
 
     return ChatConversationModel(
       chatId: (json['id'] ?? '').toString(),
       partnerId: (otherParticipant['userId'] ?? '').toString(),
-      partnerName:
-          (user?['username'] ?? user?['name'] ?? 'Unknown user').toString(),
-      partnerAvatarUrl: user?['profilePic']?.toString(),
+      partnerName: (user?['username'] ?? user?['name'] ?? 'Unknown user')
+          .toString(),
+      partnerAvatarUrl:
+          (user?['avatarUrl'] ?? user?['profilePic'] ?? user?['profileImage'])
+              ?.toString(),
       lastMessage: (latest['content'] ?? 'No messages yet').toString(),
       lastMessageAt: DateTime.tryParse((latest['createdAt'] ?? '').toString()),
-      unreadCount: ((json['_count'] as Map?)?['messages'] as int?) ?? 0,
+      unreadCount: unreadCount,
     );
   }
 }
-

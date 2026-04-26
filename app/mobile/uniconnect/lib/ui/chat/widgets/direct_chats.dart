@@ -7,6 +7,16 @@ class DirectChatScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const ConversationsView();
+    return Scaffold(
+      appBar: AppBar(
+          title: Text(
+            'Chat',
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+          ),
+      ),
+      body: const ConversationsView()
+    );
   }
 }

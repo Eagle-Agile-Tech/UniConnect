@@ -28,7 +28,17 @@ abstract class ChatMessageModel with _$ChatMessageModel {
   ) {
     final sender = json['sender'] as Map<String, dynamic>?;
     final senderId =
-        (json['senderId'] ?? sender?['id'] ?? sender?['userId'] ?? '') as String;
+        (json['senderId'] ?? sender?['id'] ?? sender?['userId'] ?? '')
+            as String;
+    final receipts = (json['receipts'] as List<dynamic>? ?? const [])
+        .map((item) => Map<String, dynamic>.from(item as Map))
+        .toList();
+    final isMine = senderId == currentUserId;
+    final status = _deriveStatus(
+      isMine: isMine,
+      explicitStatus: json['status']?.toString(),
+      receipts: receipts,
+    );
 
     return ChatMessageModel(
       id: (json['id'] ?? json['messageId'] ?? json['clientMessageId'] ?? '')
@@ -37,12 +47,39 @@ abstract class ChatMessageModel with _$ChatMessageModel {
       senderId: senderId,
       senderName: (sender?['username'] ?? sender?['name'])?.toString(),
       content: (json['content'] ?? '').toString(),
-      createdAt: DateTime.tryParse((json['createdAt'] ?? '').toString()) ??
+      createdAt:
+          DateTime.tryParse((json['createdAt'] ?? '').toString()) ??
           DateTime.now(),
-      status: (json['status'] ?? 'sent').toString(),
+      status: status,
       clientMessageId: json['clientMessageId']?.toString(),
-      isMine: senderId == currentUserId,
+      isMine: isMine,
     );
   }
 }
 
+String _deriveStatus({
+  required bool isMine,
+  required String? explicitStatus,
+  required List<Map<String, dynamic>> receipts,
+}) {
+  if (explicitStatus != null && explicitStatus.isNotEmpty) {
+    return explicitStatus;
+  }
+  if (!isMine) {
+    return 'received';
+  }
+  if (receipts.isEmpty) {
+    return 'sent';
+  }
+  final allRead = receipts.every((receipt) => receipt['readAt'] != null);
+  if (allRead) {
+    return 'read';
+  }
+  final anyDelivered = receipts.any(
+    (receipt) => receipt['deliveredAt'] != null,
+  );
+  if (anyDelivered) {
+    return 'delivered';
+  }
+  return 'sent';
+}
