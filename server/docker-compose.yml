@@ -51,12 +51,37 @@ services:
       REDIS_PORT: 6379
     ports:
       - "${API_HOST_PORT:-3000}:3000"
+    volumes:
+      # Expose ML workspace to the API container so it can write datasets/checkpoints
+      # that the `ml` service can read.
+      - ./ml:/app/ml
     command: >
       sh -c "until pg_isready -h db -U postgres; do sleep 2; done &&
       cd /app/src &&
       npm run db:generate &&
       npm run db:migrate &&
       npm run dev"
+
+  ml:
+    build:
+      context: .
+      dockerfile: Dockerfile.ml
+    container_name: uniconnect_ml
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env.docker
+    environment:
+      # run_id_pipeline.py uses /app as project root and imports `ml.*`
+      PYTHONPATH: /app
+      # Ensure python sync scripts can reach Postgres inside the compose network.
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/uniconnect?schema=public
+    volumes:
+      - ./ml:/app/ml
+      - ./src:/app/src
+    working_dir: /app
 
 volumes:
   db_data:

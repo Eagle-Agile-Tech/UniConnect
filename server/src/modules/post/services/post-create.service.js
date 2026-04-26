@@ -8,7 +8,14 @@ const storageService = require("../../media/services/supabase-storage.service");
 
 class PostCreateService {
   async createPost(userId, data, files = []) {
-    const { content, tags, mediaIds = [] } = data;
+    const {
+      content,
+      tags,
+      mediaIds = [],
+      communityId,
+      visibility,
+      category,
+    } = data || {};
 
     // =========================
     // VALIDATION
@@ -72,6 +79,11 @@ if (moderationResult.moderationStatus !== "APPROVED") {
         authorId: userId,
         content: content || "",
         tags: tags || [],
+        ...(typeof communityId === "string" && communityId.trim()
+          ? { communityId: communityId.trim() }
+          : {}),
+        ...(visibility ? { visibility } : {}),
+        ...(category !== undefined ? { category } : {}),
         moderationStatus: "APPROVED",
 
         media: uploadedMedia.length

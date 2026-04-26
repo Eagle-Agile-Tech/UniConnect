@@ -14,7 +14,11 @@ function normalizeFullName(profile) {
     const lastName =
         typeof profile?.user?.lastName === "string" ? profile.user.lastName.trim() : "";
     const combined = `${firstName} ${lastName}`.trim();
-    return combined || null;
+    if (combined) return combined;
+
+    const username =
+        typeof profile?.username === "string" ? profile.username.trim() : "";
+    return username || null;
 }
 
 function mapSearchProfile(profile) {
@@ -273,7 +277,7 @@ class userService {
 
         const existingProfile = await prisma.userProfile.findUnique({
             where: { userId },
-            select: { id: true },
+            select: { id: true, fullName: true, username: true },
         });
         if (!existingProfile && !username) {
             throw new ValidationError("Username is required");
@@ -301,6 +305,14 @@ class userService {
 
         const detectedUniversity = this.detectUniversity(user?.email);
 
+        const derivedFullName = (() => {
+            const first = typeof user?.firstName === "string" ? user.firstName.trim() : "";
+            const last = typeof user?.lastName === "string" ? user.lastName.trim() : "";
+            const combined = `${first} ${last}`.trim();
+            if (combined) return combined;
+            return username || existingProfile?.username || null;
+        })();
+
         if (existingProfile) {
             let resolvedUniversityId = universityId;
             if (detectedUniversity) {
@@ -318,6 +330,7 @@ class userService {
                 where: { userId },
                 data: {
                     username: username || undefined,
+                    ...(existingProfile.fullName ? {} : { fullName: derivedFullName || undefined }),
                     bio,
                     profileImage,
                     interests,
@@ -365,6 +378,7 @@ class userService {
             data: {
                 userId,
                 username,
+                fullName: derivedFullName || undefined,
                 bio,
                 profileImage,
                 interests,
@@ -577,10 +591,33 @@ class userService {
             resolvedUniversityId = universityRecord?.id || undefined;
         }
 
+        const freshUserForName = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { firstName: true, lastName: true },
+        });
+
+        const existingProfileForName = await prisma.userProfile.findUnique({
+            where: { userId },
+            select: { fullName: true, username: true },
+        });
+
+        const derivedFullName = (() => {
+            const first = typeof freshUserForName?.firstName === "string"
+                ? freshUserForName.firstName.trim()
+                : "";
+            const last = typeof freshUserForName?.lastName === "string"
+                ? freshUserForName.lastName.trim()
+                : "";
+            const combined = `${first} ${last}`.trim();
+            if (combined) return combined;
+            return data.username || existingProfileForName?.username || null;
+        })();
+
         await prisma.userProfile.update({
             where: { userId },
             data: {
                 username: data.username,
+                ...(existingProfileForName?.fullName ? {} : { fullName: derivedFullName || undefined }),
                 bio,
                 profileImage,
                 interests,

@@ -43,6 +43,31 @@ function normalizeCommunityPostPayload(req, _res, next) {
 
 router.use(authenticate);
 
+router.get(
+  "/top",
+  validateRequest(communitySchema.getTopCommunitiesQuerySchema, "query"),
+  communityController.getTopCommunities,
+);
+
+router.get(
+  "/:communityId/members",
+  validateRequest(communitySchema.communityIdParamSchema, "params"),
+  communityController.getCommunityMembers,
+);
+
+router.get(
+  "/:communityId/posts",
+  validateRequest(communitySchema.communityIdParamSchema, "params"),
+  validateRequest(communitySchema.getCommunityPostsQuerySchema, "query"),
+  communityController.getCommunityPosts,
+);
+
+router.get(
+  "/:communityId",
+  validateRequest(communitySchema.communityIdParamSchema, "params"),
+  communityController.getCommunity,
+);
+
 router.post(
   "/",
   uploadProfileImage,
@@ -84,6 +109,12 @@ router.post(
   "/leave",
   validateRequest(communitySchema.leaveCommunitySchema),
   communityController.leaveCommunity,
+);
+
+router.post(
+  "/join",
+  validateRequest(communitySchema.joinCommunitySchema),
+  communityController.joinCommunity,
 );
 
 module.exports = router;

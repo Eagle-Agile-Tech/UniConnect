@@ -4,7 +4,15 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon src/app.js",
-    "start": "node src/app.js"
+    "start": "node src/app.js",
+    "dataset:training:json": "node src/modules/ai-recommendation-service/generate-training-dataset.js --format json --output training.json",
+    "dataset:training:jsonl": "node src/modules/ai-recommendation-service/generate-training-dataset.js --format jsonl --output ml/training_data.jsonl",
+    "ml:eda:id": "PYTHONPATH=. python3 ml/pipelines/eda_dataset.py --data ml/training_data.jsonl --out-dir ml/eda",
+    "ml:train:id": "PYTHONPATH=. python3 ml/pipelines/train_id_two_tower.py --data ml/training_data.jsonl",
+    "ml:evaluate:id": "PYTHONPATH=. python3 ml/pipelines/evaluate_id_two_tower.py --checkpoint ml/two_tower/checkpoints/id_two_tower_run --data ml/training_data.jsonl",
+    "ml:sync:id": "PYTHONPATH=. python3 ml/pipelines/sync_id_embeddings.py --checkpoint ml/two_tower/checkpoints/id_two_tower_run",
+    "ai:pipeline:id": "PYTHONPATH=. python3 ml/pipelines/run_id_pipeline.py",
+    "rec:benchmark": "PYTHONPATH=. python3 ml/pipelines/benchmark_recommenders.py"
   },
   "keywords": [],
   "author": "",

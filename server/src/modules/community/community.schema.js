@@ -3,13 +3,19 @@ const zod = require("zod");
 const createCommunitySchema = zod.object({
   name: zod.string().trim().min(3).max(20),
   description: zod.string().trim().max(160).optional(),
-  profileImage: zod.string().url().optional()
+  profileImage: zod.string().url().optional(),
+  // Optional initial members to add at creation time (mobile client sends this).
+  members: zod.array(zod.string().uuid()).max(100).optional().default([]),
   
 });
 
 const updateCommunitySchema = createCommunitySchema.partial();
 const communityIdParamSchema = zod.object({
   communityId: zod.string().uuid(),
+});
+
+const getTopCommunitiesQuerySchema = zod.object({
+  limit: zod.coerce.number().int().min(1).max(100).optional(),
 });
 
 const postToCommunityBaseSchema = zod.object({
@@ -43,14 +49,20 @@ const leaveCommunitySchema = zod.object({
   communityId: zod.string().uuid(),
 });
 
+const joinCommunitySchema = zod.object({
+  communityId: zod.string().uuid(),
+});
+
 module.exports = {
     createCommunitySchema,
     updateCommunitySchema,
     communityIdParamSchema,
+    getTopCommunitiesQuerySchema,
     postToCommunitySchema,
     updatePostInCommunitySchema,
     getCommunitiesQuerySchema,
     getCommunityPostsQuerySchema,
     addCommunityMemberSchema,
-    leaveCommunitySchema
+    leaveCommunitySchema,
+    joinCommunitySchema,
 }

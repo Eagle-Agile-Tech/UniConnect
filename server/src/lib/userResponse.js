@@ -72,6 +72,13 @@ function buildUserResponse({
     role: normalizeString(user?.role),
     firstName: normalizeString(user?.firstName),
     lastName: normalizeString(user?.lastName),
+    fullName: (() => {
+      const direct = normalizeString(profile?.fullName ?? null);
+      if (direct) return direct;
+      const combined = normalizeString(`${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim());
+      if (combined) return combined;
+      return normalizeString(profile?.username ?? null);
+    })(),
     email: normalizeString(user?.email),
     username: normalizeString(profile?.username),
     university: normalizeString(resolvedUniversity),

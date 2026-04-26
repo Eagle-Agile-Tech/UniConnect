@@ -7,12 +7,27 @@ const supabaseStorage =
     require("../media/services/supabase-storage.service").default ||
     require("../media/services/supabase-storage.service");
 const notificationService = require('../notification/notification.service');
+const buildUserResponse = require('../../lib/userResponse');
+const { formatPostDTO } = require('../../utils/postDTO');
 const {
     BadRequestError,
     ConflictError,
     NotFoundError,
     ValidationError,
 } = require('../../errors')
+
+function mapCommunityForMobile(community, currentUserId) {
+    return {
+        id: community.id,
+        communityName: community.name,
+        ownerId: community.createdById,
+        description: community.description || "",
+        profilePicture: community.profileImage || null,
+        members: community._count?.members || 0,
+        university: community.createdBy?.profile?.university?.name || "general",
+        isMember: (community.members || []).some((member) => member.userId === currentUserId),
+    };
+}
 
 
 const createCommunity = async (data , userId) => {
@@ -44,7 +59,96 @@ const createCommunity = async (data , userId) => {
         },
     });
 
-    return community;
+    // Optional initial members (mobile creation flow sends this list).
+    // We add only users that exist and are CONNECTED to the creator.
+    const memberIds = Array.isArray(data?.members) ? data.members : [];
+    const cleanedMemberIds = [...new Set(memberIds)]
+        .filter((id) => typeof id === "string" && id && id !== userId);
+
+    if (cleanedMemberIds.length > 0) {
+        const existingUsers = await prisma.User.findMany({
+            where: { id: { in: cleanedMemberIds } },
+            select: { id: true },
+        });
+        const existingUserIds = new Set(existingUsers.map((u) => u.id));
+
+        const networks = await prisma.Network.findMany({
+            where: {
+                status: "CONNECTED",
+                OR: cleanedMemberIds.flatMap((targetId) => ([
+                    { userAId: userId, userBId: targetId },
+                    { userAId: targetId, userBId: userId },
+                ])),
+            },
+            select: { userAId: true, userBId: true },
+        });
+
+        const connectedToCreator = new Set();
+        for (const n of networks) {
+            if (n.userAId === userId) connectedToCreator.add(n.userBId);
+            if (n.userBId === userId) connectedToCreator.add(n.userAId);
+        }
+
+        const finalMemberIds = cleanedMemberIds
+            .filter((id) => existingUserIds.has(id))
+            .filter((id) => connectedToCreator.has(id));
+
+        if (finalMemberIds.length > 0) {
+            await prisma.CommunityMember.createMany({
+                data: finalMemberIds.map((targetUserId) => ({
+                    communityId: community.id,
+                    userId: targetUserId,
+                    role: "MEMBER",
+                })),
+                skipDuplicates: true,
+            });
+
+            await Promise.all(
+                finalMemberIds.map(async (targetUserId) => {
+                    try {
+                        await notificationService.createAndSendNotification({
+                            recipientId: targetUserId,
+                            actorId: userId,
+                            type: 'COMMUNITY',
+                            referenceId: community.id,
+                            referenceType: 'COMMUNITY',
+                            title: 'Added to community',
+                            body: `You've been added to ${community.name}`,
+                            data: { communityId: community.id, role: 'MEMBER' },
+                            io: null,
+                            onlineUsers: null,
+                        });
+                    } catch (_err) {
+                        // Best-effort: do not fail community creation due to notification issues.
+                    }
+                }),
+            );
+        }
+    }
+
+    const hydratedCommunity = await prisma.Community.findUnique({
+        where: { id: community.id },
+        include: {
+            createdBy: {
+                select: {
+                    profile: {
+                        select: {
+                            university: { select: { name: true } },
+                        },
+                    },
+                },
+            },
+            members: {
+                where: { userId },
+                select: { userId: true },
+            },
+            _count: {
+                select: { members: true },
+            },
+        },
+    });
+
+    return mapCommunityForMobile(hydratedCommunity, userId);
 }
 
 function resolveMediaType(mimetype) {
@@ -118,12 +222,15 @@ const postToCommunity = async (data , userId, files = []) => {
     }
 
     try {
-        const { post, moderationResult } = await postCreateService.createPost(
-            userId,
-            postPayload,
-        );
+        // postCreateService.createPost() can return:
+        // - { post, moderationResult } on success
+        // - { success:false, status:'REJECTED'|'PENDING', message, details } without throwing
+        //
+        // Previously we destructured { post, moderationResult }, which turns those non-success
+        // responses into { post: undefined, moderationResult: undefined } -> serialized as {}.
+        const createResult = await postCreateService.createPost(userId, postPayload);
 
-        return { post, moderationResult };
+        return createResult;
     } catch (error) {
         if (uploadedMediaIds.length > 0) {
             await prisma.media.deleteMany({
@@ -231,7 +338,7 @@ const addCommunityMember = async (data, userId) => {
 
     const community = await prisma.Community.findUnique({
         where: { id: communityId },
-        select: { id: true },
+        select: { id: true, name: true },
     });
 
     if (!community) {
@@ -313,6 +420,40 @@ const addCommunityMember = async (data, userId) => {
     return member;
 };
 
+const joinCommunity = async (communityId, userId) => {
+    if (!communityId) {
+        throw new ValidationError("communityId is required");
+    }
+
+    const community = await prisma.Community.findUnique({
+        where: { id: communityId },
+        select: { id: true, isDeleted: true },
+    });
+
+    if (!community || community.isDeleted) {
+        throw new NotFoundError("Community not found");
+    }
+
+    const existingMember = await prisma.CommunityMember.findUnique({
+        where: { communityId_userId: { communityId, userId } },
+        select: { id: true },
+    });
+
+    if (existingMember) {
+        return { joined: true };
+    }
+
+    await prisma.CommunityMember.create({
+        data: {
+            communityId,
+            userId,
+            role: "MEMBER",
+        },
+    });
+
+    return { joined: true };
+};
+
 const leaveCommunity = async (communityId, userId) => {
     if (!communityId) {
         throw new ValidationError("communityId is required");
@@ -338,11 +479,181 @@ const leaveCommunity = async (communityId, userId) => {
     return { success: true };
 };
 
+const getCommunityById = async (communityId, userId) => {
+    if (!communityId) {
+        throw new ValidationError("communityId is required");
+    }
+
+    const community = await prisma.Community.findUnique({
+        where: { id: communityId },
+        include: {
+            createdBy: {
+                select: {
+                    profile: {
+                        select: {
+                            university: { select: { name: true } },
+                        },
+                    },
+                },
+            },
+            members: {
+                where: { userId },
+                select: { userId: true },
+            },
+            _count: {
+                select: { members: true },
+            },
+        },
+    });
+
+    if (!community || community.isDeleted) {
+        throw new NotFoundError("Community not found");
+    }
+
+    return mapCommunityForMobile(community, userId);
+};
+
+const getTopCommunities = async (userId, limit = 10) => {
+    const safeLimit = Math.min(100, Math.max(1, Number(limit) || 10));
+
+    const communities = await prisma.Community.findMany({
+        where: { isDeleted: false },
+        include: {
+            createdBy: {
+                select: {
+                    profile: {
+                        select: {
+                            university: { select: { name: true } },
+                        },
+                    },
+                },
+            },
+            members: {
+                where: { userId },
+                select: { userId: true },
+            },
+            _count: {
+                select: { members: true },
+            },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 100,
+    });
+
+    return communities
+        .sort((a, b) => (b._count?.members || 0) - (a._count?.members || 0))
+        .slice(0, safeLimit)
+        .map((community) => mapCommunityForMobile(community, userId));
+};
+
+const getCommunityMembers = async (communityId) => {
+    if (!communityId) {
+        throw new ValidationError("communityId is required");
+    }
+
+    const community = await prisma.Community.findUnique({
+        where: { id: communityId },
+        select: { id: true, isDeleted: true },
+    });
+
+    if (!community || community.isDeleted) {
+        throw new NotFoundError("Community not found");
+    }
+
+    const members = await prisma.CommunityMember.findMany({
+        where: { communityId },
+        include: {
+            user: {
+                include: {
+                    profile: {
+                        include: {
+                            university: { select: { name: true } },
+                        },
+                    },
+                },
+            },
+        },
+        orderBy: { createdAt: "asc" },
+    });
+
+    return members.map((member) =>
+        buildUserResponse({
+            user: member.user,
+            profile: member.user.profile,
+        }),
+    );
+};
+
+const getCommunityPosts = async (communityId, userId, page = 1, limit = 20) => {
+    if (!communityId) {
+        throw new ValidationError("communityId is required");
+    }
+
+    const community = await prisma.Community.findUnique({
+        where: { id: communityId },
+        select: { id: true, isDeleted: true },
+    });
+
+    if (!community || community.isDeleted) {
+        throw new NotFoundError("Community not found");
+    }
+
+    const safePage = Math.max(1, Number(page) || 1);
+    const safeLimit = Math.min(100, Math.max(1, Number(limit) || 20));
+    const skip = (safePage - 1) * safeLimit;
+
+    const posts = await prisma.Post.findMany({
+        where: {
+            communityId,
+            isDeleted: false,
+            moderationStatus: "APPROVED",
+        },
+        include: {
+            author: {
+                include: {
+                    profile: true,
+                },
+            },
+            media: {
+                orderBy: { createdAt: "asc" },
+            },
+            _count: {
+                select: {
+                    comments: true,
+                    postReactions: true,
+                },
+            },
+            postReactions: userId
+                ? {
+                    where: { userId },
+                    select: { userId: true },
+                }
+                : false,
+            favorites: userId
+                ? {
+                    where: { userId },
+                    select: { userId: true },
+                }
+                : false,
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: safeLimit,
+    });
+
+    return posts.map((post) => formatPostDTO(post, userId || null));
+};
+
 module.exports = {
     createCommunity,
     postToCommunity,
     updateCommunity,
     deleteCommunity,
     addCommunityMember,
+    joinCommunity,
     leaveCommunity,
+    getCommunityById,
+    getTopCommunities,
+    getCommunityMembers,
+    getCommunityPosts,
 };
