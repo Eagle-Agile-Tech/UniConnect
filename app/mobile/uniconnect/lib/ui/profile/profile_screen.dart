@@ -97,9 +97,11 @@ class ProfileScreen extends ConsumerWidget {
 
   Widget _buildPostList(AsyncValue<List<dynamic>> postAsync, HomeViewmodelProvider postsNotifier) {
     return postAsync.when(
-      data: (posts) => ListView.builder(
+      data: (posts) => posts.isEmpty
+          ? const Center(child: Text('No posts available'))
+          :  ListView.builder(
         itemCount: posts.length,
-        itemBuilder: (context, index) => UCPostCard(post: posts[index], onLike: () => postsNotifier.toggleLike(postId: posts[index].id,), onBookmark: () => postsNotifier.bookmarkPost(postId: posts[index].id),),
+        itemBuilder: (context, index) => UCPostCard(post: posts[index], onLike: () => postsNotifier.toggleLike(postId: posts[index].id,), onBookmark: () => postsNotifier.bookmarkPost(postId: posts[index].id), onDelete: () => postsNotifier.removePost(posts[index].id),),
       ),
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, stack) => Center(child: Text('Error loading posts: $err')),

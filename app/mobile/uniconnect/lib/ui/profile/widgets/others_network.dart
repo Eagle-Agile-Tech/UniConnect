@@ -5,8 +5,10 @@ import '../../../domain/models/user/user.dart';
 import '../../../routing/routes.dart';
 import '../../../utils/enums.dart';
 import '../../../utils/helper_functions.dart';
+import '../../../utils/result.dart';
 import '../../auth/auth_state_provider.dart';
 import '../../core/theme/dimens.dart';
+import '../../network/viewmodels/network_provider.dart';
 import '../view_models/user_provider.dart';
 
 class _NetworkPill extends StatelessWidget {
@@ -85,15 +87,35 @@ class OthersNetwork extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final actionState = ref.watch(networkActionProvider(user.id));
+    final isActionInProgress = actionState.isLoading;
+
     return Wrap(
       spacing: Dimens.sm,
       runSpacing: Dimens.sm,
       children: [
         _NetworkPill(
-          onTap: user.networkStatus != null ? () {
-            ref.read(selectedUserProfileProvider.notifier).state = user;
-            context.push(Routes.networks);
-          } : null,
+          onTap: isActionInProgress
+              ? null
+              : () async {
+                  if (user.networkStatus == NetworkStatus.CONNECTED) {
+                    ref.read(selectedUserProfileProvider.notifier).state = user;
+                    context.push(Routes.networks);
+                    return;
+                  }
+                  if (user.networkStatus == NetworkStatus.PENDING) {
+                    ref.read(selectedUserProfileProvider.notifier).state = user;
+                    context.push(Routes.networks);
+                    return;
+                  }
+
+                  await _executeNetworkAction(
+                    context: context,
+                    ref: ref,
+                    action: () => ref.read(networkActionProvider(user.id).notifier).sendRequest(),
+                    successMessage: 'Network request sent',
+                  );
+                },
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -105,7 +127,13 @@ class OthersNetwork extends ConsumerWidget {
                 const SizedBox(width: Dimens.xs),
               ],
               Text(
-                user.networkStatus == NetworkStatus.CONNECTED ? 'Linked' : user.networkStatus == NetworkStatus.PENDING ? 'Sent' : 'Network',
+                isActionInProgress
+                    ? 'Please wait...'
+                    : user.networkStatus == NetworkStatus.CONNECTED
+                        ? 'Linked'
+                        : user.networkStatus == NetworkStatus.PENDING
+                            ? 'Sent'
+                            : 'Network',
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
                   color: user.networkStatus == null ? null : Theme.of(context).primaryColor,
@@ -129,6 +157,28 @@ class OthersNetwork extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Future<void> _executeNetworkAction({
+    required BuildContext context,
+    required WidgetRef ref,
+    required Future<Result> Function() action,
+    required String successMessage,
+  }) async {
+    final result = await action();
+    result.fold(
+      (_) {
+        ref.invalidate(userProvider(user.id));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(successMessage)),
+        );
+      },
+      (error, _) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error.toString())),
+        );
+      },
     );
   }
 }

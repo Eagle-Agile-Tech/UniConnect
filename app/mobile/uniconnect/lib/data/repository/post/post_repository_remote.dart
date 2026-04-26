@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uniconnect/data/repository/post/post_repository.dart';
 import 'package:uniconnect/domain/models/comment/comment.dart';
 import 'package:uniconnect/domain/models/post/post.dart';
+import 'package:uniconnect/utils/enums.dart';
 import 'package:uniconnect/utils/result.dart';
 
 import '../../service/api/api_client.dart';
@@ -144,6 +145,7 @@ class PostRepositoryRemote implements PostRepository {
       return Result.ok(posts);
     }, (error, stackTrace) => Result.error(error));
   }
+
   @override
   Future<Result<List<Post>>> getOtherUserPost(String userId) async {
     final result = await _apiClient.fetchOtherUserPost(userId);
@@ -187,13 +189,10 @@ class PostRepositoryRemote implements PostRepository {
   @override
   Future<Result<Post>> getPostById(String postId) async {
     final result = await _apiClient.fetchPostById(postId);
-    return result.fold(
-      (data) {
-        final post = Post.fromJson(data);
-        return Result.ok(post);
-      },
-      (error, stackTrace) => Result.error(error, stackTrace),
-    );
+    return result.fold((data) {
+      final post = Post.fromJson(data);
+      return Result.ok(post);
+    }, (error, stackTrace) => Result.error(error, stackTrace));
   }
 
   @override
@@ -215,7 +214,10 @@ class PostRepositoryRemote implements PostRepository {
   }
 
   @override
-  Future<Result> likePost({required String postId, required String userId}) async {
+  Future<Result> likePost({
+    required String postId,
+    required String userId,
+  }) async {
     final result = await _apiClient.likePost(postId: postId, userId: userId);
     return result.fold(
       (data) => Result.ok(data),
@@ -227,7 +229,9 @@ class PostRepositoryRemote implements PostRepository {
   Future<Result<List<Comment>>> getComments(String postId) async {
     final result = await _apiClient.fetchComments(postId);
     return result.fold((data) {
-      final comments = data.map((comment) => Comment.fromJson(comment)).toList();
+      final comments = data
+          .map((comment) => Comment.fromJson(comment))
+          .toList();
       return Result.ok(comments);
     }, (error, _) => Result.error(error));
   }
@@ -275,5 +279,24 @@ class PostRepositoryRemote implements PostRepository {
       final posts = data.map((post) => Post.fromJson(post)).toList();
       return Result.ok(posts);
     }, (error, stackTrace) => Result.error(error));
+  }
+
+  @override
+  Future<Result<void>> reportPost({
+    required String postId,
+    required ReportReason reason,
+    String? message,
+  }) async {
+    final result = await _apiClient.reportContent(
+      targetType: ReportTargetType.POST,
+      targetId: postId,
+      reason: reason,
+      message: message,
+    );
+
+    return result.fold(
+      (_) => Result.ok(null),
+      (error, stackTrace) => Result.error(error, stackTrace),
+    );
   }
 }

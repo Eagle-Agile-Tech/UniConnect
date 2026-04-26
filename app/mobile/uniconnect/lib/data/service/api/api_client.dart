@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../utils/enums.dart';
 import '../../../utils/result.dart';
 import 'routes/api_routes.dart';
 import 'token_refresher.dart';
@@ -15,16 +16,15 @@ final apiClientProvider = Provider<ApiClient>((ref) {
 class ApiClient {
   final Dio _client;
   ApiClient({Dio? client})
-    :
-      _client = client ?? Dio(BaseOptions(baseUrl: baseUrl));
+    : _client = client ?? Dio(BaseOptions(baseUrl: baseUrl));
 
   dynamic _payload(dynamic responseData) {
-    if (responseData is Map<String, dynamic> && responseData.containsKey('data')) {
+    if (responseData is Map<String, dynamic> &&
+        responseData.containsKey('data')) {
       return responseData['data'];
     }
     return responseData;
   }
-
 
   Future<Result<List<Map<String, dynamic>>>> fetchUserPost() async {
     try {
@@ -38,7 +38,9 @@ class ApiClient {
     }
   }
 
-  Future<Result<List<Map<String, dynamic>>>> fetchOtherUserPost(String userId) async {
+  Future<Result<List<Map<String, dynamic>>>> fetchOtherUserPost(
+    String userId,
+  ) async {
     try {
       final response = await _client.get('/v1/posts/user/$userId');
       final List data = response.data;
@@ -76,9 +78,7 @@ class ApiClient {
 
   Future<Result> makeNetwork(String receiverId) async {
     try {
-      await _client.post("/network/request", data: {
-        "receiverId" : receiverId
-      });
+      await _client.post("/network/request", data: {"receiverId": receiverId});
       return Result.ok('');
     } on DioException catch (e) {
       return Result.error(e);
@@ -89,9 +89,21 @@ class ApiClient {
 
   Future<Result> acceptNetwork(String requestId) async {
     try {
-      await _client.post("/network/accept", data: {
-        "receiverId" : requestId
-      });
+      await _client.post("/network/accept", data: {"receiverId": requestId});
+      return Result.ok('');
+    } on DioException catch (e) {
+      return Result.error(e);
+    } catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result> cancelNetwork(String receiverId) async {
+    try {
+      await _client.post(
+        "/network/cancel",
+        data: {"receiverId": "{$receiverId}"},
+      );
       return Result.ok('');
     } on DioException catch (e) {
       return Result.error(e);
@@ -102,9 +114,7 @@ class ApiClient {
 
   Future<Result> rejectNetwork(String requestId) async {
     try {
-      await _client.post("/network/reject", data: {
-        "requestId" : requestId
-      });
+      await _client.post("/network/reject", data: {"requestId": requestId});
       return Result.ok('');
     } on DioException catch (e) {
       return Result.error(e);
@@ -115,9 +125,7 @@ class ApiClient {
 
   Future<Result> removeNetwork(String receiverId) async {
     try {
-      await _client.delete("/network", data: {
-        "targetId" : receiverId
-      });
+      await _client.delete("/network", data: {"targetId": receiverId});
       return Result.ok('');
     } on DioException catch (e) {
       return Result.error(e);
@@ -126,12 +134,14 @@ class ApiClient {
     }
   }
 
-  Future<Result<List<Map<String,dynamic>>>> fetchUserNetworks(String userId) async {
-    try{
-      final response = await _client.get('/networks/$userId');
-      final List data = response.data;
-      return Result.ok(data.cast<Map<String,dynamic>>());
-    } on DioException catch (e){
+  Future<Result<List<Map<String, dynamic>>>> fetchUserNetworks(
+    String userId,
+  ) async {
+    try {
+      final response = await _client.get('/network/$userId');
+      final List data = response.data['data'];
+      return Result.ok(data.cast<Map<String, dynamic>>());
+    } on DioException catch (e) {
       return Result.error(e);
     }
   }
@@ -139,7 +149,7 @@ class ApiClient {
   Future<Result<List<Map<String, dynamic>>>> fetchFriends() async {
     try {
       final response = await _client.get('/network');
-      final List data = response.data['data'];
+      final List data = response.data['data']['connected'];
       return Result.ok(data.cast<Map<String, dynamic>>());
     } on DioException catch (e) {
       return Result.error(e);
@@ -174,12 +184,9 @@ class ApiClient {
       }
 
       final formData = FormData.fromMap(postData);
-      final response = await _client.post(
-        '/v1/posts/',
-        data: formData,
-      );
+      final response = await _client.post('/v1/posts/', data: formData);
 
-      return Result.ok(_payload(response.data));
+      return Result.ok('');
     } on DioException catch (e) {
       return Result.error(e);
     }
@@ -202,7 +209,7 @@ class ApiClient {
       if (payload is Map<String, dynamic>) {
         return Result.ok(payload);
       }
-      return Result.error(StateError('Invalid post payload')); 
+      return Result.error(StateError('Invalid post payload'));
     } on DioException catch (e) {
       return Result.error(e);
     }
@@ -237,10 +244,7 @@ class ApiClient {
     try {
       await _client.post(
         '/v1/posts/commentPost/$postId',
-        data: {
-          'comment': comment,
-          'createdAt': createdAt.toIso8601String(),
-        },
+        data: {'comment': comment, 'createdAt': createdAt.toIso8601String()},
       );
       return Result.ok(null);
     } on DioException catch (e) {
@@ -248,7 +252,9 @@ class ApiClient {
     }
   }
 
-  Future<Result<List<Map<String,dynamic>>>> fetchComments(String postId) async {
+  Future<Result<List<Map<String, dynamic>>>> fetchComments(
+    String postId,
+  ) async {
     try {
       final response = await _client.get('/v1/posts/comments/$postId');
       final List data = response.data['data'];
@@ -267,15 +273,21 @@ class ApiClient {
     }
   }
 
-  Future<Result> updateProfile(String? firstName, String? lastName, String? username, String? bio, File? profilePic) async {
+  Future<Result> updateProfile(
+    String? firstName,
+    String? lastName,
+    String? username,
+    String? bio,
+    File? profilePic,
+  ) async {
     try {
-      final Map<String,dynamic> change = {
+      final Map<String, dynamic> change = {
         'firstName': firstName,
         'lastName': lastName,
         'username': username,
         'bio': bio,
       };
-      if (profilePic != null){
+      if (profilePic != null) {
         final file = MultipartFile.fromFile(
           profilePic.path,
           filename: profilePic.path.split('/').last,
@@ -285,7 +297,7 @@ class ApiClient {
       final formData = FormData.fromMap(change);
       await _client.post('/updateProfile/', data: formData);
       return Result.ok('');
-    } on DioException catch (e){
+    } on DioException catch (e) {
       return Result.error(e);
     }
   }
@@ -299,19 +311,53 @@ class ApiClient {
     }
   }
 
-  Future<Result<List<Map<String, dynamic>>>> fetchBookmarks(String userId) async {
+  Future<Result<List<Map<String, dynamic>>>> fetchBookmarks(
+    String userId,
+  ) async {
     try {
       final response = await _client.get('/v1/posts/bookmarks/$userId');
-      final List data = response.data['data'];
+      final List data = response.data;
       return Result.ok(data.cast<Map<String, dynamic>>());
     } on DioException catch (e) {
       return Result.error(e);
     }
   }
 
+  Future<Result<Map<String, dynamic>>> reportContent({
+    required ReportTargetType targetType,
+    required String targetId,
+    required ReportReason reason,
+    String? message,
+  }) async {
+    try {
+      final payload = <String, dynamic>{
+        'targetType': targetType.name,
+        'targetId': targetId,
+        'reason': reason.name,
+      };
+
+      final trimmedMessage = message?.trim();
+      if (trimmedMessage != null && trimmedMessage.isNotEmpty) {
+        payload['message'] = trimmedMessage;
+      }
+
+      final response = await _client.post('/reports', data: payload);
+      final responseData = _payload(response.data);
+      if (responseData is Map<String, dynamic>) {
+        return Result.ok(responseData);
+      }
+      return Result.ok(<String, dynamic>{});
+    } on DioException catch (e) {
+      return Result.error(e);
+    } catch (e) {
+      return Result.error(e);
+    }
+  }
+
   Future<Result<List<Map<String, dynamic>>>> searchUsers(String keyWord) async {
     try {
-      final response = await _client.get('/users/profiles/username/$keyWord');      List data = response.data;
+      final response = await _client.get('/users/profiles/username/$keyWord');
+      List data = response.data;
       return Result.ok(data.cast<Map<String, dynamic>>());
     } on DioException catch (e) {
       return Result.error(e);
@@ -348,10 +394,7 @@ class ApiClient {
         );
       }
       final formData = FormData.fromMap(mapData);
-      final response = await _client.post(
-        '/createCommunity',
-        data: formData,
-      );
+      final response = await _client.post('/createCommunity', data: formData);
       // The response is expected to include id.
       return Result.ok(response.data);
     } on DioException catch (e) {
@@ -362,15 +405,15 @@ class ApiClient {
   Future<Result<Map<String, dynamic>>> fetchCommunity(String id) async {
     try {
       final response = await _client.get('/getCommunity/$id');
-      return Result.ok(response.data.cast<String,dynamic>());
+      return Result.ok(response.data.cast<String, dynamic>());
     } on DioException catch (e) {
       return Result.error(e);
     }
   }
 
   Future<Result<List<Map<String, dynamic>>>> fetchCommunityPosts(
-      String communityId,
-      ) async {
+    String communityId,
+  ) async {
     try {
       final response = await _client.get('/communityPosts/$communityId');
       final List data = response.data;
@@ -382,9 +425,9 @@ class ApiClient {
     }
   }
 
-  Future<Result<List<Map<String,dynamic>>>> fetchCommunityMembers(
-      String communityId,
-      ) async {
+  Future<Result<List<Map<String, dynamic>>>> fetchCommunityMembers(
+    String communityId,
+  ) async {
     try {
       final response = await _client.get('/communityMembers/$communityId');
       final List data = response.data;
@@ -396,8 +439,7 @@ class ApiClient {
     }
   }
 
-  Future<Result<List<Map<String,dynamic>>>> fetchTopCommunities(
-      ) async {
+  Future<Result<List<Map<String, dynamic>>>> fetchTopCommunities() async {
     try {
       final response = await _client.get('/topCommunities');
       final List data = response.data;
@@ -410,35 +452,35 @@ class ApiClient {
   }
 
   // Course
-  Future<Result<List<Map<String,dynamic>>>> fetchCourses(String id) async {
-    try{
+  Future<Result<List<Map<String, dynamic>>>> fetchCourses(String id) async {
+    try {
       final response = await _client.get('/courses/$id');
       final data = response.data as List;
       return Result.ok(data.cast<Map<String, dynamic>>());
-    } on DioException catch(e){
+    } on DioException catch (e) {
       return Result.error(e);
     }
   }
 
   // Events
   Future<Result<List<Map<String, dynamic>>>> fetchEvents(String userId) async {
-    try{
+    try {
       final response = await _client.get('users/event/$userId');
       final List data = response.data;
-      return Result.ok(data.cast<Map<String,dynamic>>());
-    } on DioException catch(e) {
+      return Result.ok(data.cast<Map<String, dynamic>>());
+    } on DioException catch (e) {
       return Result.error(e);
     }
   }
 
   // Chats
-Future<Result<Map<String, dynamic>>> getChatId(String receiverId) async {
-  try{
-    final response = await _client.get('/chats/$receiverId');
-    final Map<String,dynamic> data = response.data;
-    return Result.ok(data);
-  } on DioException catch(e) {
-    return Result.error(e);
+  Future<Result<Map<String, dynamic>>> getChatId(String receiverId) async {
+    try {
+      final response = await _client.get('/chats/$receiverId');
+      final Map<String, dynamic> data = response.data;
+      return Result.ok(data);
+    } on DioException catch (e) {
+      return Result.error(e);
+    }
   }
-}
 }

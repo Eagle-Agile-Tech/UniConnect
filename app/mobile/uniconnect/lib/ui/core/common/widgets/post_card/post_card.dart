@@ -12,10 +12,11 @@ import '../../../../../domain/models/post/post.dart';
 import '../../../theme/colors.dart';
 
 class UCPostCard extends ConsumerStatefulWidget {
-  const UCPostCard({required this.post, super.key, this.onLike, this.onBookmark});
+  const UCPostCard({required this.post, super.key, this.onLike, this.onBookmark, this.onDelete});
   final Post post;
   final VoidCallback? onLike;
   final VoidCallback? onBookmark;
+  final VoidCallback? onDelete;
 
   @override
   ConsumerState<UCPostCard> createState() => _UCPostCardState();

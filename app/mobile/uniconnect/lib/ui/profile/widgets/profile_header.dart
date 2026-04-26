@@ -9,7 +9,11 @@ import '../../../config/assets.dart';
 import '../../../domain/models/user/user.dart';
 import '../../../routing/routes.dart';
 import '../../../utils/enums.dart';
+import '../../../utils/result.dart';
+import '../../core/common/widgets/report/report_sheet.dart';
 import '../../core/theme/dimens.dart';
+import '../../network/viewmodels/network_provider.dart';
+import '../view_models/user_provider.dart';
 import 'my_network.dart';
 import 'others_network.dart' hide MyNetwork;
 
@@ -21,6 +25,7 @@ class ProfileHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final networkActionState = ref.watch(networkActionProvider(user.id));
     return Column(
       children: [
         Row(
@@ -39,42 +44,67 @@ class ProfileHeader extends ConsumerWidget {
                     icon: const Icon(Icons.settings),
                   )
                 : Row(
-              children: [
-                IconButton(
-                  onPressed: () => context.push(Routes.events(userId: user.id)),
-                  icon: const Icon(Icons.event_available_rounded),
-                ),
-                PopupMenuButton(
-                  icon: Icon(Icons.more_vert),
-                  itemBuilder: (BuildContext context) => [
-                    if (user.networkStatus == NetworkStatus.CONNECTED)
-                      PopupMenuItem(
-                        value: 'unlink',
-                        child: Text('Unlink'),
+                    children: [
+                      IconButton(
+                        onPressed: () =>
+                            context.push(Routes.events(userId: user.id)),
+                        icon: const Icon(Icons.event_available_rounded),
                       ),
-                    if (user.networkStatus == NetworkStatus.PENDING)
-                      PopupMenuItem(
-                        value: 'request',
-                        child: Text('Cancel Request'),
+                      PopupMenuButton(
+                        enabled: !networkActionState.isLoading,
+                        icon: Icon(Icons.more_vert),
+                        itemBuilder: (BuildContext context) => [
+                          if (user.networkStatus == NetworkStatus.CONNECTED)
+                            PopupMenuItem(
+                              value: 'unlink',
+                              child: Text('Unlink'),
+                            ),
+                          if (user.networkStatus == NetworkStatus.PENDING)
+                            PopupMenuItem(
+                              value: 'cancel',
+                              child: Text('Cancel Request'),
+                            ),
+                          PopupMenuItem(
+                            value: 'report',
+                            child: Text('Report User 🚩'),
+                          ),
+                        ],
+                        onSelected: (value) async {
+                          switch (value) {
+                            case 'cancel':
+                              await _performNetworkAction(
+                                context: context,
+                                ref: ref,
+                                action: () => ref
+                                    .read(
+                                      networkActionProvider(user.id).notifier,
+                                    )
+                                    .cancelRequest(),
+                                successMessage: 'Network request canceled',
+                              );
+                              break;
+                            case 'unlink':
+                              await _performNetworkAction(
+                                context: context,
+                                ref: ref,
+                                action: () => ref
+                                    .read(
+                                      networkActionProvider(user.id).notifier,
+                                    )
+                                    .removeConnection(),
+                                successMessage: 'Connection removed',
+                              );
+                              break;
+                            case 'block':
+                              break;
+                            case 'report':
+                              _openUserReportSheet(context, ref);
+                              break;
+                          }
+                        },
                       ),
-                    PopupMenuItem(
-                      value: 'report',
-                      child: Text('Report User 🚩'),
-                    ),
-                  ],
-                  onSelected: (value) {
-                    switch (value) {
-                      case 'unlink':
-                        break;
-                      case 'block':
-                        break;
-                      case 'report':
-                        break;
-                    }
-                  },
-                ),
-              ]
-            ),
+                    ],
+                  ),
           ],
         ),
         Padding(
@@ -115,21 +145,21 @@ class ProfileHeader extends ConsumerWidget {
                           style: Theme.of(context).textTheme.headlineSmall
                               ?.copyWith(fontWeight: FontWeight.bold),
                         ),
-                        if(user.role != UserRole.INSTITUTION)
-                        Text(
-                          user.university,
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(color: Theme.of(context).hintColor),
-                        ),
-                        if(user.role != UserRole.INSTITUTION)
-                        const SizedBox(height: Dimens.xs),
-                        if(user.role != UserRole.INSTITUTION)
-                        Text(
-                          user.role == UserRole.STUDENT
-                              ? user.student!.degree
-                              : user.expert!.expertise,
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
+                        if (user.role != UserRole.INSTITUTION)
+                          Text(
+                            user.university,
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(color: Theme.of(context).hintColor),
+                          ),
+                        if (user.role != UserRole.INSTITUTION)
+                          const SizedBox(height: Dimens.xs),
+                        if (user.role != UserRole.INSTITUTION)
+                          Text(
+                            user.role == UserRole.STUDENT
+                                ? user.student!.degree
+                                : user.expert!.expertise,
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
                         const SizedBox(height: Dimens.sm),
 
                         GestureDetector(
@@ -252,6 +282,8 @@ class ProfileHeader extends ConsumerWidget {
                                 Clipboard.setData(
                                   ClipboardData(text: user.bio ?? ''),
                                 );
+                              } else if (value == 'report') {
+                                _openUserReportSheet(context, null);
                               }
                             },
                           ),
@@ -277,6 +309,51 @@ class ProfileHeader extends ConsumerWidget {
           ],
         );
       },
+    );
+  }
+
+  Future<void> _performNetworkAction({
+    required BuildContext context,
+    required WidgetRef ref,
+    required Future<Result> Function() action,
+    required String successMessage,
+  }) async {
+    final result = await action();
+    result.fold(
+      (_) {
+        ref.invalidate(userProvider(user.id));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(successMessage)));
+      },
+      (error, _) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.toString())));
+      },
+    );
+  }
+
+  void _openUserReportSheet(BuildContext context, WidgetRef? ref) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (_) => ReportSheet(
+        title: 'Report User',
+        onSubmit: (reason, message) {
+          if (ref != null) {
+            return ref
+                .read(userReportActionProvider(user.id).notifier)
+                .reportUser(reason: reason, message: message);
+          }
+          final container = ProviderScope.containerOf(context, listen: false);
+          return container
+              .read(userReportActionProvider(user.id).notifier)
+              .reportUser(reason: reason, message: message);
+        },
+      ),
     );
   }
 }
