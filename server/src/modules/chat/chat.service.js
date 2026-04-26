@@ -78,7 +78,40 @@ function formatChatMessage(message) {
   };
 }
 
-function formatChat(chat, { latestFirst = false } = {}) {
+function getUnreadMessageCount(chat, currentUserId) {
+  if (!chat || !currentUserId) return 0;
+
+  const participant = (chat.participants || []).find(
+    (item) => item.userId === currentUserId
+  );
+  const lastReadAt = participant?.lastReadAt
+    ? new Date(participant.lastReadAt)
+    : null;
+
+  return (chat.messages || []).reduce((count, message) => {
+    if (!message || message.isDeleted) return count;
+    if (message.senderId === currentUserId) return count;
+
+    const myReceipt = (message.receipts || []).find(
+      (receipt) => receipt.userId === currentUserId
+    );
+
+    if (myReceipt) {
+      return myReceipt.readAt ? count : count + 1;
+    }
+
+    if (
+      lastReadAt &&
+      new Date(message.createdAt).getTime() <= lastReadAt.getTime()
+    ) {
+      return count;
+    }
+
+    return count + 1;
+  }, 0);
+}
+
+function formatChat(chat, { latestFirst = false, currentUserId } = {}) {
   if (!chat) return chat;
 
   const participants = (chat.participants || []).map((participant) => ({
@@ -87,6 +120,7 @@ function formatChat(chat, { latestFirst = false } = {}) {
   }));
 
   const messages = (chat.messages || []).map(formatChatMessage);
+  const unreadMessageCount = getUnreadMessageCount(chat, currentUserId);
   if (latestFirst) {
     messages.sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -98,7 +132,9 @@ function formatChat(chat, { latestFirst = false } = {}) {
     participants,
     messages,
     _count: {
-      messages: messages.length,
+      messages: unreadMessageCount,
+      unreadMessages: unreadMessageCount,
+      totalMessages: messages.length,
     },
   };
 }
@@ -167,7 +203,12 @@ class ChatService {
         where: { uniqueKey },
         include: chatInclude,
       });
-      if (existing) return formatChat(existing, { latestFirst: true });
+      if (existing) {
+        return formatChat(existing, {
+          latestFirst: true,
+          currentUserId: userId,
+        });
+      }
 
       const chat = await prisma.chat.create({
         data: {
@@ -182,7 +223,7 @@ class ChatService {
         include: chatInclude,
       });
 
-      return formatChat(chat, { latestFirst: true });
+      return formatChat(chat, { latestFirst: true, currentUserId: userId });
     }
 
     if (data.type === 'GROUP') {
@@ -225,7 +266,7 @@ class ChatService {
         include: chatInclude,
       });
 
-      return formatChat(chat, { latestFirst: true });
+      return formatChat(chat, { latestFirst: true, currentUserId: userId });
     }
 
     throw new BadRequestError('Invalid chat type');
@@ -347,7 +388,11 @@ async getChatIdFromUserIds(userId, otherUserId, query = {}) {
       include: chatInclude,
     });
 
-    return { chats: chats.map((chat) => formatChat(chat, { latestFirst: true })) };
+    return {
+      chats: chats.map((chat) =>
+        formatChat(chat, { latestFirst: true, currentUserId: userId })
+      ),
+    };
   }
 
   async updateGroupChat(userId, data) {
@@ -372,7 +417,7 @@ async getChatIdFromUserIds(userId, otherUserId, query = {}) {
       include: chatInclude,
     });
 
-    return formatChat(updated, { latestFirst: true });
+    return formatChat(updated, { latestFirst: true, currentUserId: userId });
   }
 
   async addParticipant(userId, data) {
@@ -417,7 +462,7 @@ async getChatIdFromUserIds(userId, otherUserId, query = {}) {
       include: chatInclude,
     });
 
-    return formatChat(updatedChat, { latestFirst: true });
+    return formatChat(updatedChat, { latestFirst: true, currentUserId: userId });
   }
 
   async removeParticipant(userId, data) {
@@ -461,7 +506,7 @@ async getChatIdFromUserIds(userId, otherUserId, query = {}) {
       include: chatInclude,
     });
 
-    return formatChat(refreshedChat, { latestFirst: true });
+    return formatChat(refreshedChat, { latestFirst: true, currentUserId: userId });
   }
 
   async listMessages(userId, data) {

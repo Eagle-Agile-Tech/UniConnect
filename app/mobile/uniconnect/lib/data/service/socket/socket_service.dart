@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:flutter/foundation.dart';
 
@@ -23,9 +22,10 @@ class SocketService {
       return;
     }
     _currentUserId = userId;
-    _socket = IO.io(baseUrl, IO.OptionBuilder()
+    final socketUrl = baseUrl.replaceFirst('/api', '');
+    _socket = IO.io(socketUrl, IO.OptionBuilder()
         .setTransports(['websocket'])
-        .setQuery({'userId': userId, 'token': token})
+        .setAuth({'token': token})
         .enableAutoConnect()
         .build()
     );
@@ -37,7 +37,6 @@ class SocketService {
     _socket?.onConnect((_) {
       debugPrint("Socket connected");
       _isConnected = true;
-      _emitEvent('user:online', {'userId': _currentUserId, 'status': true});
       _notifyListeners('connected', null);
     });
 
@@ -58,35 +57,32 @@ class SocketService {
       _notifyListeners('error', error);
     });
 
-    _socket?.on('message:received', (data) {
+    _socket?.on('chat:message:new', (data) {
       _notifyListeners('message:received', data);
     });
 
-    _socket?.on('message:sent', (data) {
+    _socket?.on('chat:message:updated', (data) {
       _notifyListeners('message:sent', data);
     });
 
-    _socket?.on('typing:start', (data) {
-      _notifyListeners('typing:start', data);
+    _socket?.on('chat:typing', (data) {
+      _notifyListeners('typing:update', data);
     });
 
-    _socket?.on('typing:stop', (data) {
-      _notifyListeners('typing:stop', data);
+    _socket?.on('chat:presence', (data) {
+      final status = (data is Map ? data['status'] : null)?.toString().toUpperCase();
+      if (status == 'ONLINE') {
+        _notifyListeners('user:online', data);
+      } else if (status == 'OFFLINE') {
+        _notifyListeners('user:offline', data);
+      }
     });
 
-    _socket?.on('user:online', (data) {
-      _notifyListeners('user:online', data);
-    });
-
-    _socket?.on('user:offline', (data) {
-      _notifyListeners('user:offline', data);
-    });
-
-    _socket?.on('message:read', (data) {
+    _socket?.on('chat:read', (data) {
       _notifyListeners('message:read', data);
     });
 
-    _socket?.on('message:delivered', (data) {
+    _socket?.on('chat:messages:delivered', (data) {
       _notifyListeners('message:delivered', data);
     });
   }
@@ -121,65 +117,51 @@ class SocketService {
   void sendMessage({
     required String chatId,
     required String content,
-    required String receiverId,
-    String? messageId,
+    String? clientMessageId,
   }) {
-    final messageData = {
-      'messageId': messageId ?? DateTime.now().millisecondsSinceEpoch.toString(),
+    _emitEvent('chat:send', {
       'chatId': chatId,
-      'senderId': _currentUserId,
-      'receiverId': receiverId,
       'content': content,
-      'timestamp': DateTime.now().toIso8601String(),
-      'status': 'sent',
-    };
-    _emitEvent('message:send', messageData);
+      if (clientMessageId != null) 'clientMessageId': clientMessageId,
+    });
   }
 
-  void sendTypingIndicator(String chatId, String receiverId, bool isTyping) {
-    _emitEvent('typing:indicator', {
+  void sendTypingIndicator(String chatId, bool isTyping) {
+    _emitEvent('chat:typing', {
       'chatId': chatId,
-      'senderId': _currentUserId,
-      'receiverId': receiverId,
       'isTyping': isTyping,
     });
   }
 
   void markMessageAsRead(String messageId, String chatId) {
-    _emitEvent('message:markRead', {
+    _emitEvent('chat:read', {
       'messageId': messageId,
       'chatId': chatId,
-      'userId': _currentUserId,
     });
   }
 
   void markMessageAsDelivered(String messageId, String chatId) {
-    _emitEvent('message:markDelivered', {
+    _emitEvent('chat:delivered', {
       'messageId': messageId,
       'chatId': chatId,
-      'userId': _currentUserId,
     });
   }
 
   void updateUserStatus(bool isOnline) {
-    _emitEvent('user:status', {
-      'userId': _currentUserId,
-      'status': isOnline,
-      'lastSeen': DateTime.now().toIso8601String(),
-    });
+    // Presence is managed by backend connect/disconnect and chat join/leave.
+    if (!isOnline) return;
   }
 
   void joinChatRoom(String chatId) {
-    _emitEvent('chat:join', {'chatId': chatId, 'userId': _currentUserId});
+    _emitEvent('chat:join', {'chatId': chatId});
   }
 
   void leaveChatRoom(String chatId) {
-    _emitEvent('chat:leave', {'chatId': chatId, 'userId': _currentUserId});
+    _emitEvent('chat:leave', {'chatId': chatId});
   }
 
   void disconnect() {
     if (_socket != null) {
-      updateUserStatus(false);
       _socket?.disconnect();
       _socket?.dispose();
       _socket = null;
