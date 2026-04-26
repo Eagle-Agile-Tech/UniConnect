@@ -26,6 +26,26 @@ class CommunityScreen extends ConsumerWidget {
     final communityAsync = ref.watch(singleCommunityProvider(communityId));
     final postAsync = ref.watch(communityPostsProvider(communityId));
     final memberAsync = ref.watch(communityMembersProvider(communityId));
+    final membershipAction = ref.watch(
+      communityMembershipActionProvider(communityId),
+    );
+
+    ref.listen(communityMembershipActionProvider(communityId), (prev, next) {
+      next.whenOrNull(
+        data: (_) {
+          ref.invalidate(singleCommunityProvider(communityId));
+          ref.invalidate(communityMembersProvider(communityId));
+          ref.invalidate(communityPostsProvider(communityId));
+        },
+        error: (error, stackTrace) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Action failed: $error')),
+          );
+        },
+      );
+    });
+
+    final isMembershipLoading = membershipAction is AsyncLoading;
     return DefaultTabController(
       length: 2,
       child: Scaffold(
@@ -54,9 +74,16 @@ class CommunityScreen extends ConsumerWidget {
                     ],
                     onSelected: (value) {
                       switch (value) {
-                        case 'create':
+                        case 'post':
+                          context.push(Routes.communityCreatePost(communityId));
                           break;
                         case 'leave':
+                          ref
+                              .read(
+                                communityMembershipActionProvider(communityId)
+                                    .notifier,
+                              )
+                              .leave();
                           break;
                       }
                     },
@@ -74,6 +101,13 @@ class CommunityScreen extends ConsumerWidget {
                             _buildHeaderImage(
                               data.profilePicture,
                               data.isMember,
+                              isMembershipLoading,
+                              () => ref
+                                  .read(
+                                    communityMembershipActionProvider(communityId)
+                                        .notifier,
+                                  )
+                                  .join(),
                             ),
                             const SizedBox(height: Dimens.spaceBtwItems),
                             _buildCommunityInfo(context, data),
@@ -121,8 +155,9 @@ class CommunityScreen extends ConsumerWidget {
               ),
               memberAsync.when(
                 data: (List<User> user) {
+                  final ownerId = communityAsync.value?.ownerId;
                   return ListView.builder(
-                    itemCount: 10,
+                    itemCount: user.length,
                     itemBuilder: (context, index) => Padding(
                       padding: const EdgeInsets.all(Dimens.md),
                       child: ListTile(
@@ -134,7 +169,7 @@ class CommunityScreen extends ConsumerWidget {
                         title: Text(user[index].fullName),
                         subtitle: Text('@${user[index].username}'),
                         trailing:
-                            communityAsync.value!.ownerId == user[index].id
+                            ownerId != null && ownerId == user[index].id
                             ? Container(
                                 padding: EdgeInsets.all(Dimens.sm),
                                 decoration: BoxDecoration(
@@ -161,7 +196,12 @@ class CommunityScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeaderImage(String? profileUrl, bool isMember) {
+  Widget _buildHeaderImage(
+    String? profileUrl,
+    bool isMember,
+    bool isLoading,
+    VoidCallback onJoin,
+  ) {
     return Stack(
       children: [
         Container(
@@ -204,7 +244,7 @@ class CommunityScreen extends ConsumerWidget {
             bottom: 0,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.purple),
-              onPressed: () {},
+              onPressed: isLoading ? null : onJoin,
               child: const Text('Join', style: TextStyle(color: Colors.white)),
             ),
           ),

@@ -35,6 +35,8 @@ abstract final class Routes {
   static const String userProfilePath = '/userProfile/:userId';
   static String community(String id) => '/community/$id';
   static const String communityScreen =  '/community/:id';
+  static String communityCreatePost(String id) => '/community/$id/createPost';
+  static const String communityCreatePostScreen = '/community/:id/createPost';
 
   // Expert
   static const String expertSignup = '/expert/signup';

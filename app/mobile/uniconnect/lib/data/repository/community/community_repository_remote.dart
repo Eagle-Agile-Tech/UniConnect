@@ -32,6 +32,7 @@ class CommunityRepositoryRemote implements CommunityRepository {
       name: name,
       description: description,
       members: members,
+      profileImage: profileImage,
     );
     return result.fold((data) {
       return Result.ok(data['id']);
@@ -61,5 +62,42 @@ class CommunityRepositoryRemote implements CommunityRepository {
           .toList();
       return Result.ok(communities);
     }, (error, stackTrace) => Result.error(error, stackTrace));
+  }
+
+  @override
+  Future<Result<void>> joinCommunity(String communityId) async {
+    final result = await _client.joinCommunity(communityId);
+    return result.fold(
+      (_) => Result.ok(null),
+      (error, stackTrace) => Result.error(error, stackTrace),
+    );
+  }
+
+  @override
+  Future<Result<void>> leaveCommunity(String communityId) async {
+    final result = await _client.leaveCommunity(communityId);
+    return result.fold(
+      (_) => Result.ok(null),
+      (error, stackTrace) => Result.error(error, stackTrace),
+    );
+  }
+
+  @override
+  Future<Result<Map<String, dynamic>>> postToCommunity({
+    required String communityId,
+    required String content,
+    List<String>? tags,
+    List<File>? media,
+  }) async {
+    final result = await _client.postToCommunity(
+      communityId: communityId,
+      content: content,
+      tags: tags,
+      media: media,
+    );
+    return result.fold(
+      (data) => Result.ok(data),
+      (error, stackTrace) => Result.error(error, stackTrace),
+    );
   }
 }

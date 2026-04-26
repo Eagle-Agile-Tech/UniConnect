@@ -12,4 +12,14 @@ abstract class CommunityRepository{
   });
   Future<Result<Community>> getCommunity(String id);
   Future<Result<List<Community>>> getTopCommunities();
+
+  Future<Result<void>> joinCommunity(String communityId);
+  Future<Result<void>> leaveCommunity(String communityId);
+
+  Future<Result<Map<String, dynamic>>> postToCommunity({
+    required String communityId,
+    required String content,
+    List<String>? tags,
+    List<File>? media,
+  });
 }

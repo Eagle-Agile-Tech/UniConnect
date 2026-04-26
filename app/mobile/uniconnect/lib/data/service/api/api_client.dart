@@ -470,7 +470,7 @@ class ApiClient {
         );
       }
       final formData = FormData.fromMap(mapData);
-      final response = await _client.post('/createCommunity', data: formData);
+      final response = await _client.post('/communities', data: formData);
       // The response is expected to include id.
       return Result.ok(response.data);
     } on DioException catch (e) {
@@ -480,7 +480,7 @@ class ApiClient {
 
   Future<Result<Map<String, dynamic>>> fetchCommunity(String id) async {
     try {
-      final response = await _client.get('/getCommunity/$id');
+      final response = await _client.get('/communities/$id');
       return Result.ok(response.data.cast<String, dynamic>());
     } on DioException catch (e) {
       return Result.error(e);
@@ -491,7 +491,7 @@ class ApiClient {
     String communityId,
   ) async {
     try {
-      final response = await _client.get('/communityPosts/$communityId');
+      final response = await _client.get('/communities/$communityId/posts');
       final List data = response.data;
       return Result.ok(data.cast<Map<String, dynamic>>());
     } on DioException catch (e) {
@@ -505,7 +505,7 @@ class ApiClient {
     String communityId,
   ) async {
     try {
-      final response = await _client.get('/communityMembers/$communityId');
+      final response = await _client.get('/communities/$communityId/members');
       final List data = response.data;
       return Result.ok(data.cast<Map<String, dynamic>>());
     } on DioException catch (e) {
@@ -517,9 +517,82 @@ class ApiClient {
 
   Future<Result<List<Map<String, dynamic>>>> fetchTopCommunities() async {
     try {
-      final response = await _client.get('/topCommunities');
+      final response = await _client.get('/communities/top');
       final List data = response.data;
       return Result.ok(data.cast<Map<String, dynamic>>());
+    } on DioException catch (e) {
+      return Result.error(e);
+    } catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<Map<String, dynamic>>> joinCommunity(String communityId) async {
+    try {
+      final response = await _client.post(
+        '/communities/join',
+        data: {'communityId': communityId},
+      );
+      final payload = _payload(response.data);
+      return Result.ok(Map<String, dynamic>.from(payload as Map));
+    } on DioException catch (e) {
+      return Result.error(e);
+    } catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<Map<String, dynamic>>> leaveCommunity(String communityId) async {
+    try {
+      final response = await _client.post(
+        '/communities/leave',
+        data: {'communityId': communityId},
+      );
+      final payload = _payload(response.data);
+      return Result.ok(Map<String, dynamic>.from(payload as Map));
+    } on DioException catch (e) {
+      return Result.error(e);
+    } catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<Map<String, dynamic>>> postToCommunity({
+    required String communityId,
+    required String content,
+    List<String>? tags,
+    List<File>? media,
+    String visibility = 'PUBLIC',
+    String? category,
+  }) async {
+    try {
+      final mapData = <String, dynamic>{
+        'communityId': communityId,
+        'content': content,
+        'visibility': visibility,
+        // The backend accepts `tags` as JSON string or comma-separated string.
+        if (tags != null) 'tags': jsonEncode(tags),
+        if (category != null) 'category': category,
+      };
+
+      if (media != null && media.isNotEmpty) {
+        mapData['media'] = await Future.wait(
+          media.map(
+            (file) => MultipartFile.fromFile(
+              file.path,
+              filename: file.path.split('/').last,
+            ),
+          ),
+        );
+      }
+
+      final response = await _client.post(
+        '/communities/posts',
+        data: FormData.fromMap(mapData),
+      );
+
+      final payload = _payload(response.data);
+      return Result.ok(Map<String, dynamic>.from(payload as Map));
     } on DioException catch (e) {
       return Result.error(e);
     } catch (e) {

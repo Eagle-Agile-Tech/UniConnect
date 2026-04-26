@@ -24,6 +24,7 @@ import '../ui/auth/auth_state_provider.dart';
 import '../ui/auth/onboarding/verify_identity/verify_identity.dart';
 import '../ui/community/community_form.dart';
 import '../ui/community/community_screen.dart';
+import '../ui/community/create_community_post.dart';
 import '../ui/community/explore_community.dart';
 import '../ui/network/network_screen.dart';
 import '../ui/profile/profile_screen.dart';
@@ -177,6 +178,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           final id = state.pathParameters['id']!;
           final isCreated = state.extra as bool;
           return CommunityScreen(communityId: id, isCreated: isCreated);
+        },
+      ),
+      GoRoute(
+        path: Routes.communityCreatePostScreen,
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return CreateCommunityPostScreen(communityId: id);
         },
       ),
       GoRoute(
