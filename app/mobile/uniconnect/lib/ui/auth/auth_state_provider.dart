@@ -177,7 +177,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       profilePicture,
     );
     return result.fold((user) {
-      AuthState(user: user);
+      state = AsyncData(AuthState(user: user));
       return null;
     }, (error, stackTrace) => Result.error(error) as Err);
   }

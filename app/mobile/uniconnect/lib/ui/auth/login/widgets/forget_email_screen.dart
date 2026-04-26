@@ -57,7 +57,7 @@ class _VerifyEmailScreen extends ConsumerState<ForgetEmailScreen>{
                 controller: _passwordController,
                 validator: (value) => UCValidator.validatePassword(value),
                 obscureText: _isPassVisible,
-                decoration: InputDecoration(labelText: 'Password',suffixIcon: IconButton(
+                decoration: InputDecoration(labelText: 'New Password',suffixIcon: IconButton(
                   onPressed: () {
                     setState(() {
                       _isPassVisible = !_isPassVisible;

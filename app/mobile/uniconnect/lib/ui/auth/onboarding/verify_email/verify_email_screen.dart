@@ -38,7 +38,7 @@ class _VerifyEmailScreen extends ConsumerState<VerifyEmailScreen>{
                 endIndent: 100,
               ),
               SizedBox(height: Dimens.spaceBtwItems),
-              Text('We have sent an email with with your code to:'),
+              Text('We have sent a code to your email:'),
               Text(onboard.email),
               SizedBox(height: Dimens.spaceBtwSections),
               OtpForm(

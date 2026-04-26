@@ -110,7 +110,7 @@ class AuthApiClient {
         'yearOfStudy': currentYear,
         'expectedGraduationYear': expectedGraduationYear.toIso8601String(),
         'bio': bio,
-        'interests': interests,
+        'interests': interests ?? [],
       };
 
       if (profilePicture != null) {
@@ -202,13 +202,14 @@ class AuthApiClient {
   }
 
   // Expert
-  Future<Result<dynamic>> registerExpert(
+  Future<Result> registerExpert(
     String firstName,
     String lastName,
     String email,
     String university,
     String uniCode,
     String password,
+    String confirmPassword,
   ) async {
     try {
       // Note: Expert registration might need checking in backend
@@ -222,6 +223,7 @@ class AuthApiClient {
           'university': university,
           'uniCode': uniCode,
           'password': password,
+          'passwordConfirm': confirmPassword,
           'role': 'expert',
         },
       );

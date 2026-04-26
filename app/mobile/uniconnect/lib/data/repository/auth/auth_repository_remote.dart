@@ -171,13 +171,14 @@ class AuthRepositoryRemote implements AuthRepository {
 
   // Expert
   @override
-  Future<Result<String>> registerExpert(
+  Future<Result> registerExpert(
     String firstName,
     String lastName,
     String email,
     String university,
     String uniCode,
     String password,
+    String confirmPassword,
   ) async {
     final result = await _authClient.registerExpert(
       firstName,
@@ -186,11 +187,9 @@ class AuthRepositoryRemote implements AuthRepository {
       university,
       uniCode,
       password,
+      confirmPassword,
     );
-    return result.fold(
-      (data) => Result.ok(data['userId'] as String),
-      (error, stackTrace) => Result.error(error),
-    );
+    return result;
   }
 
   @override

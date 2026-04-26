@@ -44,7 +44,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
     ref.listen(createPostViewModelProvider, (previous, next) {
       next.whenOrNull(
         data: (_) {
-          ref.read(homeViewModelProvider.notifier).refreshFeed();
+          ref.read(homeViewModelProvider(ref.read(authNotifierProvider).value!.user!.id).notifier).refreshFeed();
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(const SnackBar(content: Text('Post shared!')));

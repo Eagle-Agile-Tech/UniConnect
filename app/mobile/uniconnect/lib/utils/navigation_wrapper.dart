@@ -27,9 +27,9 @@ class _NavigationWrapperState extends State<NavigationWrapper> {
       selectedIcon: Icon(Icons.explore),
     ),
     const NavigationDestination(
-      icon: Badge(label: Text('5'), child: Icon(Icons.chat_bubble_outline)),
+      icon: Icon(Icons.chat_bubble_outline),
       label: 'Message',
-      selectedIcon: Badge(label: Text('5'), child: Icon(Icons.chat_bubble)),
+      selectedIcon: Icon(Icons.chat_bubble),
     ),
     const NavigationDestination(
       icon: Icon(Icons.notifications_none),
