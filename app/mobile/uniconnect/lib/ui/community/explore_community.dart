@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -48,7 +50,7 @@ class ExploreCommunityScreen extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(
                   horizontal: Dimens.defaultSpace,
                 ),
-                itemCount: 5,
+                itemCount: math.min(5, topCommunities.length),
                 separatorBuilder: (context, index) =>
                     const SizedBox(height: 12),
                 itemBuilder: (context, index) {
