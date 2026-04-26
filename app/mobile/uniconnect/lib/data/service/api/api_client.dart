@@ -26,6 +26,22 @@ class ApiClient {
     return responseData;
   }
 
+  List<dynamic>? _extractListPayload(dynamic payload) {
+    if (payload is List) {
+      return payload;
+    }
+    if (payload is Map<String, dynamic>) {
+      const listKeys = ['events', 'items', 'results', 'data'];
+      for (final key in listKeys) {
+        final value = payload[key];
+        if (value is List) {
+          return value;
+        }
+      }
+    }
+    return null;
+  }
+
   Future<Result<List<Map<String, dynamic>>>> fetchUserPost() async {
     try {
       final response = await _client.get('/v1/posts/me');
@@ -184,7 +200,7 @@ class ApiClient {
       }
 
       final formData = FormData.fromMap(postData);
-      final response = await _client.post('/v1/posts/', data: formData);
+      await _client.post('/v1/posts/', data: formData);
 
       return Result.ok('');
     } on DioException catch (e) {
@@ -235,30 +251,90 @@ class ApiClient {
     }
   }
 
-  //todo: handle replies
-  Future<Result> commentOnPost({
+  Future<Result<Map<String, dynamic>>> commentOnPost({
     required String postId,
     required String comment,
     required DateTime createdAt,
+    String? parentCommentId,
   }) async {
     try {
-      await _client.post(
+      final response = await _client.post(
         '/v1/posts/commentPost/$postId',
-        data: {'comment': comment, 'createdAt': createdAt.toIso8601String()},
+        data: {
+          'comment': comment,
+          'createdAt': createdAt.toIso8601String(),
+          if (parentCommentId != null) 'parentCommentId': parentCommentId,
+        },
       );
-      return Result.ok(null);
+
+      final payload = _payload(response.data);
+      if (payload is Map<String, dynamic>) {
+        return Result.ok(payload);
+      }
+
+      return Result.error(StateError('Invalid comment payload'));
     } on DioException catch (e) {
       return Result.error(e);
     }
   }
 
-  Future<Result<List<Map<String, dynamic>>>> fetchComments(
-    String postId,
-  ) async {
+  Future<Result<Map<String, dynamic>>> fetchPaginatedComments({
+    required String postId,
+    String? cursor,
+    int limit = 10,
+  }) async {
     try {
-      final response = await _client.get('/v1/posts/comments/$postId');
-      final List data = response.data['data'];
-      return Result.ok(data.cast<Map<String, dynamic>>());
+      final response = await _client.get(
+        '/v1/posts/comments/$postId/paginated',
+        queryParameters: {'limit': limit, if (cursor != null) 'cursor': cursor},
+      );
+
+      if (response.data is Map<String, dynamic>) {
+        return Result.ok(Map<String, dynamic>.from(response.data as Map));
+      }
+
+      return Result.error(StateError('Invalid paginated comments payload'));
+    } on DioException catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<Map<String, dynamic>>> fetchCommentReplies({
+    required String commentId,
+    String? cursor,
+    int limit = 5,
+  }) async {
+    try {
+      final response = await _client.get(
+        '/v1/posts/comments/$commentId/replies',
+        queryParameters: {'limit': limit, if (cursor != null) 'cursor': cursor},
+      );
+
+      if (response.data is Map<String, dynamic>) {
+        return Result.ok(Map<String, dynamic>.from(response.data as Map));
+      }
+
+      return Result.error(StateError('Invalid comment replies payload'));
+    } on DioException catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<Map<String, dynamic>>> toggleCommentReaction({
+    required String commentId,
+    String type = 'LIKE',
+  }) async {
+    try {
+      final response = await _client.post(
+        '/v1/posts/comments/$commentId/reactions',
+        data: {'type': type},
+      );
+      final payload = _payload(response.data);
+      if (payload is Map<String, dynamic>) {
+        return Result.ok(payload);
+      }
+
+      return Result.error(StateError('Invalid comment reaction payload'));
     } on DioException catch (e) {
       return Result.error(e);
     }
@@ -462,12 +538,230 @@ class ApiClient {
     }
   }
 
-  // Events
-  Future<Result<List<Map<String, dynamic>>>> fetchEvents(String userId) async {
+  Future<Result<List<Map<String, dynamic>>>> fetchAllEvents({
+    String? search,
+    String? university,
+    DateTime? eventDay,
+    String? authorId,
+    int page = 1,
+    int limit = 10,
+  }) async {
     try {
-      final response = await _client.get('users/event/$userId');
-      final List data = response.data;
-      return Result.ok(data.cast<Map<String, dynamic>>());
+      final queryParams = {
+        'page': page,
+        'limit': limit,
+        if (search != null) 'search': search,
+        if (university != null) 'university': university,
+        if (eventDay != null) 'eventDay': eventDay.toIso8601String(),
+        if (authorId != null) 'authorId': authorId,
+      };
+      final response = await _client.get(
+        '/events',
+        queryParameters: queryParams,
+      );
+      final payload = _payload(response.data);
+      final listPayload = _extractListPayload(payload);
+      if (listPayload == null) {
+        return Result.error(StateError('Invalid events payload'));
+      }
+      return Result.ok(listPayload.cast<Map<String, dynamic>>());
+    } on DioException catch (e) {
+      return Result.error(e);
+    } catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<List<Map<String, dynamic>>>> fetchTrendingEvents({
+    String? university,
+    DateTime? from,
+    DateTime? to,
+    int page = 1,
+    int limit = 10,
+  }) async {
+    try {
+      final queryParams = {
+        'page': page,
+        'limit': limit,
+        if (university != null) 'university': university,
+        if (from != null) 'from': from.toIso8601String(),
+        if (to != null) 'to': to.toIso8601String(),
+      };
+      final response = await _client.get(
+        '/events/trending',
+        queryParameters: queryParams,
+      );
+      final payload = _payload(response.data);
+      final listPayload = _extractListPayload(payload);
+      if (listPayload == null) {
+        return Result.error(StateError('Invalid trending events payload'));
+      }
+      return Result.ok(listPayload.cast<Map<String, dynamic>>());
+    } on DioException catch (e) {
+      return Result.error(e);
+    } catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<List<Map<String, dynamic>>>> fetchPublicUserEvents(
+    String userId, {
+    int page = 1,
+    int limit = 10,
+  }) async {
+    try {
+      final response = await _client.get(
+        '/events/user/$userId',
+        queryParameters: {'page': page, 'limit': limit},
+      );
+      final payload = _payload(response.data);
+      final listPayload = _extractListPayload(payload);
+      if (listPayload == null) {
+        return Result.error(StateError('Invalid user events payload'));
+      }
+      return Result.ok(listPayload.cast<Map<String, dynamic>>());
+    } on DioException catch (e) {
+      return Result.error(e);
+    } catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<List<Map<String, dynamic>>>> fetchMyEvents({
+    int page = 1,
+    int limit = 10,
+  }) async {
+    try {
+      final response = await _client.get(
+        '/events/me',
+        queryParameters: {'page': page, 'limit': limit},
+      );
+      final payload = _payload(response.data);
+      final listPayload = _extractListPayload(payload);
+      if (listPayload == null) {
+        return Result.error(StateError('Invalid my events payload'));
+      }
+      return Result.ok(listPayload.cast<Map<String, dynamic>>());
+    } on DioException catch (e) {
+      return Result.error(e);
+    } catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<Map<String, dynamic>>> fetchEventById(String id) async {
+    try {
+      final response = await _client.get('/events/$id');
+      final payload = _payload(response.data);
+      if (payload is Map<String, dynamic>) {
+        return Result.ok(payload);
+      }
+      return Result.error(StateError('Invalid event payload'));
+    } on DioException catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<void>> viewEvent(String id) async {
+    try {
+      await _client.post('/events/$id/view');
+      return Result.ok(null);
+    } on DioException catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<Map<String, dynamic>>> registerForEvent(String id) async {
+    try {
+      final response = await _client.post('/events/$id/register');
+      final payload = _payload(response.data);
+      if (payload is Map<String, dynamic>) {
+        return Result.ok(payload);
+      }
+      return Result.ok(<String, dynamic>{});
+    } on DioException catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<void>> cancelEventRegistration(String id) async {
+    try {
+      await _client.post('/events/$id/cancel-registration');
+      return Result.ok(null);
+    } on DioException catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<Map<String, dynamic>>> createEvent({
+    required String title,
+    required String description,
+    required DateTime starts,
+    required DateTime ends,
+    required DateTime eventDay,
+    required String location,
+    required String university,
+  }) async {
+    try {
+      final response = await _client.post(
+        '/events',
+        data: {
+          'title': title,
+          'description': description,
+          'starts': starts.toIso8601String(),
+          'ends': ends.toIso8601String(),
+          'eventDay': eventDay.toIso8601String(),
+          'location': location,
+          'university': university,
+        },
+      );
+      final responseData = _payload(response.data);
+      if (responseData is Map<String, dynamic>) {
+        return Result.ok(responseData);
+      }
+      return Result.ok(<String, dynamic>{});
+    } on DioException catch (e) {
+      return Result.error(e);
+    } catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<Map<String, dynamic>>> updateEvent(
+    String id, {
+    String? title,
+    String? description,
+    DateTime? starts,
+    DateTime? ends,
+    DateTime? eventDay,
+    String? location,
+    String? university,
+  }) async {
+    try {
+      final data = {
+        if (title != null) 'title': title,
+        if (description != null) 'description': description,
+        if (starts != null) 'starts': starts.toIso8601String(),
+        if (ends != null) 'ends': ends.toIso8601String(),
+        if (eventDay != null) 'eventDay': eventDay.toIso8601String(),
+        if (location != null) 'location': location,
+        if (university != null) 'university': university,
+      };
+      final response = await _client.patch('/events/$id', data: data);
+      final responseData = _payload(response.data);
+      if (responseData is Map<String, dynamic>) {
+        return Result.ok(responseData);
+      }
+      return Result.error(StateError('Invalid update response'));
+    } on DioException catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<void>> deleteEvent(String id) async {
+    try {
+      await _client.delete('/events/$id');
+      return Result.ok(null);
     } on DioException catch (e) {
       return Result.error(e);
     }
