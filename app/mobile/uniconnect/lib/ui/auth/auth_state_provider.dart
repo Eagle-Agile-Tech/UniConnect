@@ -123,28 +123,6 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     }
   }
 
-  Future<Result<String?>> signInWithMicrosoft() async {
-    state = const AsyncLoading();
-    final result = await _onborader.signInWithMicrosoft();
-    return result.fold(
-          (user) async {
-        if (user != null) {
-          state = AsyncData(AuthState(user: user));
-          await Future.delayed(const Duration(milliseconds: 500));
-          _chat.initialize();
-          return Result.ok(null);
-        } else {
-          state = const AsyncData(AuthState(user: null));
-          return Result.ok('Proceed');
-        }
-      },
-          (error, _) {
-        state = const AsyncData(AuthState(user: null));
-        return Result.error(error);
-      },
-    );
-  }
-
   Future<bool> logout() async {
     final result = await _repo.logout();
     if (result) {

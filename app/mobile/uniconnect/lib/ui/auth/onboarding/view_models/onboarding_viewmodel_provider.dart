@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter_appauth/flutter_appauth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uniconnect/config/dummy_data.dart';
 import 'package:uniconnect/domain/models/onboarding/onboarding_state.dart';
@@ -102,48 +101,6 @@ class OnboardingViewmodel extends Notifier<OnboardingState> {
       return Result.ok(data);
     }, (error, stackTrace) => Result.error(error),);
 
-  }
-
-  Future<Result<User?>> signInWithMicrosoft() async {
-    final FlutterAppAuth _appAuth = FlutterAppAuth();
-
-    const String _clientId = '6cd2822a-b462-4014-baed-d7dd66f8ebd3';
-
-    // The redirect URI must match what's registered in Azure portal
-     const String _redirectUrl =
-        "msauth://com.example.uniconnect/VzSiQcXRmi2kyjzcA%2BmYLEtbGVs%3D";
-
-
-    /// Perform Microsoft login and return tokens
-    try{
-      final result = await _appAuth.authorizeAndExchangeCode(
-          AuthorizationTokenRequest(
-            _clientId,
-            _redirectUrl,
-            scopes: ['openid', 'profile', 'offline_access', 'User.Read'],
-            serviceConfiguration: const AuthorizationServiceConfiguration(
-              authorizationEndpoint:
-              'https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
-              tokenEndpoint:
-              'https://login.microsoftonline.com/common/oauth2/v2.0/token',
-            ),
-            promptValues: ['login'],
-          )
-      );
-
-      if (result != null) {
-        print('✅ Login successful!');
-        print('Access Token: ${result.accessToken}');
-        print('ID Token: ${result.idToken}');
-        return Result.ok(null);
-      } else {
-        print('⚠️ Authorization canceled or failed.');
-        return Result.ok(null);
-      }
-      } on Exception catch (e) {
-        print('❌ Login error: $e');
-        return Result.ok(null);
-      }
   }
 
   Future<Err?> verifyId(File front, File back) async {
