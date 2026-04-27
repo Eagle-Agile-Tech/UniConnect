@@ -78,6 +78,37 @@ generator client {
 
 ---
 
+## Team Seed Commands
+
+A reusable team seed script is available at `server/src/scripts/seedDatabase.js`.
+
+Run from `server/`:
+
+```bash
+npm run db:seed
+```
+
+List supported tables:
+
+```bash
+npm run db:seed:list
+```
+
+Seed only one or more specific tables (dependencies are auto-seeded):
+
+```bash
+node src/scripts/seedDatabase.js --table User
+node src/scripts/seedDatabase.js --table Post,CommentReaction
+```
+
+Notes:
+- The script uses deterministic IDs and `upsert`, so it is safe to run repeatedly.
+- It inserts broad test coverage across enum states and relations.
+- It includes more than 20 rows in at least one table (`PostReaction`, `Notification`, `UserInteraction`) for stress testing.
+- Default password for seeded users: `SeedPass123!`
+
+---
+
 ## Key Models
 
 ### User

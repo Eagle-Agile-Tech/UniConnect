@@ -1,6 +1,6 @@
 require("../config/env");
 
-const { PrismaClient } = require("@prisma/client");
+const { PrismaClient } = require("../node_modules/.prisma/client");
 const { PrismaPg } = require("@prisma/adapter-pg");
 const { Pool } = require("pg");
 const { isProduction } = require("../config/env");
