@@ -448,7 +448,7 @@ class ApiClient {
       return Result.error(e);
     }
   }
-
+  
   // Community
   Future<Result<Map<String, dynamic>>> createCommunity({
     required String name,
@@ -457,18 +457,27 @@ class ApiClient {
     File? profileImage,
   }) async {
     try {
-      final mapData = {
-        'name': name,
-        'description': description,
-        'members': members,
-      };
+      final formData = FormData();
+
+      formData.fields.add(MapEntry('name', name));
+      formData.fields.add(MapEntry('description', description));
+
+      for (final member in members) {
+        formData.fields.add(MapEntry('members[]', member));
+      }
+
       if (profileImage != null) {
-        mapData['profileImage'] = await MultipartFile.fromFile(
-          profileImage.path,
-          filename: profileImage.path.split('/').last,
+        formData.files.add(
+          MapEntry(
+            'profileImage',
+            await MultipartFile.fromFile(
+              profileImage.path,
+              filename: profileImage.path.split('/').last,
+            ),
+          ),
         );
       }
-      final formData = FormData.fromMap(mapData);
+
       final response = await _client.post('/communities', data: formData);
       // The response is expected to include id.
       return Result.ok(response.data);

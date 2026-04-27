@@ -180,11 +180,6 @@ class _SignupScreenState extends ConsumerState<ExpertSignupScreen> {
                       ),
                     ),
                   ),
-
-                  const SizedBox(height: 24),
-                  const FormDivider(),
-                  const SizedBox(height: 24),
-                  const SignInWith(),
                 ],
               ),
             ),

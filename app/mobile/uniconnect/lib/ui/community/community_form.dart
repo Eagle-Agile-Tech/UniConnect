@@ -223,7 +223,7 @@ class _CreateCommunityScreenState extends ConsumerState<CreateCommunityScreen> {
                     ),
                     child: Text('Create Community'),
                   ),
-                  const SizedBox(height: Dimens.spaceBtwItems), // Add bottom padding
+                  const SizedBox(height: Dimens.spaceBtwItems),
                 ],
               ),
             ),

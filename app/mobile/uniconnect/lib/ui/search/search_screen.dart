@@ -12,10 +12,6 @@ import 'package:uniconnect/ui/search/viewmodels/search_viewmodel_provider.dart';
 enum SearchTab {
   users,
   posts,
-  hashtags,
-  jobs,
-  hackathons,
-  scholarships,
 }
 
 extension SearchTabExtension on SearchTab {
@@ -25,14 +21,6 @@ extension SearchTabExtension on SearchTab {
         return 'Users';
       case SearchTab.posts:
         return 'Posts';
-      case SearchTab.hashtags:
-        return 'Hashtags';
-      case SearchTab.jobs:
-        return 'Jobs';
-      case SearchTab.hackathons:
-        return 'Hackathons';
-      case SearchTab.scholarships:
-        return 'Scholarships';
     }
   }
 
@@ -42,14 +30,6 @@ extension SearchTabExtension on SearchTab {
         return Icons.people;
       case SearchTab.posts:
         return Icons.article;
-      case SearchTab.hashtags:
-        return Icons.tag;
-      case SearchTab.jobs:
-        return Icons.work;
-      case SearchTab.hackathons:
-        return Icons.code;
-      case SearchTab.scholarships:
-        return Icons.school;
     }
   }
 }
@@ -89,18 +69,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         break;
       case SearchTab.posts:
         ref.read(postSearchProvider.notifier).searchPost(value);
-        break;
-      case SearchTab.hashtags:
-        ref.read(userSearchProvider.notifier).searchUser(value);
-        break;
-      case SearchTab.jobs:
-        ref.read(userSearchProvider.notifier).searchUser(value);
-        break;
-      case SearchTab.hackathons:
-        ref.read(userSearchProvider.notifier).searchUser(value);
-        break;
-      case SearchTab.scholarships:
-        ref.read(userSearchProvider.notifier).searchUser(value);
         break;
     }
   }
@@ -213,14 +181,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         return _buildUsersContent();
       case SearchTab.posts:
         return _buildPostsContent();
-      case SearchTab.hashtags:
-        return _buildHashtagsContent();
-      case SearchTab.jobs:
-        return _buildJobsContent();
-      case SearchTab.hackathons:
-        return _buildHackathonsContent();
-      case SearchTab.scholarships:
-        return _buildScholarshipsContent();
     }
   }
 

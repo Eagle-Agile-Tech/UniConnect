@@ -65,30 +65,6 @@ class SettingScreen extends ConsumerWidget {
               trailing: Icon(Icons.keyboard_arrow_right_outlined),
               onTap: () => context.push(Routes.events()),
             ),
-            if (user.isExpert)
-              SizedBox(
-                width: double.infinity,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: Dimens.defaultSpace,
-                    vertical: Dimens.sm,
-                  ),
-                  child: Text(
-                    'Monetize',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.headlineSmall!.copyWith(color: Colors.grey),
-                  ),
-                ),
-              ),
-            // Activity
-            if (user.isExpert)
-              ListTile(
-                leading: Icon(Icons.school_outlined),
-                title: Text('Add Course'),
-                trailing: Icon(Icons.keyboard_arrow_right_outlined),
-                onTap: () => context.push(Routes.addCourse),
-              ),
             if (user.role == UserRole.INSTITUTION)
             SizedBox(
               width: double.infinity,
