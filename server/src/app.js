@@ -28,7 +28,9 @@ const eventRoutes = require('./modules/event/event.route');
 const communityRoutes = require('./modules/community/community.route');
 const reportRoutes = require("./modules/report/report.routes");
 
-// const recommendationRoutes = require('./modules/ai-recommendation-service/recommendation.route');
+const recommendationRoutes = require('./modules/ai-recommendation-service/recommendation.route');
+const interactionRoutes = require('./modules/ai-recommendation-service/interaction.route');
+const recommendRoutes = require('./modules/ai-recommendation-service/recommend.route');
 const errorHandler = require('./middlewares/errorhHandler');
 const initAdmin = require('./config/initAdmin');
 const courseRoutes = require('./modules/course/course.routes');
@@ -98,7 +100,10 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/network', networkRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use("/api/reports", reportRoutes);
-// app.use('/api/v1/recommendations', recommendationRoutes);
+app.use('/api/v1/interactions', interactionRoutes);
+app.use('/api/v1/recommend', recommendRoutes);
+
+app.use('/api/v1/recommendations', recommendationRoutes);
 app.use('/api/admin/recommendations', trainingDatasetRoutes);
 
 // Error handler

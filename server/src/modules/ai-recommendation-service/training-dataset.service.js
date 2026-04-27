@@ -15,6 +15,12 @@ function clampLimit(limit, fallback = 5000, max = 20000) {
   return Math.min(parsed, max);
 }
 
+function clampInt(value, fallback, min = 0, max = 20) {
+  const parsed = Number.parseInt(String(value ?? ""), 10);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(min, Math.min(max, parsed));
+}
+
 function buildSinceDate(days) {
   const parsed = Number(days);
   if (!Number.isFinite(parsed) || parsed <= 0) return null;
@@ -43,6 +49,12 @@ class TrainingDatasetService {
     const since = buildSinceDate(options.days);
     const targetTypes = toArray(options.targetTypes).filter(Boolean);
     const userIds = toArray(options.userIds).filter(Boolean);
+    const negativesPerPositive = clampInt(
+      options.negativesPerPositive,
+      1,
+      0,
+      20,
+    );
 
     const interactions = await prisma.userInteraction.findMany({
       where: {
@@ -55,9 +67,13 @@ class TrainingDatasetService {
     });
 
     const context = await this.loadContext(interactions);
-    const rows = aggregate
+    let rows = aggregate
       ? this.buildAggregatedRows(interactions, context)
       : this.buildRawRows(interactions, context);
+
+    if (aggregate && negativesPerPositive > 0) {
+      rows = this.addNegativeSamples(rows, context, { negativesPerPositive });
+    }
 
     return {
       summary: {
@@ -68,6 +84,7 @@ class TrainingDatasetService {
         since: since ? since.toISOString() : null,
         limit,
         targetTypes,
+        negativesPerPositive: aggregate ? negativesPerPositive : 0,
       },
       rows,
     };
@@ -227,11 +244,91 @@ class TrainingDatasetService {
         ...row,
         firstInteractionAt: row.firstInteractionAt.toISOString(),
         lastInteractionAt: row.lastInteractionAt.toISOString(),
+        // Aliases used by the Python EDA + training pipeline.
+        earliestInteractionAt: row.firstInteractionAt.toISOString(),
+        latestInteractionAt: row.lastInteractionAt.toISOString(),
         label: row.totalScore,
         userFeatures: context.users.get(row.userId) || null,
         targetFeatures: context.targets[row.targetType]?.get(row.targetId) || null,
       }))
       .sort((a, b) => b.totalScore - a.totalScore);
+  }
+
+  addNegativeSamples(rows, context, options = {}) {
+    const negativesPerPositive = clampInt(options.negativesPerPositive, 1, 0, 20);
+    if (!negativesPerPositive || !Array.isArray(rows) || rows.length === 0) {
+      return rows;
+    }
+
+    const positives = rows.filter((row) => Number(row?.label || 0) > 0);
+    if (positives.length === 0) return rows;
+
+    // Candidate pool: for each type, use all targets observed anywhere in the dataset.
+    // This gives us "hard-ish" negatives without requiring extra DB queries.
+    const candidatesByType = positives.reduce((acc, row) => {
+      const type = row?.targetType;
+      const id = row?.targetId;
+      if (!type || !id) return acc;
+      if (!acc[type]) acc[type] = new Set();
+      acc[type].add(id);
+      return acc;
+    }, {});
+
+    const seenByUserType = positives.reduce((acc, row) => {
+      const userId = row?.userId;
+      const type = row?.targetType;
+      const id = row?.targetId;
+      if (!userId || !type || !id) return acc;
+      if (!acc[userId]) acc[userId] = {};
+      if (!acc[userId][type]) acc[userId][type] = new Set();
+      acc[userId][type].add(id);
+      return acc;
+    }, {});
+
+    const output = [...rows];
+
+    for (const row of positives) {
+      const userId = row.userId;
+      const type = row.targetType;
+      if (!userId || !type) continue;
+
+      const candidates = candidatesByType[type]
+        ? [...candidatesByType[type]]
+        : [];
+      if (candidates.length <= 1) continue;
+
+      const seen = seenByUserType[userId]?.[type] || new Set();
+      const eligible = candidates.filter((id) => !seen.has(id));
+      if (eligible.length === 0) continue;
+
+      // Lightweight sampling without replacement.
+      for (let i = 0; i < Math.min(negativesPerPositive, eligible.length); i += 1) {
+        const pickIndex = Math.floor(Math.random() * eligible.length);
+        const targetId = eligible.splice(pickIndex, 1)[0];
+
+        output.push({
+          userId,
+          targetType: type,
+          targetId,
+          interactionCount: 0,
+          totalValue: 0,
+          totalScore: 0,
+          firstInteractionAt: null,
+          lastInteractionAt: null,
+          earliestInteractionAt: null,
+          latestInteractionAt: null,
+          interactionBreakdown: {},
+          metadataExamples: [],
+          label: 0,
+          userFeatures: context.users.get(userId) || null,
+          targetFeatures: context.targets[type]?.get(targetId) || null,
+          negativeSample: true,
+          sampledFrom: "observed-target-pool",
+        });
+      }
+    }
+
+    return output;
   }
 
   formatUserFeatures(user) {

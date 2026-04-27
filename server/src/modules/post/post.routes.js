@@ -26,9 +26,11 @@ function optionalAuthenticate(req, _res, next) {
 
 // ===== PUBLIC =====
 router.get("/", optionalAuthenticate, postController.listPosts);
+router.get("/search", optionalAuthenticate, postController.searchPosts);
 router.get("/me", authenticate, postController.getMyPosts);
 router.get("/user/:userId", optionalAuthenticate, postController.getUserPosts);
 router.get("/feed/:userId", optionalAuthenticate, postController.getFeed);
+router.get("/recommended", optionalAuthenticate, postController.getRecommendedFeed);
 router.get("/:postId", optionalAuthenticate, postController.getPostById);
 
 // ===== AUTHENTICATED ROUTES =====

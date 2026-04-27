@@ -16,6 +16,18 @@ const INTERACTION_TYPES = {
   SAVE: "SAVE",
 };
 
+// Keep this in sync with training dataset generation weights so that:
+// - interaction metadata endpoint can report weights
+// - ML dataset export and runtime interpretation align
+const INTERACTION_WEIGHTS = {
+  VIEW: 1,
+  CLICK: 2,
+  LIKE: 3,
+  SAVE: 4,
+  COMMENT: 4,
+  SHARE: 5,
+};
+
 class InteractionService {
   async logInteraction({
     userId,
@@ -126,4 +138,5 @@ module.exports = {
   interactionService: new InteractionService(),
   TARGET_TYPES,
   INTERACTION_TYPES,
+  INTERACTION_WEIGHTS,
 };

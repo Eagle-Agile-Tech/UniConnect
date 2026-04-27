@@ -29,6 +29,11 @@ function parseNumber(value, fallback) {
   return Number.isFinite(num) && num > 0 ? num : fallback;
 }
 
+function parseNonNegativeInt(value, fallback) {
+  const num = Number.parseInt(String(value ?? ""), 10);
+  return Number.isFinite(num) && num >= 0 ? num : fallback;
+}
+
 // ----------------------
 // Main Runner
 // ----------------------
@@ -38,6 +43,7 @@ async function main() {
     const format = (getArg("--format", "json") || "json").toLowerCase();
     const output = getArg("--output", null);
     const aggregate = !hasFlag("--raw");
+    const negativesPerPositive = parseNonNegativeInt(getArg("--negatives-per-positive"), 1);
 
     const days = parseNumber(getArg("--days"), undefined);
     const limit = parseNumber(getArg("--limit"), 5000);
@@ -57,6 +63,7 @@ async function main() {
           days: days ?? "all",
           limit,
           targetTypes,
+          negativesPerPositive: aggregate ? negativesPerPositive : 0,
         },
         null,
         2
@@ -69,6 +76,7 @@ async function main() {
       days,
       limit,
       targetTypes,
+      negativesPerPositive,
     });
 
     // 📦 Format output

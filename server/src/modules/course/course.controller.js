@@ -54,6 +54,19 @@ const getCourseById = asyncHandler(async (req, res) => {
     return res.status(403).json({ success: false, message: "Access denied" });
   }
 
+  // Log course view interaction for recommendation system
+  const { interactionService } = require("../ai-recommendation-service/interaction.service");
+  await interactionService.logInteractionSafe({
+    userId: user.id,
+    targetType: "COURSE",
+    targetId: courseId,
+    interactionType: "VIEW",
+    metadata: {
+      source: "course_detail_view",
+      expertId: course.expertId,
+    },
+  });
+
   return res.status(200).json({
     success: true,
     data: course,
