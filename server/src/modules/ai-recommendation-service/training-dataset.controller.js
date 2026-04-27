@@ -18,6 +18,7 @@ class TrainingDatasetController {
   async generate(req, res) {
     const format = (req.query.format || "json").toLowerCase();
     const aggregate = parseBoolean(req.query.aggregate, true);
+    const negativesPerPositive = req.query.negativesPerPositive ?? req.query.negativeSamples;
 
     const dataset = await trainingDatasetService.generateDataset({
       format,
@@ -26,6 +27,7 @@ class TrainingDatasetController {
       days: req.query.days,
       targetTypes: parseCsv(req.query.targetTypes),
       userIds: parseCsv(req.query.userIds),
+      negativesPerPositive,
     });
 
     if (format === "jsonl") {

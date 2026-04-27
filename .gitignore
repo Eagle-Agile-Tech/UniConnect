@@ -1,0 +1,8 @@
+# Python virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Generated ML datasets
+training_data*.jsonl

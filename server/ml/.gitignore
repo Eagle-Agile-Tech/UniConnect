@@ -1,0 +1,16 @@
+# Python environments and caches
+.venv/
+**/.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+
+# Generated ML artifacts
+eda/
+runs/
+training_data*.jsonl
+two_tower/checkpoints/
+two_tower/*.pt
+two_tower/*.png
+two_tower/*.svg
+two_tower/*.json
