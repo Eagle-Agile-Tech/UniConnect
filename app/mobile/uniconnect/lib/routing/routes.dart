@@ -21,7 +21,7 @@ abstract final class Routes {
       userId == null ? '/events' : '/events?userId=$userId';
   static const String eventsScreen = '/events';
   static const String detailEventsScreen = '/detailEvent';
-
+  static const String incomingNetworks = '/incomingNetworks';
 
 
   static const String addEvent = '/addEvent';

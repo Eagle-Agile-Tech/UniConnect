@@ -60,6 +60,23 @@ class AuthRepositoryRemote implements AuthRepository {
     }, (error, stackTrace) => Result.error(error));
   }
 
+
+  Future<Result> verifyExpertOtp(String email, String otp) async {
+    final result = await _authClient.verifyOtp(email, otp);
+    return result.fold((data) async {
+      final token = OAuth2Token(
+        accessToken: data['accessToken'],
+        refreshToken: data['refreshToken'],
+        expiresIn: data['accessTokenExpiresIn'],
+        issuedAt: DateTime.fromMillisecondsSinceEpoch(
+          data['accessTokenIssuedAt'] * 1000,
+        ),
+      );
+      await _fresh.setToken(token);
+      return Result.ok(null);
+    }, (error, stackTrace) => Result.error(error));
+  }
+
   @override
   Future<Result> verifyId(File front, File back) async {
     final result = await _authClient.verifyId(front, back);
@@ -137,7 +154,7 @@ class AuthRepositoryRemote implements AuthRepository {
     final result = await _authClient.googleLogin(idToken);
     return result.fold(
       (data) async {
-        if(data.containsKey('university')){
+        if(data.containsKey('firstName')){
           final token = OAuth2Token(
             accessToken: data['accessToken'],
             refreshToken: data['refreshToken'],
@@ -152,6 +169,15 @@ class AuthRepositoryRemote implements AuthRepository {
 
           return Result.ok(User.fromJson(data));
         } else {
+          final token = OAuth2Token(
+            accessToken: data['accessToken'],
+            refreshToken: data['refreshToken'],
+            expiresIn: data['accessTokenExpiresIn'],
+            issuedAt: DateTime.fromMillisecondsSinceEpoch(
+              data['accessTokenIssuedAt'] * 1000,
+            ),
+          );
+          await _fresh.setToken(token);
           return Result.ok(null);
         }
       },
@@ -188,24 +214,12 @@ class AuthRepositoryRemote implements AuthRepository {
       confirmPassword,
     );
     return result.fold((data) async {
-      final loginResult = await _authClient.loginUser(email, password);
-      return loginResult.fold((loginData) async {
-        final token = OAuth2Token(
-          accessToken: loginData['accessToken'],
-          refreshToken: loginData['refreshToken'],
-          expiresIn: loginData['accessTokenExpiresIn'],
-          issuedAt: DateTime.fromMillisecondsSinceEpoch(
-            loginData['accessTokenIssuedAt'] * 1000,
-          ),
-        );
-        await _fresh.setToken(token);
-        return Result.ok(data);
-      }, (error, stackTrace) => Result.error(error, stackTrace));
+        return Result.ok(null);
     }, (error, stackTrace) => Result.error(error, stackTrace));
   }
 
   @override
-  Future<Result<String>> createExpertProfile(
+  Future<Result<User>> createExpertProfile(
     String expertise,
     String honor,
     String username,
@@ -222,7 +236,7 @@ class AuthRepositoryRemote implements AuthRepository {
     return result.fold(
       (data) async {
         await Future.delayed(const Duration(milliseconds: 500));
-        return Result.ok((data['username'] ?? username).toString());
+        return Result.ok(User.fromJson(data));
       },
       (error, _) {
         return Result.error(error);

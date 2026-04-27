@@ -8,7 +8,7 @@ abstract class Course with _$Course{
   const factory Course({
     required String id,
     required String title,
-    required String link,
+    @Default('https://repository.ju.edu.et/') String link,
     required String description,
     required int enrolled,
     required int price,

@@ -29,7 +29,8 @@ class _NavigationWrapperState extends ConsumerState<NavigationWrapper> {
   @override
   Widget build(BuildContext context) {
     final notifications = ref.watch(notificationViewModelProvider);
-    final unreadCount = notifications.value?.unreadCount ?? 0;
+    // final unreadCount = notifications.value?.unreadCount ?? 0;
+     final unreadCount = 0;
 
     final destinations = [
       const NavigationDestination(

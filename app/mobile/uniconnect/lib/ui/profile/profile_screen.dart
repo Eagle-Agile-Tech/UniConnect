@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
 import 'package:uniconnect/ui/home/view_models/home_viewmodel_provider.dart';
 import 'package:uniconnect/ui/profile/view_models/course_viewmodel_provider.dart';
@@ -7,8 +8,11 @@ import 'package:uniconnect/ui/profile/view_models/profile_viewmodel_provider.dar
 import 'package:uniconnect/ui/profile/view_models/user_provider.dart';
 import 'package:uniconnect/ui/profile/widgets/profile_header.dart';
 
+import '../../config/assets.dart';
 import '../../domain/models/course/course.dart';
 import '../../domain/models/user/user.dart';
+import '../../routing/routes.dart';
+import '../../utils/enums.dart';
 import '../../utils/result.dart';
 import '../auth/auth_state_provider.dart';
 import '../core/common/widgets/post_card/post_card.dart';
@@ -47,6 +51,10 @@ class ProfileScreen extends ConsumerWidget {
             final postsNotifier = ref.watch(homeViewModelProvider(activeId).notifier);
             final courseAsync = ref.watch(courseProvider(activeId));
 
+            int tabCount = 1;
+            if (user.isExpert) tabCount = 2;
+            if (user.role == UserRole.INSTITUTION) tabCount = 2;
+
             return DefaultTabController(
               length: user.isExpert ? 2 : 1,
               child: Scaffold(
@@ -61,6 +69,7 @@ class ProfileScreen extends ConsumerWidget {
                             child: ProfileHeader(user: user, isMe: isMe),
                           ),
                         ),
+                        // if (user.isExpert || (user.role == UserRole.INSTITUTION && user.institution!.affiliatedExperts.isNotEmpty))
                         if (user.isExpert)
                           SliverPersistentHeader(
                             pinned: true,
@@ -68,23 +77,23 @@ class ProfileScreen extends ConsumerWidget {
                               TabBar(
                                 labelPadding: EdgeInsets.zero,
                                 indicatorSize: TabBarIndicatorSize.tab,
-                                tabs: const [
-                                  Tab(text: 'Posts'),
-                                  Tab(text: 'Courses'),
+                                tabs: [
+                                  const Tab(text: 'Posts'),
+                                  if (user.isExpert) const Tab(text: 'Courses'),
+                                  // if (user.role == UserRole.INSTITUTION && user.institution!.affiliatedExperts.isNotEmpty) const Tab(text: 'Affiliates'),
                                 ],
                               ),
                             ),
                           ),
                       ];
                     },
-                    body: user.isExpert
-                        ? TabBarView(
+                    body: TabBarView(
                       children: [
-                        _buildPostList(postsAsync,postsNotifier),
-                        _buildCourseGrid(courseAsync),
+                        _buildPostList(postsAsync, postsNotifier),
+                        if (user.isExpert) _buildCourseGrid(courseAsync),
+                        // if (user.role == UserRole.INSTITUTION && user.institution!.affiliatedExperts.isNotEmpty) _buildAffiliatesList(user.institution!.affiliatedExperts), // Placeholder for affiliates
                       ],
-                    )
-                        : _buildPostList(postsAsync, postsNotifier),
+                    ),
                   ),
                 ),
               ),
@@ -92,6 +101,25 @@ class ProfileScreen extends ConsumerWidget {
           },
         );
       },
+    );
+  }
+
+  Widget _buildAffiliatesList(List<User> user) {
+    return ListView.builder(
+      itemCount: user.length,
+      itemBuilder: (context, index) => Padding(
+        padding: const EdgeInsets.all(Dimens.md),
+        child: ListTile(
+          onTap: () => context.push(Routes.userProfile(user[index].id)),
+          leading: CircleAvatar(
+            backgroundImage: user[index].profilePicture != null
+                ? NetworkImage(user[index].profilePicture!)
+                : const AssetImage(Assets.defaultAvatar),
+          ),
+          title: Text(user[index].fullName),
+          subtitle: Text('@${user[index].username}'),
+        ),
+      ),
     );
   }
 
@@ -113,17 +141,23 @@ class ProfileScreen extends ConsumerWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, stack) => Center(child: Text('Error loading courses: $err')),
       data: (result) => result.fold(
-            (courses) => GridView.builder(
-          padding: EdgeInsets.all(Dimens.sm),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: Dimens.sm,
-            mainAxisSpacing: Dimens.sm,
-          ),
-          itemCount: courses.length,
-          itemBuilder: (context, index) => _CourseCard(course: courses[index]),
-        ),
-            (error, _) => Center(child: Text('Course Error: $error')),
+            (courses) {
+              if (courses.isEmpty) {
+                return const Center(child: Text('No courses available'));
+              }
+              return GridView.builder(
+                padding: EdgeInsets.all(Dimens.sm),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: Dimens.sm,
+                  mainAxisSpacing: Dimens.sm,
+                ),
+                itemCount: courses.length,
+                itemBuilder: (context, index) =>
+                    _CourseCard(course: courses[index]),
+              );
+            },
+            (error, _) => Center(child: Text('Course Error : Please try again later')),
       ),
     );
   }
@@ -136,26 +170,83 @@ class _CourseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 4)),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(course.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Text(course.description, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+          // Title
+          Text(
+            course.title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              height: 1.3,
+            ),
+          ),
+
+          const SizedBox(height: 6),
+
+          Text(
+            course.description,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 12.5,
+              color: Colors.grey.shade600,
+              height: 1.4,
+            ),
+          ),
+
           const Spacer(),
+
+          const Divider(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("\$${course.price}", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
-              Text("👥 ${course.enrolled}", style: const TextStyle(fontSize: 12)),
+              // Price pill
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  "\$${course.price}",
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+
+              // Enrolled
+              Row(
+                children: [
+                  const Icon(Icons.people_alt_outlined, size: 16, color: Colors.grey),
+                  const SizedBox(width: 4),
+                  Text(
+                    "${course.enrolled}",
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         ],

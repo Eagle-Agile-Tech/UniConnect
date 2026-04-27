@@ -45,7 +45,7 @@ abstract class AuthRepository {
     String confirmPassword,
   );
 
-  Future<Result<String>> createExpertProfile(
+  Future<Result<User>> createExpertProfile(
     String expertise,
     String honor,
     String username,

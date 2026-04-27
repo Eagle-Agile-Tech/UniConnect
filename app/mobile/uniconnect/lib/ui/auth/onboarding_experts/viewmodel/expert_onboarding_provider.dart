@@ -46,19 +46,14 @@ class ExpertOnboardingViewModel extends Notifier<ExpertOnboardingState> {
       confirmPassword,
     );
     return result.fold((data){
-      final response = data is Map<String, dynamic> ? data : <String, dynamic>{};
-      state = state.copyWith(id: (response['id'] ?? '').toString());
       return null;
     }, (error, stackTrace) => Result.error(error, stackTrace) as Err);
   }
 
   Future<Err?> verifyEmail(String otp) async {
-    final result = await _authRepo.verifyOtp(state.email, otp);
+    final result = await _authRepo.verifyExpertOtp(state.email, otp);
     return result.fold(
       (data) {
-        state = state.copyWith(
-          university: data
-        );
         return null;
       }, (error, stackTrace) => Result.error(error, stackTrace) as Err,
     );
@@ -91,16 +86,7 @@ class ExpertOnboardingViewModel extends Notifier<ExpertOnboardingState> {
       return result.fold(
             (data) =>
             Result.ok(
-              User(
-                id: state.id,
-                firstName: state.firstName,
-                lastName: state.lastName,
-                email: state.email,
-                username: state.username,
-                university: state.university,
-                role: UserRole.EXPERT,
-                networkCount: 0
-              ),
+              data
             ),
             (error, stackTrace) => Result.error(error.toString()),
       );

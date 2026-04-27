@@ -250,7 +250,6 @@ class _SignupScreenState extends ConsumerState<ExpertSignupScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Account created successfully. Verify Your Email.')),
       );
-      onboarding.verifyEmail(      _emailController.text.trim(),);
       context.push(Routes.expertVerifyUni);
     }
   }

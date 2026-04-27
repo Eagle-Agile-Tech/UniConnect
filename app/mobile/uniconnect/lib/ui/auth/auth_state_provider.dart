@@ -41,6 +41,8 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       _chat = ChatService(ref.read(dioProvider), ref);
       _push = ref.read(pushNotificationServiceProvider);
       _onborader = ref.read(onboardingProvider.notifier);
+      _onBoardExpert = ref.read(expertOnboardingProvider.notifier);
+
 
       final isAuth = await _repo.isAuthenticated;
       if (!isAuth) return const AuthState(user: null);
@@ -157,7 +159,6 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     String? bio,
     File? profilePicture,
   ) async {
-    _onBoardExpert = ref.read(expertOnboardingProvider.notifier);
     final result = await _onBoardExpert.createExpertProfile(
       expertise,
       honor,

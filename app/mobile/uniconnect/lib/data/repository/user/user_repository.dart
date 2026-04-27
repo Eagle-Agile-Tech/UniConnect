@@ -20,6 +20,7 @@ abstract class UserRepository {
   Future<Result> rejectNetworkRequest(String requestId);
   Future<Result> removeNetwork(String targetId);
   Future<Result> cancelNetwork(String receiverId);
+  Future<Result<List<(User, String requestId)>>> getIncomingNetworks();
   Future<Result> updateProfile(
     String? firstName,
     String? lastName,

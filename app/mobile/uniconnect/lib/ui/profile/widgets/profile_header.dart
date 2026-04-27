@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -53,6 +54,17 @@ class ProfileHeader extends ConsumerWidget {
                         enabled: !networkActionState.isLoading,
                         icon: Icon(Icons.more_vert),
                         itemBuilder: (BuildContext context) => [
+                          if (user.role == UserRole.INSTITUTION)
+                            PopupMenuItem(
+                              value: 'website',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.language, size: 18),
+                                  SizedBox(width: 8),
+                                  Text('Visit Website'),
+                                ],
+                              ),
+                            ),
                           if (user.networkStatus == NetworkStatus.CONNECTED)
                             PopupMenuItem(
                               value: 'unlink',
@@ -94,7 +106,7 @@ class ProfileHeader extends ConsumerWidget {
                                 successMessage: 'Connection removed',
                               );
                               break;
-                            case 'block':
+                            case 'website':
                               break;
                             case 'report':
                               _openUserReportSheet(context, ref);
@@ -139,10 +151,22 @@ class ProfileHeader extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          user.fullName,
-                          style: Theme.of(context).textTheme.headlineSmall
-                              ?.copyWith(fontWeight: FontWeight.bold),
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                user.fullName,
+                                style: Theme.of(context).textTheme.headlineSmall
+                                    ?.copyWith(fontWeight: FontWeight.bold),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            if (user.role == UserRole.INSTITUTION)
+                              _VerifiedBadge(color: Colors.amber, isCracked: true),
+                            if (user.role == UserRole.EXPERT)
+                              _VerifiedBadge(color: Colors.blue, isCracked: false),
+                          ],
                         ),
                         if (user.role != UserRole.INSTITUTION)
                           Text(
@@ -355,4 +379,99 @@ class ProfileHeader extends ConsumerWidget {
       ),
     );
   }
+}
+
+class _VerifiedBadge extends StatelessWidget {
+  const _VerifiedBadge({
+    required this.color,
+    this.isCracked = false,
+  });
+
+  final Color color;
+  final bool isCracked;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 20,
+      height: 20,
+      decoration: BoxDecoration(
+        // Subtle glow to make it pop against background
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.2),
+            blurRadius: 4,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      child: CustomPaint(
+        painter: _BadgePainter(color: color, isCracked: isCracked),
+        child: Center(
+          child: Icon(
+            // Institutions get a different icon if they are "cracked"
+            isCracked ? Icons.account_balance_rounded : Icons.check_rounded,
+            size: 11,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BadgePainter extends CustomPainter {
+  _BadgePainter({required this.color, required this.isCracked});
+  final Color color;
+  final bool isCracked;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
+
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    // Create a 12-point star/burst shape for a "seal" look
+    final path = Path();
+    for (int i = 0; i < 12; i++) {
+      double angle = (i * 30) * (3.14159 / 180);
+      double r = i.isEven ? radius : radius * 0.85;
+      double x = center.dx + r * cos(angle);
+      double y = center.dy + r * sin(angle);
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+    path.close();
+
+    // If cracked, subtract the crack from the shape
+    if (isCracked) {
+      final crackPath = Path()
+        ..moveTo(size.width * 0.5, 0)
+        ..lineTo(size.width * 0.45, size.height * 0.3)
+        ..lineTo(size.width * 0.55, size.height * 0.5)
+        ..lineTo(size.width * 0.5, size.height * 0.7);
+
+      // We draw the badge, then draw the crack using BlendMode.clear
+      // or just draw a background-colored line. For simplicity:
+      canvas.drawPath(path, paint);
+      canvas.drawPath(
+        crackPath,
+        Paint()
+          ..color = Colors.black.withOpacity(0.3) // Shadow depth in crack
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.5,
+      );
+    } else {
+      canvas.drawPath(path, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

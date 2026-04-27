@@ -13,6 +13,7 @@ import 'package:uniconnect/ui/events/detailed_event_screen.dart';
 import 'package:uniconnect/ui/events/explore_events.dart';
 import 'package:uniconnect/ui/mentorship/explore_mentorship.dart';
 import 'package:uniconnect/ui/message/message_screen.dart';
+import 'package:uniconnect/ui/notification/widgets/incoming_networks.dart';
 import 'package:uniconnect/ui/post/create_post.dart';
 import 'package:uniconnect/ui/profile/widgets/event_form.dart';
 import 'package:uniconnect/ui/setting/widgets/add_course_form_screen.dart';
@@ -164,6 +165,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.verifyIdentity,
         builder: (context, state) => const IdentityVerificationScreen(),
+      ),
+      GoRoute(
+        path: Routes.incomingNetworks,
+        builder: (context, state) => const NetworksIncomingScreen(),
       ),
       GoRoute(
         path: Routes.userProfilePath,

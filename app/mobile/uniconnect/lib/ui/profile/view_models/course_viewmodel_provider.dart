@@ -14,3 +14,14 @@ final courseProvider = FutureProvider.family<Result<List<Course>>, String>(
     );
   },
 );
+
+final topCoursesProvider = FutureProvider<Result<List<(Course, String id, String fullName, String username, String? profileImage)>>>(
+      (ref) async {
+    final courseRepo = ref.read(courseRepoProvider);
+    final result = await courseRepo.getFamousCourses();
+    return result.fold(
+          (courses) => Result.ok(courses),
+          (error, stackTrace) => Result.error(error),
+    );
+  },
+);

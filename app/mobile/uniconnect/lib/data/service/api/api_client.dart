@@ -105,7 +105,7 @@ class ApiClient {
 
   Future<Result> acceptNetwork(String requestId) async {
     try {
-      await _client.post("/network/accept", data: {"receiverId": requestId});
+      await _client.post("/network/accept", data: {"requestId": requestId});
       return Result.ok('');
     } on DioException catch (e) {
       return Result.error(e);
@@ -143,6 +143,18 @@ class ApiClient {
     try {
       await _client.delete("/network", data: {"targetId": receiverId});
       return Result.ok('');
+    } on DioException catch (e) {
+      return Result.error(e);
+    } catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<List<Map<String, dynamic>>>> incomingRequests() async {
+    try {
+      final response = await _client.get("/network/incoming");
+      final List data = response.data['data'];
+      return Result.ok(data.cast<Map<String, dynamic>>());
     } on DioException catch (e) {
       return Result.error(e);
     } catch (e) {
@@ -592,8 +604,18 @@ class ApiClient {
   // Course
   Future<Result<List<Map<String, dynamic>>>> fetchCourses(String id) async {
     try {
-      final response = await _client.get('/courses/$id');
-      final data = response.data as List;
+      final response = await _client.get('/courses/expert/$id');
+      final data = response.data['data'] as List;
+      return Result.ok(data.cast<Map<String, dynamic>>());
+    } on DioException catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<List<Map<String, dynamic>>>> fetchFamousCourses() async {
+    try {
+      final response = await _client.get('/courses/top/enrolled');
+      final data = response.data['data'] as List;
       return Result.ok(data.cast<Map<String, dynamic>>());
     } on DioException catch (e) {
       return Result.error(e);

@@ -54,7 +54,6 @@ class AuthApiClient {
         '/auth/verify-otp',
         data: {'email': email, 'otp': otp},
       );
-      // { 'university': 'Jimma university' or 'university': 'general'} -> accessToken, refreshToken
       return Result.ok(response.data);
     } on DioException catch (e) {
       return Result.error(e);
@@ -211,8 +210,6 @@ class AuthApiClient {
     String confirmPassword,
   ) async {
     try {
-      // Note: Expert registration might need checking in backend
-      // Using /auth/register as a general registration point if experts register there
       final response = await _client.post(
         '/experts/join',
         data: {

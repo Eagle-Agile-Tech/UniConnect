@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:uniconnect/config/assets.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
 import 'package:uniconnect/ui/network/viewmodels/network_provider.dart';
 import 'package:uniconnect/ui/auth/auth_state_provider.dart';
 import 'package:uniconnect/ui/profile/view_models/user_provider.dart';
+
+import '../../routing/routes.dart';
 
 class NetworkScreen extends ConsumerWidget {
   const NetworkScreen({super.key});
@@ -25,10 +28,35 @@ class NetworkScreen extends ConsumerWidget {
       ),
       body: networksAsync.when(
         data: (users) {
+          if(users.isEmpty){
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.auto_awesome_motion_rounded,
+                      size: 64, color: Colors.grey[300]),
+                  const SizedBox(height: 16),
+                  const Text(
+                    "No connection so far",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const Text(
+                    "Seize the moment at the moment.",
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ],
+              ),
+            );
+          }
           return ListView.builder(
             itemCount: users.length,
             itemBuilder: (context, index) {
               return ListTile(
+                onTap: () => context.push(Routes.userProfile(users[index].id)),
                 title: Text(users[index].fullName, style: TextStyle(
                   fontSize: Dimens.fontLg,
                   fontWeight: FontWeight.w600
