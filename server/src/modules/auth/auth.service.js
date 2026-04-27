@@ -465,10 +465,19 @@ class AuthService {
       include: { university: { select: { name: true } } },
     });
 
+    const expertProfile =
+      user.role === "EXPERT"
+        ? await prisma.expertProfile.findUnique({
+            where: { expertId: user.id },
+            include: { institution: true },
+          })
+        : null;
+
     const userResponse = buildUserResponse({
       user,
       profile,
       universityName: university,
+      expertProfile,
       accessToken,
       refreshToken,
       sessionId,
@@ -691,9 +700,18 @@ class AuthService {
       include: { university: { select: { name: true } } },
     });
 
+    const expertProfile =
+      user.role === "EXPERT"
+        ? await prisma.expertProfile.findUnique({
+            where: { expertId: user.id },
+            include: { institution: true },
+          })
+        : null;
+
     return buildUserResponse({
       user,
       profile,
+      expertProfile,
       accessToken,
       refreshToken,
       sessionId,
@@ -934,10 +952,19 @@ class AuthService {
       include: { university: { select: { name: true } } },
     });
 
+    const expertProfile =
+      user.role === "EXPERT"
+        ? await prisma.expertProfile.findUnique({
+            where: { expertId: user.id },
+            include: { institution: true },
+          })
+        : null;
+
     return buildUserResponse({
       user,
       profile,
       universityName: universityRecord?.name || "general",
+      expertProfile,
       accessToken,
       refreshToken,
       sessionId,
