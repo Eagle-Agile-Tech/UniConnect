@@ -53,7 +53,9 @@ function buildUserResponse({
   networkStatus,
 }) {
   const resolvedUniversity =
-    universityName || profile?.university?.name || profile?.universityName || null;
+    user?.role === 'EXPERT'
+      ? expertProfile?.institution?.name || null
+      : universityName || profile?.university?.name || profile?.universityName || null;
 
   const resolvedNetworkCount =
     typeof networkCount === 'number'
