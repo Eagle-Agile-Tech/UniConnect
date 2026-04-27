@@ -1,4 +1,5 @@
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 
 abstract final class UCHelperFunctions {
   static List<String>? extractHashtags(String content) {
@@ -33,6 +34,32 @@ abstract final class UCHelperFunctions {
     } else {
       return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
     }
+  }
+
+  static String formatMessageDate(DateTime dateTime) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final dateToCompare = DateTime(dateTime.year, dateTime.month, dateTime.day);
+
+    final diff = now.difference(dateTime);
+
+    if (diff.inSeconds < 60) {
+      return 'Just now';
+    }
+
+    if (dateToCompare.isAtSameMomentAs(today)) {
+      return DateFormat('HH:mm').format(dateTime);
+    }
+
+    if (diff.inDays < 7) {
+      return DateFormat('EEEE').format(dateTime);
+    }
+
+    if (dateTime.year == now.year) {
+      return DateFormat('MMM d').format(dateTime);
+    }
+
+    return DateFormat('dd.MM.yy').format(dateTime);
   }
 
   static bool isUrl(String text) {

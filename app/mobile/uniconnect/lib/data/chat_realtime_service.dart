@@ -181,7 +181,7 @@ class ChatRealtimeService {
   }
 
   void _onMessage(dynamic payload) {
-    final data = _asMap(payload);
+    final data = _extractPayloadMap(payload);
     final currentUserId = _currentUserId;
     if (data == null || currentUserId == null || currentUserId.isEmpty) {
       return;
@@ -289,6 +289,23 @@ class ChatRealtimeService {
       return Map<String, dynamic>.from(payload);
     }
     return null;
+  }
+
+  Map<String, dynamic>? _extractPayloadMap(dynamic payload) {
+    final root = _asMap(payload);
+    if (root == null) {
+      return null;
+    }
+
+    final nestedMessage = _asMap(root['message']);
+    if (nestedMessage != null) {
+      return nestedMessage;
+    }
+    final nestedData = _asMap(root['data']);
+    if (nestedData != null) {
+      return nestedData;
+    }
+    return root;
   }
 
   DateTime? _parseDate(dynamic value) {

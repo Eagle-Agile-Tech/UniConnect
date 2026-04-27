@@ -40,10 +40,12 @@ abstract class ChatMessageModel with _$ChatMessageModel {
       receipts: receipts,
     );
 
+    final chat = json['chat'] as Map<String, dynamic>?;
+
     return ChatMessageModel(
       id: (json['id'] ?? json['messageId'] ?? json['clientMessageId'] ?? '')
           .toString(),
-      chatId: (json['chatId'] ?? '').toString(),
+      chatId: (json['chatId'] ?? chat?['id'] ?? '').toString(),
       senderId: senderId,
       senderName: (sender?['username'] ?? sender?['name'])?.toString(),
       content: (json['content'] ?? '').toString(),
