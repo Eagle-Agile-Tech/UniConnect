@@ -5,17 +5,16 @@ import 'package:uniconnect/ui/core/common/widgets/post_card/post_card.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
 import 'package:uniconnect/ui/home/view_models/home_viewmodel_provider.dart';
 import 'package:uniconnect/ui/home/widgets/drawer_content.dart';
-import 'package:uniconnect/ui/post/create_post.dart';
-import 'package:uniconnect/ui/profile/view_models/user_provider.dart';
 
 import '../../routing/routes.dart';
+import '../auth/auth_state_provider.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final postAsync = ref.watch(homeViewModelProvider);
+    final postAsync = ref.watch(homeViewModelProvider(ref.read(authNotifierProvider).value!.user!.id));
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 0,
@@ -27,7 +26,6 @@ class HomeScreen extends ConsumerWidget {
         ),
         actions: [
           IconButton(
-            // Todo: make the navigator router
             onPressed: () => context.push(Routes.post),
             icon: const Icon(
               Icons.add_circle_outline_outlined,
@@ -42,19 +40,38 @@ class HomeScreen extends ConsumerWidget {
           ),
         ),
       ),
-      drawer: Drawer(child: DrawerContent()),
+      drawer: Drawer(
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.zero,
+        ),
+        elevation: 4,
+        width: MediaQuery.of(context).size.width * 0.8,
+        child: const DrawerContent(),
+      ),
       body: RefreshIndicator(
-        onRefresh: () => ref.read(homeViewModelProvider.future),
+        onRefresh: () => ref.watch(homeViewModelProvider(ref.read(authNotifierProvider).value!.user!.id).notifier).refreshFeed(),
         child: postAsync.when(
-          data: (posts) => ListView.builder(
-            itemCount: posts.length,
-            itemBuilder: (context, index) {
-              return UCPostCard(
-                author: ref.read(userProvider)!,
-                post: posts[index],
+          data: (posts) {
+            if (posts.isEmpty) {
+              return ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: const [
+                  SizedBox(
+                    height: 300,
+                    child: Center(child: Text('No posts yet')),
+                  ),
+                ],
               );
-            },
-          ),
+            }
+            return ListView.builder(
+              itemCount: posts.length,
+              itemBuilder: (context, index) {
+                return UCPostCard(
+                  post: posts[index],
+                );
+              },
+            );
+          },
           // Todo: make the error widget better
           error: (error, stackTrace) => Center(child: Text('Oops: $error')),
           loading: () => const Center(child: CircularProgressIndicator()),

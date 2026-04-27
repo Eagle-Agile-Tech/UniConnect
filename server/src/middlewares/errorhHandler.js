@@ -3,6 +3,11 @@ const {
   ConflictError,
   NotFoundError,
   ValidationError,
+  BadRequestError,
+  UnauthorizedError,
+  ForbiddenError,
+  RateLimitError,
+  UnprocessableEntityError,
   ServiceUnavailableError,
 } = require('../errors');
 const logger = require('../utils/logger');
@@ -23,13 +28,62 @@ function deriveErrorCode(error) {
 function errorHandler(err, req, res, next) { // eslint-disable-line no-unused-vars
   let error;
 
-  if (err?.code === 'P2002') {
-    error = new ConflictError('Unique constraint violation (duplicate entry)');
-  } else if (err?.code === 'P2025') {
-    error = new NotFoundError('Record not found');
+  if (err?.name === 'PrismaClientKnownRequestError') {
+    switch (err.code) {
+      case 'P2002':
+        error = new ConflictError(`Unique constraint violation${err.meta?.target ? ` on ${err.meta.target}` : ''}`);
+        if (err.meta) error.details = { ...error.details, meta: err.meta };
+        break;
+      case 'P2000':
+        error = new ValidationError('Value too long for database field');
+        if (err.meta) error.details = { ...error.details, meta: err.meta };
+        break;
+      case 'P2001':
+      case 'P2025':
+        error = new NotFoundError('Record not found');
+        if (err.meta) error.details = { ...error.details, meta: err.meta };
+        break;
+      case 'P2003':
+        error = new ConflictError('Foreign key constraint failed');
+        if (err.meta) error.details = { ...error.details, meta: err.meta };
+        break;
+      case 'P2004':
+        error = new BadRequestError('Constraint failed on the database');
+        if (err.meta) error.details = { ...error.details, meta: err.meta };
+        break;
+      case 'P2011':
+        error = new UnprocessableEntityError('Null constraint violation');
+        if (err.meta) error.details = { ...error.details, meta: err.meta };
+        break;
+      case 'P2012':
+        error = new UnprocessableEntityError('Missing required value');
+        if (err.meta) error.details = { ...error.details, meta: err.meta };
+        break;
+      case 'P2021':
+        error = new ServiceUnavailableError('Database table does not exist');
+        if (err.meta) error.details = { ...error.details, meta: err.meta };
+        break;
+      case 'P2022':
+        error = new ServiceUnavailableError('Database column does not exist');
+        if (err.meta) error.details = { ...error.details, meta: err.meta };
+        break;
+      case 'P2034':
+        error = new ServiceUnavailableError('Database transaction failed (deadlock)');
+        if (err.meta) error.details = { ...error.details, meta: err.meta };
+        break;
+      case 'P3009':
+        error = new ServiceUnavailableError('Migration failed and blocked new migrations');
+        break;
+      default:
+        error = new AppError('Database request error', 500, false, 'DB_REQUEST_ERROR');
+    }
   } else if (err?.name === 'MulterError') {
     if (err.code === 'LIMIT_FILE_SIZE') {
       error = new ValidationError('Uploaded file is too large. Maximum size is 5MB');
+    } else if (err.code === 'LIMIT_FILE_COUNT') {
+      error = new ValidationError('Too many files uploaded');
+    } else if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+      error = new ValidationError('Unexpected file field in upload');
     } else {
       error = new ValidationError(err.message || 'Invalid file upload');
     }
@@ -41,6 +95,16 @@ function errorHandler(err, req, res, next) { // eslint-disable-line no-unused-va
     error = new ValidationError('Invalid data format for database');
   } else if (err?.name === 'PrismaClientInitializationError') {
     error = new ServiceUnavailableError('Cannot initialize database connection');
+  } else if (err?.name === 'JsonWebTokenError') {
+    error = new UnauthorizedError('Invalid authentication token');
+  } else if (err?.name === 'TokenExpiredError') {
+    error = new UnauthorizedError('Authentication token expired');
+  } else if (err?.name === 'NotBeforeError') {
+    error = new UnauthorizedError('Authentication token not active');
+  } else if (err?.type === 'entity.too.large' || err?.status === 413) {
+    error = new ValidationError('Request payload is too large');
+  } else if (err?.code === 'LIMIT_RATE' || err?.status === 429) {
+    error = new RateLimitError('Too many requests');
   } else if (err?.message?.toLowerCase().includes('redis')) {
     error = new ServiceUnavailableError('Cache service unavailable');
   } else if (err instanceof AppError) {

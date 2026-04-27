@@ -1,15 +1,51 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:uniconnect/ui/community/view_models/community_viewmodel.dart';
 
 import '../../config/assets.dart';
-import '../../config/dummy_data.dart';
+import '../../domain/models/community/community.dart';
+import '../../domain/models/post/post.dart';
+import '../../domain/models/user/user.dart';
+import '../../routing/routes.dart';
 import '../core/common/widgets/post_card/post_card.dart';
 import '../core/theme/dimens.dart';
 
-class CommunityScreen extends StatelessWidget {
-  const CommunityScreen({super.key});
+class CommunityScreen extends ConsumerWidget {
+  const CommunityScreen({
+    super.key,
+    required this.communityId,
+    required this.isCreated,
+  });
+
+  final String communityId;
+  final bool isCreated;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final communityAsync = ref.watch(singleCommunityProvider(communityId));
+    final postAsync = ref.watch(communityPostsProvider(communityId));
+    final memberAsync = ref.watch(communityMembersProvider(communityId));
+    final membershipAction = ref.watch(
+      communityMembershipActionProvider(communityId),
+    );
+
+    ref.listen(communityMembershipActionProvider(communityId), (prev, next) {
+      next.whenOrNull(
+        data: (_) {
+          ref.invalidate(singleCommunityProvider(communityId));
+          ref.invalidate(communityMembersProvider(communityId));
+          ref.invalidate(communityPostsProvider(communityId));
+        },
+        error: (error, stackTrace) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Action failed: $error')),
+          );
+        },
+      );
+    });
+
+    final isMembershipLoading = membershipAction is AsyncLoading;
     return DefaultTabController(
       length: 2,
       child: Scaffold(
@@ -17,20 +53,71 @@ class CommunityScreen extends StatelessWidget {
           headerSliverBuilder: (context, innerBoxIsScrolled) {
             return [
               SliverAppBar(
-                title: const Text('Community', style: TextStyle(fontWeight: FontWeight.bold)),
+                leading: IconButton(
+                  icon: Icon(Icons.arrow_back),
+                  onPressed: isCreated
+                      ? () => context.go(Routes.home)
+                      : () => context.pop(),
+                ),
+                title: const Text(
+                  'Community',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 pinned: true,
                 floating: true,
                 actions: [
-                  IconButton(icon: const Icon(Icons.more_vert), onPressed: () {}),
+                  PopupMenuButton(
+                    icon: Icon(Icons.more_vert),
+                    itemBuilder: (BuildContext context) => [
+                      PopupMenuItem(value: 'post', child: Text('Create Post')),
+                      PopupMenuItem(value: 'leave', child: Text('Leave')),
+                    ],
+                    onSelected: (value) {
+                      switch (value) {
+                        case 'post':
+                          context.push(Routes.communityCreatePost(communityId));
+                          break;
+                        case 'leave':
+                          ref
+                              .read(
+                                communityMembershipActionProvider(communityId)
+                                    .notifier,
+                              )
+                              .leave();
+                          break;
+                      }
+                    },
+                  ),
                 ],
               ),
               SliverToBoxAdapter(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildHeaderImage(),
-                    const SizedBox(height: Dimens.spaceBtwItems),
-                    _buildCommunityInfo(context),
+                    communityAsync.when(
+                      data: (Community data) {
+                        return Column(
+                          children: [
+                            _buildHeaderImage(
+                              data.profilePicture,
+                              data.isMember,
+                              isMembershipLoading,
+                              () => ref
+                                  .read(
+                                    communityMembershipActionProvider(communityId)
+                                        .notifier,
+                                  )
+                                  .join(),
+                            ),
+                            const SizedBox(height: Dimens.spaceBtwItems),
+                            _buildCommunityInfo(context, data),
+                          ],
+                        );
+                      },
+                      error: (Object error, StackTrace stackTrace) =>
+                          Center(child: Text(error.toString())),
+                      loading: () => Center(child: CircularProgressIndicator()),
+                    ),
                   ],
                 ),
               ),
@@ -53,20 +140,54 @@ class CommunityScreen extends StatelessWidget {
           },
           body: TabBarView(
             children: [
-              ListView.builder(
-                padding: const EdgeInsets.only(top: 10),
-                itemCount: 10,
-                itemBuilder: (context, index) => UCPostCard(
-                  author: UCDummyData.user,
-                  post: UCDummyData.post,
-                ),
+              postAsync.when(
+                data: (List<Post> data) {
+                  return ListView.builder(
+                    padding: const EdgeInsets.only(top: 10),
+                    itemCount: data.length,
+                    itemBuilder: (context, index) =>
+                        UCPostCard(post: data[index]),
+                  );
+                },
+                error: (Object error, StackTrace stackTrace) =>
+                    Center(child: Text(error.toString())),
+                loading: () => Center(child: CircularProgressIndicator()),
               ),
-              ListView.builder(
-                itemCount: 10,
-                itemBuilder: (context, index) => const ListTile(
-                  leading: CircleAvatar(),
-                  title: Text("Member Name"),
-                ),
+              memberAsync.when(
+                data: (List<User> user) {
+                  final ownerId = communityAsync.value?.ownerId;
+                  return ListView.builder(
+                    itemCount: user.length,
+                    itemBuilder: (context, index) => Padding(
+                      padding: const EdgeInsets.all(Dimens.md),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundImage: user[index].profilePicture != null
+                              ? NetworkImage(user[index].profilePicture!)
+                              : const AssetImage(Assets.defaultAvatar),
+                        ),
+                        title: Text(user[index].fullName),
+                        subtitle: Text('@${user[index].username}'),
+                        trailing:
+                            ownerId != null && ownerId == user[index].id
+                            ? Container(
+                                padding: EdgeInsets.all(Dimens.sm),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(
+                                    Dimens.md,
+                                  ),
+                                  color: Color(0xFFe8edea),
+                                ),
+                                child: Text('Owner'),
+                              )
+                            : null,
+                      ),
+                    ),
+                  );
+                },
+                error: (Object error, StackTrace stackTrace) =>
+                    Center(child: Text(error.toString())),
+                loading: () => Center(child: CircularProgressIndicator()),
               ),
             ],
           ),
@@ -75,20 +196,30 @@ class CommunityScreen extends StatelessWidget {
     );
   }
 
-
-  Widget _buildHeaderImage() {
+  Widget _buildHeaderImage(
+    String? profileUrl,
+    bool isMember,
+    bool isLoading,
+    VoidCallback onJoin,
+  ) {
     return Stack(
       children: [
         Container(
           width: double.infinity,
           height: 70,
           decoration: BoxDecoration(
-            image: DecorationImage(image: AssetImage(Assets.event), fit: BoxFit.cover),
+            image: DecorationImage(
+              image: profileUrl != null
+                  ? NetworkImage(profileUrl)
+                  : AssetImage(Assets.defaultCommunityHeader),
+              fit: BoxFit.cover,
+            ),
           ),
         ),
         Container(
           margin: const EdgeInsets.fromLTRB(15, 35, 0, 0),
-          width: 80, height: 80,
+          width: 80,
+          height: 80,
           decoration: BoxDecoration(
             color: Colors.tealAccent,
             borderRadius: BorderRadius.circular(12),
@@ -98,33 +229,44 @@ class CommunityScreen extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.grey.shade200,
               borderRadius: BorderRadius.circular(8),
-              image: DecorationImage(image: AssetImage(Assets.event), fit: BoxFit.cover),
+              image: DecorationImage(
+                image: profileUrl != null
+                    ? NetworkImage(profileUrl)
+                    : AssetImage(Assets.defaultCommunityAvatar),
+                fit: BoxFit.cover,
+              ),
             ),
           ),
         ),
-        Positioned(
-          right: 15, bottom: 0,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.purple),
-            onPressed: () {},
-            child: const Text('Join', style: TextStyle(color: Colors.white)),
+        if (!isMember)
+          Positioned(
+            right: 15,
+            bottom: 0,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.purple),
+              onPressed: isLoading ? null : onJoin,
+              child: const Text('Join', style: TextStyle(color: Colors.white)),
+            ),
           ),
-        ),
       ],
     );
   }
 
-  Widget _buildCommunityInfo(BuildContext context) {
+  Widget _buildCommunityInfo(BuildContext context, Community community) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: Dimens.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Software Engineering 2026',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+            community.communityName,
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
           ),
-          const Text('12,240 members'),
+          Text('${community.members} members'),
+          const SizedBox(height: Dimens.md),
+          Text(community.description),
           const SizedBox(height: Dimens.spaceBtwItems),
         ],
       ),
@@ -134,15 +276,24 @@ class CommunityScreen extends StatelessWidget {
 
 class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   _SliverAppBarDelegate(this._tabBar);
+
   final TabBar _tabBar;
 
-  @override double get minExtent => _tabBar.preferredSize.height;
-  @override double get maxExtent => _tabBar.preferredSize.height;
+  @override
+  double get minExtent => _tabBar.preferredSize.height;
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+  double get maxExtent => _tabBar.preferredSize.height;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
     return Container(color: Colors.white, child: _tabBar);
   }
 
-  @override bool shouldRebuild(_SliverAppBarDelegate oldDelegate) => false;
+  @override
+  bool shouldRebuild(_SliverAppBarDelegate oldDelegate) => false;
 }

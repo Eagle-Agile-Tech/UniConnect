@@ -356,6 +356,8 @@ async function adminProfile(adminId) {
             id: true,
             email: true,
             role: true,
+            firstName: true,
+            lastName: true,
             createdAt: true,
             profile: true
         }
@@ -502,9 +504,18 @@ async function moderateContent(adminId, contentId, contentType, action, reason) 
     }
 
     const validTypes = ['POST', 'COMMENT'];
+    const normalizedAction = action === 'APPROVE'
+        ? 'APPROVED'
+        : action === 'REJECT'
+            ? 'REJECTED'
+            : action;
 
     if (!validTypes.includes(contentType)) {
         throw new BadRequestError('Invalid content type');
+    }
+
+    if (!['APPROVED', 'REJECTED', 'PENDING'].includes(normalizedAction)) {
+        throw new BadRequestError('Invalid moderation action');
     }
 
     if (contentType === 'POST') {
@@ -512,7 +523,7 @@ async function moderateContent(adminId, contentId, contentType, action, reason) 
         const updatedPost = await prisma.post.update({
             where: { id: contentId },
             data: {
-                moderationStatus: action,
+                moderationStatus: normalizedAction,
                 moderatedById: adminId
             }
         });
@@ -525,7 +536,7 @@ async function moderateContent(adminId, contentId, contentType, action, reason) 
         const updatedComment = await prisma.postComment.update({
             where: { id: contentId },
             data: {
-                moderationStatus: action,
+                moderationStatus: normalizedAction,
                 moderatedById: adminId
             }
         });

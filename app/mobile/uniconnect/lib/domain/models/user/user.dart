@@ -1,20 +1,15 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-part 'user.freezed.dart';
+import '../../../utils/enums.dart';
+import 'expert/expert.dart';
+import 'institution/institution.dart';
+import 'student/student.dart';
 
+part 'user.freezed.dart';
 part 'user.g.dart';
 
-enum UserRole {
-  @JsonValue('STUDENT')
-  student,
-  @JsonValue('EXPERT')
-  expert,
-  @JsonValue('INSTITUTION')
-  institution,
-}
-
 @freezed
-abstract class User with _$User {
+abstract class User with _$User{
   const User._();
   const factory User({
     required String id,
@@ -23,19 +18,18 @@ abstract class User with _$User {
     required String email,
     required String username,
     required String university,
-    required String degree,
-    required String currentYear,
-    required DateTime expectedGraduationYear,
-    required DateTime createdAt,
-    required DateTime updatedAt,
+    required int networkCount,
     String? bio,
-    List<String>? interests,
     String? profilePicture,
-    @Default(UserRole.student) UserRole role,
-    @Default(false) bool isVerified,
-  }) = _User;
+    required UserRole role,
+    @JsonKey(name:'STUDENT') Student? student,
+    @JsonKey(name:'EXPERT') Expert? expert,
+    @JsonKey(name:'INSTITUTION') Institution? institution,
+    NetworkStatus? networkStatus,
+}) = _User;
 
   String get fullName => '$firstName $lastName';
+  bool get isExpert => role == UserRole.EXPERT;
 
-  factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
+  factory User.fromJson(Map<String,dynamic> json) => _$UserFromJson(json);
 }

@@ -67,12 +67,12 @@ const moderationQueueSchema = zod.object({
     contentType: zod.enum(['POST', 'COMMENT']).optional(),
     status: zod.string().min(1).optional(),
     page: zod.string().regex(/^\\d+$/).optional(),
-    limit: zod.string().regex(/^\\d+$/).optional(),
+    limit: zod.coerce.number().int().positive().optional(),
 }).strict()
 
 const paginationSchema = zod.object({
-    page: zod.string().regex(/^\\d+$/).optional(),
-    limit: zod.string().regex(/^\\d+$/).optional(),
+    page: zod.coerce.number().int().positive().optional(),
+    limit: zod.coerce.number().int().positive().optional(),
 }).strict()
 
 const listUserProfilesSchema = zod.object({

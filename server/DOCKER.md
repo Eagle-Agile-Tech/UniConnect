@@ -24,7 +24,7 @@ docker compose up --build
 API runs at `http://localhost:3000`.
 Default host ports are:
 - API: `3000`
-- Postgres: `5433` (container still uses `5432` internally)
+- Postgres: `5434` (container still uses `5432` internally)
 - Redis: `6380` (container still uses `6379` internally)
 
 ## 3) Run in background
@@ -47,7 +47,8 @@ docker compose down -v
 
 ## Notes
 
-- On startup, `api` runs Prisma migrations with:
-  - `npx prisma generate --schema prisma/schema.prisma`
-  - `npx prisma migrate deploy --schema prisma/schema.prisma`
+- On startup, `api` waits for Postgres health, then runs:
+  - `npm run db:generate`
+  - `npm run db:migrate`
+  - `npm run dev`
 - The database image is `pgvector/pgvector:pg16` because your schema/migrations use `CREATE EXTENSION vector`.

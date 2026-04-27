@@ -1,0 +1,59 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon src/app.js",
+    "start": "node src/app.js",
+    "dataset:training:json": "node src/modules/ai-recommendation-service/generate-training-dataset.js --format json --output training.json",
+    "dataset:training:jsonl": "node src/modules/ai-recommendation-service/generate-training-dataset.js --format jsonl --output ml/training_data.jsonl",
+    "ml:eda:id": "PYTHONPATH=. python3 ml/pipelines/eda_dataset.py --data ml/training_data.jsonl --out-dir ml/eda",
+    "ml:train:id": "PYTHONPATH=. python3 ml/pipelines/train_id_two_tower.py --data ml/training_data.jsonl",
+    "ml:evaluate:id": "PYTHONPATH=. python3 ml/pipelines/evaluate_id_two_tower.py --checkpoint ml/two_tower/checkpoints/id_two_tower_run --data ml/training_data.jsonl",
+    "ml:sync:id": "PYTHONPATH=. python3 ml/pipelines/sync_id_embeddings.py --checkpoint ml/two_tower/checkpoints/id_two_tower_run",
+    "ai:pipeline:id": "PYTHONPATH=. python3 ml/pipelines/run_id_pipeline.py",
+    "rec:benchmark": "PYTHONPATH=. python3 ml/pipelines/benchmark_recommenders.py"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.4.2",
+    "@prisma/client": "^7.4.2",
+    "@socket.io/redis-adapter": "^8.3.0",
+    "@supabase/supabase-js": "^2.99.0",
+    "axios": "^1.15.0",
+    "bcrypt": "^6.0.0",
+    "bullmq": "^5.71.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "crypto": "^1.0.1",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "express-validator": "^7.3.1",
+    "fcm-notification": "^2.0.0",
+    "firebase-admin": "^13.8.0",
+    "google-auth-library": "^10.6.2",
+    "helmet": "^8.1.0",
+    "ioredis": "^5.10.1",
+    "jsonwebtoken": "^9.0.3",
+    "mailtrap": "^4.5.1",
+    "morgan": "^1.10.1",
+    "multer": "^2.1.1",
+    "nodemailer": "^7.0.13",
+    "pg": "^8.20.0",
+    "pino": "^10.3.1",
+    "redis": "^5.11.0",
+    "socket.io": "^4.8.3",
+    "zod": "^4.3.6"
+  },
+  "prisma": {
+    "schema": "./Database/prisma/schema.prisma"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14",
+    "pino-pretty": "^13.1.3",
+    "prisma": "^7.7.0"
+  }
+}

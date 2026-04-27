@@ -1,22 +1,20 @@
 import 'package:flutter/material.dart';
 
 import '../../../../theme/dimens.dart';
-import '../post_card.dart';
+
 class ImageCarousel extends StatelessWidget {
   const ImageCarousel({
     super.key,
     required bool isExpanded,
     required CarouselController controller,
-    required double imageWidth,
-    required this.widget,
-  }) : _isExpanded = isExpanded,
-        _controller = controller,
-        _imageWidth = imageWidth;
+    required List<String> images,
+  }) : _images = images,
+       _isExpanded = isExpanded,
+       _controller = controller;
 
   final bool _isExpanded;
   final CarouselController _controller;
-  final double _imageWidth;
-  final UCPostCard widget;
+  final List<String> _images;
 
   @override
   Widget build(BuildContext context) {
@@ -35,27 +33,27 @@ class ImageCarousel extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: AspectRatio(
         aspectRatio: 4 / 5,
-        child: CarouselView(
-          controller: _controller,
-          itemExtent: _imageWidth,
-          shrinkExtent: _imageWidth,
-          itemSnapping: true,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          // Todo:  padding: EdgeInsets.all(100), looks amazing try it for real
-          padding: EdgeInsets.all(Dimens.sm),
-          children: [
-            ...List.generate(widget.post.mediaUrls!.length, (index) {
-              return ClipRRect(
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            return CarouselView(
+              controller: _controller,
+              itemExtent: constraints.maxWidth,
+              itemSnapping: true,
+              shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  widget.post.mediaUrls![index],
-                  fit: BoxFit.cover,
-                ),
-              );
-            }),
-          ],
+              ),
+              // Todo:  padding: EdgeInsets.all(100), looks amazing try it for real
+              padding: EdgeInsets.all(Dimens.sm),
+              children: [
+                ...List.generate(_images.length, (index) {
+                  return ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(_images[index], fit: BoxFit.cover),
+                  );
+                }),
+              ],
+            );
+          },
         ),
       ),
     );

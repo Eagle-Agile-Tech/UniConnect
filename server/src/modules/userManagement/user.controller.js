@@ -11,6 +11,16 @@ class UserController {
     }
   }
 
+  async checkUsernameAvailableSimple(req, res, next) {
+    try {
+      const { username } = req.params;
+      await userService.assertUsernameAvailable(username);
+      res.status(200).json({ available: true });
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async createUserProfile(req, res, next) {
     try {
       const userId = req.user?.sub || req.user?.id;
@@ -67,6 +77,16 @@ class UserController {
       const userId = req.user?.sub || req.user?.id;
       const result = await userService.deleteUserProfile(userId);
       res.status(200).json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async getUserProfileById(req, res, next) {
+    try {
+      const { userId } = req.params;
+      const profile = await userService.getUserProfileById(userId);
+      res.status(200).json(profile);
     } catch (err) {
       next(err);
     }

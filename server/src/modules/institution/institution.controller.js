@@ -1,11 +1,33 @@
 const institutionService = require('./institution.service');
 
 class InstitutionController {
-  async createInstitution(req, res, next) {
+  async registerInstitution(req, res, next) {
     try {
-      const managerId = req.user?.sub || req.user?.id;
-      const result = await institutionService.createInstitution(req.body, managerId);
+      const deviceInfo = {
+        ip: req.ip,
+        userAgent: req.headers['user-agent'],
+        device: req.headers['sec-ch-ua-platform'] || 'Unknown',
+      };
+      const result = await institutionService.registerInstitution(req.body, deviceInfo);
       res.status(201).json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async verifyInstitutionOtp(req, res, next) {
+    try {
+      const result = await institutionService.verifyInstitutionOtp(req.body);
+      res.status(200).json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async resendInstitutionOtp(req, res, next) {
+    try {
+      const result = await institutionService.resendInstitutionOtp(req.body);
+      res.status(200).json(result);
     } catch (err) {
       next(err);
     }
@@ -33,7 +55,14 @@ class InstitutionController {
   async updateInstitution(req, res, next) {
     try {
       const { institutionId } = req.params;
-      const result = await institutionService.updateInstitution(institutionId, req.body);
+      const actorId = req.user?.sub || req.user?.id;
+      const isAdmin = req.user?.role === 'ADMIN';
+      const result = await institutionService.updateInstitution(
+        institutionId,
+        req.body,
+        actorId,
+        isAdmin
+      );
       res.status(200).json(result);
     } catch (err) {
       next(err);
@@ -57,7 +86,14 @@ class InstitutionController {
   async submitVerification(req, res, next) {
     try {
       const { institutionId } = req.params;
-      const result = await institutionService.submitVerification(institutionId, req.body);
+      const actorId = req.user?.sub || req.user?.id;
+      const isAdmin = req.user?.role === 'ADMIN';
+      const result = await institutionService.submitVerification(
+        institutionId,
+        req.body,
+        actorId,
+        isAdmin
+      );
       res.status(200).json(result);
     } catch (err) {
       next(err);

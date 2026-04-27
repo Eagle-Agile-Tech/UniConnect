@@ -1,0 +1,77 @@
+.student-sidebar {
+  width: 240px;
+  background: linear-gradient(180deg, #101621 0%, #0b111b 100%);
+  color: #e5ecff;
+  padding: 28px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+  min-height: 100vh;
+  box-shadow: 4px 0 18px rgba(8, 15, 30, 0.12);
+}
+
+.student-sidebar h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  padding-left: 12px;
+  border-left: 3px solid #38bdf8;
+}
+
+.student-sidebar nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.student-sidebar nav li {
+  margin: 0;
+}
+
+.student-sidebar-link {
+  display: block;
+  padding: 12px 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  color: #c6d2f3;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.student-sidebar-link:hover {
+  background: rgba(56, 189, 248, 0.18);
+  color: #ffffff;
+  transform: translateX(4px);
+}
+
+.student-sidebar-link:active {
+  transform: translateX(2px);
+}
+
+.student-sidebar-link.active {
+  background: #38bdf8;
+  color: #0b1220;
+  box-shadow: 0 4px 12px rgba(56, 189, 248, 0.35);
+}
+
+@media (max-width: 768px) {
+  .student-sidebar {
+    width: 210px;
+    padding: 22px 14px;
+  }
+
+  .student-sidebar h2 {
+    font-size: 18px;
+  }
+
+  .student-sidebar-link {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+}

@@ -3,6 +3,7 @@ const router = express.Router();
 
 const authController = require('./auth.controller');
 const validateRequest = require('../../middlewares/validateRequest');
+const authenticate = require('../../middlewares/authMiddleware');
 const { uploadIdVerificationDocument, attachUploadedDocumentImage } = require('../../middlewares/idVerificationUpload');
 const {
   registerSchema,
@@ -13,6 +14,7 @@ const {
   resetPasswordSchema,
   refreshTokenSchema,
   googleLoginSchema,
+  microsoftLoginSchema,
   submitIdVerificationSchema,
   logoutSchema,
 } = require('./auth.schema');
@@ -29,6 +31,9 @@ router.post('/login', validateRequest(loginSchema), authController.login);
 
 // Google OAuth login
 router.post('/google', validateRequest(googleLoginSchema), authController.googleLogin);
+
+// Microsoft OAuth login
+router.post('/microsoft', validateRequest(microsoftLoginSchema), authController.microsoftLogin);
 
 // Verify OTP
 router.post('/verify-otp', validateRequest(verifyOtpSchema), authController.verifyOtp);
@@ -60,6 +65,7 @@ router.post('/logout', validateRequest(logoutSchema, 'query'), authController.lo
 // Submit university ID for verification
 router.post(
   '/verify-id',
+  authenticate,
   uploadIdVerificationDocument,
   attachUploadedDocumentImage,
   validateRequest(submitIdVerificationSchema),

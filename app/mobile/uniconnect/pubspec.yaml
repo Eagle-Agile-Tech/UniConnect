@@ -23,6 +23,14 @@ dependencies:
   dio: ^5.9.2
   fresh_dio: ^0.6.0
   http_mock_adapter: ^0.6.1
+  chat_plugin: ^1.0.0
+  socket_io_client: ^2.0.3+1
+  url_launcher: ^6.3.2
+  google_places_autocomplete_text_field: ^4.0.0
+  flutter_nominatim: ^0.0.1+2
+  shared_preferences: ^2.5.5
+  flutter_svg: ^2.2.4
+  google_sign_in: ^7.2.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

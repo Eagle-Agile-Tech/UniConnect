@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:uniconnect/ui/chat/chat_screen.dart';
+import 'package:uniconnect/ui/chat/widgets/direct_chats.dart';
 import 'package:uniconnect/ui/explore/explore_screen.dart';
 import 'package:uniconnect/ui/home/home_screen.dart';
 import 'package:uniconnect/ui/profile/profile_screen.dart';
@@ -27,13 +28,13 @@ class _NavigationWrapperState extends State<NavigationWrapper> {
       selectedIcon: Icon(Icons.explore),
     ),
     const NavigationDestination(
-      icon: Badge(label: Text('5'), child: Icon(Icons.chat_bubble_outline)),
+      icon: Icon(Icons.chat_bubble_outline),
       label: 'Message',
-      selectedIcon: Badge(label: Text('5'), child: Icon(Icons.chat_bubble)),
+      selectedIcon: Icon(Icons.chat_bubble),
     ),
     const NavigationDestination(
       icon: Icon(Icons.notifications_none),
-      label: 'Notifications',
+      label: 'Notification',
       selectedIcon: Icon(Icons.notifications_rounded),
     ),
     const NavigationDestination(
@@ -46,7 +47,7 @@ class _NavigationWrapperState extends State<NavigationWrapper> {
   final List<Widget> pages = [
     HomeScreen(),
     ExploreScreen(),
-    ChatScreen(),
+    DirectChatScreen(),
     NotificationScreen(),
     ProfileScreen(),
   ];
@@ -59,6 +60,7 @@ class _NavigationWrapperState extends State<NavigationWrapper> {
         children: pages,
       ),
       bottomNavigationBar: NavigationBar(
+        height: 65,
         elevation: 0,
         labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
         destinations: destinations,

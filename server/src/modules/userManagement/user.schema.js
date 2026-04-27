@@ -12,8 +12,9 @@ const createUserSchema = zod.object({
   department: zod.string().optional(),
   level: zod.enum(['UNDERGRADUATE', 'POSTGRADUATE', 'GRADUATED']).optional(),
   universityId: zod.string().uuid('University id must be a valid UUID').optional(),
+  universityName: zod.string().min(2, 'University name must be at least 2 characters').max(120).optional(),
   yearOfStudy: zod.coerce.number().int().min(1).max(10).optional(),
-  graduationYear: zod.coerce.number().int().min(1900).max(2100).optional(),
+  expectedGraduationYear: zod.coerce.date().optional(),
 });
 
 const updateUserSchema = createUserSchema.partial();
@@ -27,12 +28,19 @@ const checkUsernameSchema = zod.object({
     .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores'),
 });
 
-
+const checkUsernameParamsSchema = zod.object({
+  username: zod
+    .string()
+    .min(3, 'Username must be at least 3 characters')
+    .max(20, 'Username must be at most 20 characters')
+    .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores'),
+});
 
 module.exports = {
   createUserSchema,
   updateUserSchema,
   upsertUserSchema,
   checkUsernameSchema,
+  checkUsernameParamsSchema,
   
 };

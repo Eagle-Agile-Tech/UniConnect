@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uniconnect/data/repository/user/user_repository.dart';
 import 'package:uniconnect/domain/models/user/user.dart';
+import 'package:uniconnect/utils/enums.dart';
 import 'package:uniconnect/utils/result.dart';
 
 import '../../service/api/api_client.dart';
@@ -15,11 +18,135 @@ class UserRepositoryRemote implements UserRepository {
   const UserRepositoryRemote(this._client);
 
   @override
-  Future<Result<List<User>>> searchUsers(String keyWord) async {
+  Future<Result> updateProfile(
+    String? firstName,
+    String? lastName,
+    String? username,
+    String? bio,
+    File? profilePic,
+  ) async {
+    final result = await _client.updateProfile(
+      firstName,
+      lastName,
+      username,
+      bio,
+      profilePic,
+    );
+    return result.fold(
+      (data) => Result.ok(''),
+      (error, stackTrace) => Result.ok(error),
+    );
+  }
+
+  @override
+  Future<
+    Result<
+      List<(String id, String username, String? profileImage, String fullName)>
+    >
+  >
+  searchUsers(String keyWord) async {
     final result = await _client.searchUsers(keyWord);
+    return result.fold((data) {
+      final users = data
+          .map(
+            (user) => (
+              user['userId'] as String,
+              user['username'] as String,
+              user['profileImage'] as String?,
+              user['fullName'] as String,
+            ),
+          )
+          .toList();
+      return Result.ok(users);
+    }, (error, _) => Result.error(error));
+  }
+
+  @override
+  Future<Result<User>> getCurrentUser() async {
+    final result = await _client.fetchCurrentUser();
+    return result.fold((data) {
+      final user = User.fromJson(data);
+      return Result.ok(user);
+    }, (error, _) => Result.error(error));
+  }
+
+  @override
+  Future<Result<User>> getUser(String id) async {
+    final result = await _client.fetchUser(id);
+    return result.fold((data) {
+      final user = User.fromJson(data);
+      return Result.ok(user);
+    }, (error, _) => Result.error(error));
+  }
+
+  @override
+  Future<Result<List<User>>> getUserNetworks(String userId) async {
+    final result = await _client.fetchUserNetworks(userId);
+    return result.fold((data) {
+      final users = data.map((user) => User.fromJson(user)).toList();
+      return Result.ok(users);
+    }, (error, stackTrace) => Result.error(error));
+  }
+
+  @override
+  Future<Result<List<User>>> getFriends() async {
+    final result = await _client.fetchFriends();
     return result.fold((data) {
       final users = data.map((user) => User.fromJson(user)).toList();
       return Result.ok(users);
     }, (error, _) => Result.error(error));
+  }
+
+  @override
+  Future<Result<List<User>>> getCommunityMembers(String id) async {
+    final result = await _client.fetchCommunityMembers(id);
+    return result.fold((data) {
+      final users = data.map((user) => User.fromJson(user)).toList();
+      return Result.ok(users);
+    }, (error, _) => Result.error(error));
+  }
+
+  @override
+  Future<Result> sendNetworkRequest(String receiverId) {
+    return _client.makeNetwork(receiverId);
+  }
+
+  @override
+  Future<Result> acceptNetworkRequest(String requestId) {
+    return _client.acceptNetwork(requestId);
+  }
+
+  @override
+  Future<Result> rejectNetworkRequest(String requestId) {
+    return _client.rejectNetwork(requestId);
+  }
+
+  @override
+  Future<Result> removeNetwork(String targetId) {
+    return _client.removeNetwork(targetId);
+  }
+
+  @override
+  Future<Result> cancelNetwork(String receiverId) {
+    return _client.cancelNetwork(receiverId);
+  }
+
+  @override
+  Future<Result<void>> reportUser({
+    required String userId,
+    required ReportReason reason,
+    String? message,
+  }) async {
+    final result = await _client.reportContent(
+      targetType: ReportTargetType.USER,
+      targetId: userId,
+      reason: reason,
+      message: message,
+    );
+
+    return result.fold(
+      (_) => Result.ok(null),
+      (error, stackTrace) => Result.error(error, stackTrace),
+    );
   }
 }

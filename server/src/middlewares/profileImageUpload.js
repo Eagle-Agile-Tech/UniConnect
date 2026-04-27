@@ -60,6 +60,48 @@ async function uploadProfileImageForUser({ userId, file }) {
   return data?.publicUrl || `${bucket}/${objectPath}`;
 }
 
+async function uploadCommunityImageForUser({ userId, file }) {
+  if (!userId) {
+    throw new UnauthorizedError('Authentication required');
+  }
+  if (!file) {
+    throw new AppError('Community image file is required', 400, true, 'COMMUNITY_IMAGE_REQUIRED');
+  }
+
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    throw new AppError(
+      'Supabase storage is not configured',
+      503,
+      true,
+      'STORAGE_NOT_CONFIGURED'
+    );
+  }
+
+  const bucket = process.env.SUPABASE_COMMUNITY_BUCKET || 'community-images';
+  const ext = path.extname(file.originalname || '').toLowerCase() || '.jpg';
+  const objectPath = `communities/${userId}/${Date.now()}-${crypto.randomUUID()}${ext}`;
+
+  const { error } = await supabase.storage
+    .from(bucket)
+    .upload(objectPath, file.buffer, {
+      contentType: file.mimetype,
+      upsert: false,
+    });
+
+  if (error) {
+    throw new AppError(
+      'Failed to upload community image',
+      503,
+      true,
+      'STORAGE_UPLOAD_FAILED'
+    );
+  }
+
+  const { data } = supabase.storage.from(bucket).getPublicUrl(objectPath);
+  return data?.publicUrl || `${bucket}/${objectPath}`;
+}
+
 async function attachUploadedProfileImage(req, _res, next) {
   try {
     if (!req.file) return next();
@@ -74,8 +116,24 @@ async function attachUploadedProfileImage(req, _res, next) {
   }
 }
 
+async function attachUploadedCommunityImage(req, _res, next) {
+  try {
+    if (!req.file) return next();
+
+    const userId = req.user?.id || req.user?.sub;
+    const publicUrl = await uploadCommunityImageForUser({ userId, file: req.file });
+    req.body.profileImage = publicUrl;
+
+    return next();
+  } catch (err) {
+    return next(err);
+  }
+}
+
 module.exports = {
   uploadProfileImage,
   uploadProfileImageForUser,
   attachUploadedProfileImage,
+  uploadCommunityImageForUser,
+  attachUploadedCommunityImage,
 };

@@ -6,17 +6,23 @@ import 'package:uniconnect/ui/core/common/widgets/post_card/widgets/image_carous
 import 'package:uniconnect/ui/core/common/widgets/post_card/widgets/post_author.dart';
 import 'package:uniconnect/ui/core/common/widgets/post_card/widgets/post_carousel.dart';
 import 'package:uniconnect/ui/home/view_models/comment_provider.dart';
-import 'package:uniconnect/ui/home/view_models/home_viewmodel_provider.dart';
 
 import '../../../../../domain/models/post/post.dart';
-import '../../../../../domain/models/user/user.dart';
 import '../../../theme/colors.dart';
 
 class UCPostCard extends ConsumerStatefulWidget {
-  const UCPostCard({required this.author, required this.post, super.key});
+  const UCPostCard({
+    required this.post,
+    super.key,
+    this.onLike,
+    this.onBookmark,
+    this.onDelete,
+  });
 
-  final User author;
   final Post post;
+  final VoidCallback? onLike;
+  final VoidCallback? onBookmark;
+  final VoidCallback? onDelete;
 
   @override
   ConsumerState<UCPostCard> createState() => _UCPostCardState();
@@ -53,7 +59,6 @@ class _UCPostCardState extends ConsumerState<UCPostCard> {
 
   @override
   Widget build(BuildContext context) {
-    final viewModel = ref.read(homeViewModelProvider.notifier);
     return Card(
       borderOnForeground: true,
       color: UCColors.background,
@@ -96,14 +101,13 @@ class _UCPostCardState extends ConsumerState<UCPostCard> {
                   ImageCarousel(
                     isExpanded: _isExpanded,
                     controller: _controller,
-                    imageWidth: _imageWidth,
-                    widget: widget,
+                    images: widget.post.mediaUrls!,
                   ),
 
                 if (widget.post.mediaUrls != null &&
                     widget.post.mediaUrls!.length > 1)
                   PostCarouselIndicator(
-                    widget: widget,
+                    length: widget.post.mediaUrls!.length,
                     currentIndex: _currentIndex,
                     controller: _controller,
                     imageWidth: _imageWidth,
@@ -113,8 +117,7 @@ class _UCPostCardState extends ConsumerState<UCPostCard> {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     IconButton(
-                      onPressed: () =>
-                          viewModel.toggleLike(postId: widget.post.id),
+                      onPressed: widget.onLike,
                       icon: Icon(
                         widget.post.isLikedByMe == true
                             ? Icons.thumb_up
@@ -129,77 +132,84 @@ class _UCPostCardState extends ConsumerState<UCPostCard> {
                       icon: const Icon(Icons.mode_comment_outlined),
                       //todo: make the comments lazily load when the button is pressed
                       //todo: use animation effect when the modal appears then the comments are loaded
-                      onPressed: () => showModalBottomSheet(
-                        context: context,
-                        showDragHandle: true,
-                        useSafeArea: true,
-                        isScrollControlled: true,
-                        builder: (context) {
-                          return Consumer(
-                            builder:
-                                (
-                                  BuildContext context,
-                                  WidgetRef ref,
-                                  Widget? child,
-                                ) {
-                                  final commentAsync = ref.watch(
-                                    commentProvider(widget.post.id),
-                                  );
-                                  return Padding(
-                                    padding: EdgeInsets.only(
-                                      bottom: MediaQuery.of(
-                                        context,
-                                      ).viewInsets.bottom,
-                                    ),
-                                    child: Column(
-                                      children: [
-                                        Expanded(
-                                          child: commentAsync.when(
-                                            data: (comments) =>
-                                                ListView.separated(
-                                                  itemCount: comments.length,
-                                                  separatorBuilder: (_, _) =>
-                                                      const Divider(
-                                                        indent: 70,
-                                                        height: 1,
-                                                        color: Colors.black12,
-                                                      ),
-                                                  itemBuilder:
-                                                      (context, index) =>
-                                                          CommentTile(
-                                                            comment:
-                                                                comments[index],
-                                                          ),
-                                                ),
-                                            error: (error, _) => Center(
-                                              child: Text(error.toString()),
-                                            ),
-                                            loading: () => const Center(
-                                              child:
-                                                  CircularProgressIndicator(),
+                      onPressed: () async {
+                        await showModalBottomSheet(
+                          context: context,
+                          showDragHandle: true,
+                          useSafeArea: true,
+                          isScrollControlled: true,
+                          builder: (context) {
+                            return Consumer(
+                              builder:
+                                  (
+                                    BuildContext context,
+                                    WidgetRef ref,
+                                    Widget? child,
+                                  ) {
+                                    final commentAsync = ref.watch(
+                                      commentProvider(widget.post.id),
+                                    );
+                                    return Padding(
+                                      padding: EdgeInsets.only(
+                                        bottom: MediaQuery.of(
+                                          context,
+                                        ).viewInsets.bottom,
+                                      ),
+                                      child: Column(
+                                        children: [
+                                          Expanded(
+                                            child: commentAsync.when(
+                                              data: (comments) =>
+                                                  ListView.separated(
+                                                    itemCount: comments.length,
+                                                    separatorBuilder: (_, _) =>
+                                                        const Divider(
+                                                          indent: 70,
+                                                          height: 1,
+                                                          color: Colors.black12,
+                                                        ),
+                                                    itemBuilder:
+                                                        (
+                                                          context,
+                                                          index,
+                                                        ) => CommentTile(
+                                                          comment:
+                                                              comments[index],
+                                                          postId:
+                                                              widget.post.id,
+                                                        ),
+                                                  ),
+                                              error: (error, _) => Center(
+                                                child: Text(error.toString()),
+                                              ),
+                                              loading: () => const Center(
+                                                child:
+                                                    CircularProgressIndicator(),
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                        CommentInputArea(widget.post.id),
-                                      ],
-                                    ),
-                                  );
-                                },
-                          );
-                        },
-                      ),
+                                          CommentInputArea(widget.post.id),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                            );
+                          },
+                        );
+                      },
                     ),
                     Text(widget.post.commentCount.toString()),
                     // todo: implement share functionality within the app only
-                    IconButton(
-                      onPressed: () {},
-                      icon: const Icon(Icons.share_outlined),
-                    ),
+                    // IconButton(
+                    //   onPressed: () {},
+                    //   icon: const Icon(Icons.share_outlined),
+                    // ),
                     Spacer(),
                     IconButton(
-                      onPressed: () =>
-                          viewModel.bookmarkPost(postId: widget.post.id),
-                      icon: widget.post.isBookmarkedByMe ? Icon(Icons.bookmark) : Icon(Icons.bookmark_border_outlined),
+                      onPressed: widget.onBookmark,
+                      icon: widget.post.isBookmarkedByMe
+                          ? Icon(Icons.bookmark)
+                          : Icon(Icons.bookmark_border_outlined),
                     ),
                   ],
                 ),

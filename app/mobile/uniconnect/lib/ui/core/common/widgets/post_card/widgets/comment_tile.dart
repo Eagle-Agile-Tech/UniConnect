@@ -1,21 +1,43 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../../config/assets.dart';
 import '../../../../../../domain/models/comment/comment.dart';
 import '../../../../../../utils/helper_functions.dart';
+import '../../../../../home/view_models/comment_provider.dart';
 import '../../../../theme/dimens.dart';
 
-class CommentTile extends StatelessWidget {
+class CommentTile extends ConsumerWidget {
   final Comment comment;
+  final String postId;
+  final bool isReply;
+  final String? parentCommentId;
 
-  const CommentTile({super.key, required this.comment});
+  const CommentTile({
+    super.key,
+    required this.comment,
+    required this.postId,
+    this.isReply = false,
+    this.parentCommentId,
+  });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notifier = ref.read(commentProvider(postId).notifier);
+    ref.watch(commentProvider(postId));
+
+    final avatarUrl = (comment.authorProfilePicUrl ?? '').trim();
+    final avatarImage = avatarUrl.isNotEmpty
+        ? NetworkImage(avatarUrl) as ImageProvider
+        : const AssetImage(Assets.defaultAvatar);
+    final repliesExpanded = notifier.isRepliesExpanded(comment.id);
+    final repliesLoading = notifier.isRepliesLoading(comment.id);
+    final replies = notifier.repliesFor(comment.id);
+
     return Padding(
-      padding: const EdgeInsets.symmetric(
+      padding: EdgeInsets.symmetric(
         vertical: Dimens.sm,
-        horizontal: Dimens.md,
+        horizontal: Dimens.md + (isReply ? 28 : 0),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -23,12 +45,7 @@ class CommentTile extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CircleAvatar(
-                radius: 18,
-                backgroundImage: comment.authorProfilePicUrl != null
-                    ? NetworkImage(comment.authorProfilePicUrl!)
-                    : const AssetImage(Assets.defaultAvatar),
-              ),
+              CircleAvatar(radius: 18, backgroundImage: avatarImage),
               const SizedBox(width: Dimens.md),
               Expanded(
                 child: Column(
@@ -37,12 +54,15 @@ class CommentTile extends StatelessWidget {
                     Wrap(
                       spacing: Dimens.sm,
                       children: [
-                        Text(comment.authorName,style: const TextStyle(fontWeight: FontWeight.bold),),
-                        Text(UCHelperFunctions.formatDateTime(
-                          comment.createdAt,
-                        ), style: Theme.of(
-                          context,
-                        ).textTheme.bodySmall?.copyWith(color: Colors.blueGrey))
+                        Text(
+                          comment.authorName,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          UCHelperFunctions.formatDateTime(comment.createdAt),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: Colors.blueGrey),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 4),
@@ -50,22 +70,62 @@ class CommentTile extends StatelessWidget {
                     const SizedBox(height: Dimens.sm),
                     Row(
                       children: [
-                        _ActionButton(
-                          Icons.thumb_up_outlined,
-                          comment.likeCount.toString(),
-                        ),
-                        const SizedBox(width: Dimens.md),
-                        _ActionButton(Icons.thumb_down_outlined, ""),
-                        const Spacer(),
-                        TextButton(
-                          onPressed: () {},
-                          child: const Text(
-                            "Reply",
-                            style: TextStyle(fontSize: 12),
+                        InkWell(
+                          onTap: () => notifier.toggleCommentLike(
+                            commentId: comment.id,
+                            parentCommentId: parentCommentId,
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          child: _ActionButton(
+                            comment.isLikedByMe
+                                ? Icons.thumb_up
+                                : Icons.thumb_up_outlined,
+                            comment.likeCount.toString(),
+                            color: comment.isLikedByMe
+                                ? Theme.of(context).primaryColor
+                                : Colors.grey[700],
                           ),
                         ),
+                        if (!isReply) ...[
+                          const SizedBox(width: Dimens.md),
+                          TextButton(
+                            onPressed: () => notifier.startReply(comment),
+                            child: const Text(
+                              "Reply",
+                              style: TextStyle(fontSize: 12),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
+                    if (!isReply && comment.replyCount > 0)
+                      TextButton(
+                        onPressed: () => notifier.toggleReplies(comment),
+                        child: Text(
+                          repliesExpanded
+                              ? 'Hide replies'
+                              : 'View replies (${comment.replyCount})',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ),
+                    if (!isReply && repliesExpanded && repliesLoading)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 6),
+                        child: SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+                    if (!isReply && repliesExpanded && replies.isNotEmpty)
+                      ...replies.map(
+                        (reply) => CommentTile(
+                          comment: reply,
+                          postId: postId,
+                          isReply: true,
+                          parentCommentId: comment.id,
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -80,19 +140,23 @@ class CommentTile extends StatelessWidget {
 class _ActionButton extends StatelessWidget {
   final IconData icon;
   final String label;
+  final Color? color;
 
-  const _ActionButton(this.icon, this.label);
+  const _ActionButton(this.icon, this.label, {this.color});
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 16, color: Colors.grey[700]),
-        if (label.isNotEmpty) ...[
-          const SizedBox(width: 4),
-          Text(label, style: const TextStyle(fontSize: 12)),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: color),
+          if (label.isNotEmpty) ...[
+            const SizedBox(width: 4),
+            Text(label, style: TextStyle(fontSize: 12, color: color)),
+          ],
         ],
-      ],
+      ),
     );
   }
 }

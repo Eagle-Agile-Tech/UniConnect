@@ -54,6 +54,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
               const SizedBox(height: Dimens.sm),
               SearchBar(
                 hintText: 'What are you looking for?',
+                readOnly: true,
                 hintStyle: WidgetStatePropertyAll(
                   TextStyle(fontWeight: FontWeight.w600),
                 ),
@@ -85,9 +86,21 @@ class _ExploreScreenState extends State<ExploreScreen> {
                     image: Assets.event,
                   ),
                   ExploreItem(
+                    onTap: () => context.push(Routes.exploreEvents),
                     color: Colors.deepOrange,
                     title: 'Events',
                     image: Assets.event,
+                  ),
+                  ExploreItem(
+                    onTap: () => context.push(Routes.exploreMentors),
+                    color: Color(0xFFA5CB24),
+                    title: 'Mentorship',
+                    image: Assets.tips,
+                  ),
+                  ExploreItem(
+                    color: Color(0xFFF9D704),
+                    title: 'Universities',
+                    image: Assets.tips,
                   ),
                   ExploreItem(
                     color: Colors.deepPurpleAccent,
@@ -108,16 +121,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
                     color: Color(0xFF315E59),
                     title: 'Support',
                     image: Assets.event,
-                  ),
-                  ExploreItem(
-                    color: Color(0xFFA5CB24),
-                    title: 'Mentorship',
-                    image: Assets.tips,
-                  ),
-                  ExploreItem(
-                    color: Color(0xFFF9D704),
-                    title: 'Universities',
-                    image: Assets.tips,
                   ),
                 ],
               ),

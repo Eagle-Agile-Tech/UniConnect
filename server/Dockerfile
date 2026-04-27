@@ -1,7 +1,7 @@
 FROM node:20-alpine
 
 WORKDIR /app
-
+RUN apk add --no-cache postgresql-client
 # Install dependencies for both backend packages.
 COPY src/package*.json ./src/
 COPY Database/package*.json ./Database/
@@ -12,8 +12,7 @@ RUN cd /app/Database && npm ci
 COPY src ./src
 COPY Database ./Database
 
-# Generate Prisma client used by /app/src/lib/prisma.js.
-RUN cd /app/Database && npx prisma generate --schema prisma/schema.prisma
+# Prisma client is generated at container runtime (see docker-compose command).
 
 EXPOSE 3000
 

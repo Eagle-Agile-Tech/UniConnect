@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:uniconnect/ui/core/theme/colors.dart';
-import 'package:uniconnect/ui/core/theme/custom_themes/elevated_button_theme.dart';
 import 'package:uniconnect/ui/core/theme/custom_themes/text_field_theme.dart';
 import 'package:uniconnect/ui/core/theme/custom_themes/text_theme.dart';
 
+import 'custom_themes/button_theme.dart';
 import 'custom_themes/color_scheme_theme.dart';
 
 abstract final class UCTheme {
@@ -23,8 +23,7 @@ abstract final class UCTheme {
     textTheme: GoogleFonts.interTextTheme(),
     colorScheme: UCColorScheme.lightScheme,
     inputDecorationTheme: UCTextFormFieldTheme.lightInputDecorationThemeData,
-    elevatedButtonTheme: UCElevatedButtonTheme.lightElevatedButtonThemeData,
-    //bottomSheetTheme:
+    // elevatedButtonTheme: UCElevatedButtonTheme.lightElevatedButtonThemeData,
   );
 
   static ThemeData darkTheme = ThemeData(
@@ -41,6 +40,5 @@ abstract final class UCTheme {
     textTheme: GoogleFonts.interTextTheme(UCTextTheme.lightTextTheme),
     inputDecorationTheme: UCTextFormFieldTheme.darkInputDecorationThemeData,
     colorScheme: UCColorScheme.darkScheme,
-    // elevatedButtonTheme: UCElevatedButtonTheme.darkElevatedButtonThemeData,
   );
 }

@@ -11,6 +11,7 @@ import 'package:uniconnect/utils/validator.dart';
 
 import '../../../../routing/routes.dart';
 import '../../../core/common/widgets/form_divider.dart';
+import '../../auth_state_provider.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
@@ -22,12 +23,14 @@ class SignupScreen extends ConsumerStatefulWidget {
 class _SignupScreenState extends ConsumerState<SignupScreen> {
   final GlobalKey<FormState> _signupFormKey = GlobalKey<FormState>();
   final _firstNameController = TextEditingController(text: 'Feysel');
-  final _lastNameController = TextEditingController(text: 'Feysel');
+  final _lastNameController = TextEditingController(text: 'Teshome');
   final _emailController = TextEditingController(
-    text: 'feysleteshome05@gmail.com',
+    text: 'feyteshome@ju2.edu.et',
   );
   final _passwordController = TextEditingController(text: '!@Fffds1ff');
   final _confirmPasswordController = TextEditingController(text: '!@Fffds1ff');
+  bool _isPassVisible = true;
+  bool _isPassConfirmVisible = true;
 
   @override
   void dispose() {
@@ -42,6 +45,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     final onboarding = ref.read(onboardingProvider.notifier);
+    final onboard = ref.watch(onboardingProvider);
     return Form(
       key: _signupFormKey,
       child: SingleChildScrollView(
@@ -97,7 +101,15 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               TextFormField(
                 controller: _passwordController,
                 validator: (value) => UCValidator.validatePassword(value),
-                decoration: const InputDecoration(labelText: 'Password'),
+                obscureText: _isPassVisible,
+                decoration: InputDecoration(labelText: 'Password',suffixIcon: IconButton(
+                  onPressed: () {
+                    setState(() {
+                      _isPassVisible = !_isPassVisible;
+                    });
+                  },
+                  icon: Icon(_isPassVisible ? Icons.visibility : Icons.visibility_off),
+                )),
               ),
               SizedBox(height: Dimens.defaultSpace),
               TextFormField(
@@ -106,20 +118,27 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   value,
                   _passwordController.text.trim(),
                 ),
-                decoration: const InputDecoration(labelText: 'Confirm Password'),
+                obscureText: _isPassConfirmVisible,
+                decoration: InputDecoration(labelText: 'Confirm Password',suffixIcon: IconButton(
+                  onPressed: () {
+                    setState(() {
+                      _isPassConfirmVisible = !_isPassConfirmVisible;
+                    });
+                  },
+                  icon: Icon(_isPassConfirmVisible ? Icons.visibility : Icons.visibility_off),
+                )),
               ),
               SizedBox(height: Dimens.spaceBtwSections),
               ElevatedButton(
-                onPressed: () async {
+                onPressed: onboard.isLoading ? null : () async {
                   if (!_signupFormKey.currentState!.validate()) return;
-                  onboarding.updateAccount(
+                  final status = await onboarding.submitAccount(
+                    _confirmPasswordController.text.trim(),
                     _firstNameController.text.trim(),
                     _lastNameController.text.trim(),
                     _emailController.text.trim(),
                     _passwordController.text.trim(),
                   );
-                  final status = await onboarding.submitAccount();
-                  // Todo: make this navigation more robust by listening to the state changes
                   if (status != null){
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text(status.toString()))
@@ -128,18 +147,28 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('Account created successfully! Please verify your email.'))
                     );
-                    context.go(Routes.verifyEmail);
+                    context.push(Routes.verifyEmail);
                   }
                 },
                 style: ElevatedButton.styleFrom(
                   minimumSize: Size(double.infinity, 48),
+                  side: BorderSide(color: onboard.isLoading ? Colors.grey : Theme.of(context).primaryColor),
                 ),
-                child: Text('Submit'),
+                child: onboard.isLoading ? SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Theme.of(context).primaryColor,
+                  ),
+                ) : Text('Submit'),
               ),
               SizedBox(height: Dimens.spaceBtwSections),
               FormDivider(),
               SizedBox(height: Dimens.defaultSpace),
-              SignInWith(),
+              SignInWith(
+                onPressed: () => ref.read(authNotifierProvider.notifier).signInWithGoogle(),
+              ),
               SizedBox(height: Dimens.spaceBtwSections),
               Text.rich(
                 TextSpan(
@@ -154,12 +183,18 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       ),
                       recognizer: TapGestureRecognizer()
                         ..onTap = () {
-                          context.go(Routes.signin);
+                          DefaultTabController.of(context).animateTo(0);
                         },
                     ),
                   ],
                 ),
               ),
+              SizedBox(height: Dimens.spaceBtwSections),
+              OutlinedButton.icon(
+                onPressed: () => context.push(Routes.expertSignup),
+                icon: Icon(Icons.workspace_premium),
+                label: Text("Register as Expert"),
+              )
             ],
           ),
         ),

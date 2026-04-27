@@ -10,7 +10,9 @@ const {
 } = require('../../middlewares/institutionVerificationUpload');
 
 const {
-  createInstitutionSchema,
+  registerInstitutionSchema,
+  verifyInstitutionOtpSchema,
+  resendInstitutionOtpSchema,
   updateInstitutionSchema,
   institutionIdParamSchema,
   loginInstitutionSchema,
@@ -27,9 +29,18 @@ const router = express.Router();
 
 router.post(
   '/',
-  authenticate,
-  validateRequest(createInstitutionSchema),
-  institutionController.createInstitution
+  validateRequest(registerInstitutionSchema),
+  institutionController.registerInstitution
+);
+router.post(
+  '/verify-otp',
+  validateRequest(verifyInstitutionOtpSchema),
+  institutionController.verifyInstitutionOtp
+);
+router.post(
+  '/resend-otp',
+  validateRequest(resendInstitutionOtpSchema),
+  institutionController.resendInstitutionOtp
 );
 router.get('/', validateRequest(listInstitutionsSchema, 'query'), institutionController.listInstitutions);
 router.get(

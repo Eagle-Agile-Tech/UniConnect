@@ -1,0 +1,135 @@
+﻿@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap");
+
+:root {
+  --ink: #0f172a;
+  --muted: #64748b;
+  --accent: #0f766e;
+  --accent-dark: #0b5f58;
+  --glass: rgba(255, 255, 255, 0.18);
+}
+
+body {
+  margin: 0;
+  font-family: "Manrope", "Segoe UI", sans-serif;
+}
+
+.container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 48px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: relative;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, rgba(15, 23, 42, 0.75), rgba(15, 23, 42, 0.35));
+}
+
+.login-card {
+  position: relative;
+  z-index: 1;
+  background: var(--glass);
+  padding: 32px;
+  width: min(100%, 380px);
+  border-radius: 18px;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.35);
+  color: #f8fafc;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.login-card h2 {
+  text-align: left;
+  margin: 0 0 10px;
+  font-size: 26px;
+}
+
+.login-card p.lead {
+  margin: 0 0 22px;
+  color: rgba(248, 250, 252, 0.8);
+  font-size: 14px;
+}
+
+.input-group {
+  margin-bottom: 16px;
+  text-align: left;
+}
+
+.input-group label {
+  font-size: 13px;
+  display: block;
+  margin-bottom: 6px;
+  padding-left: 2px;
+  color: rgba(248, 250, 252, 0.85);
+}
+
+.input-group input {
+  width: 100%;
+  padding: 12px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 10px;
+  outline: none;
+  background: rgba(15, 23, 42, 0.4);
+  color: #f8fafc;
+}
+
+.input-group input::placeholder {
+  color: rgba(248, 250, 252, 0.6);
+}
+
+.input-group input:focus {
+  border-color: rgba(15, 118, 110, 0.8);
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.2);
+}
+
+button {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  background: var(--accent);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+button:hover {
+  background: var(--accent-dark);
+  transform: translateY(-1px);
+}
+
+.footer {
+  text-align: left;
+  margin-top: 16px;
+  font-size: 13px;
+  color: rgba(248, 250, 252, 0.75);
+}
+
+.footer span {
+  color: #5eead4;
+  cursor: pointer;
+}
+
+.error {
+  margin: 8px 0 12px;
+  font-size: 13px;
+  color: #fecdd3;
+}
+
+@media (max-width: 900px) {
+  .container {
+    justify-content: center;
+    padding: 28px;
+  }
+
+  .login-card {
+    width: min(100%, 420px);
+  }
+}
