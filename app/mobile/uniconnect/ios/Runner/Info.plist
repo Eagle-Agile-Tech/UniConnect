@@ -29,15 +29,19 @@
 		<key>UIMainStoryboardFile</key>
 		<string>Main</string>
 		<key>UISupportedInterfaceOrientations</key>
-		<key>NSCameraUsageDescription</key>
-        <string>We need access to your camera to capture photos.</string>
-        <key>NSPhotoLibraryUsageDescription</key>
-        <string>We need access to your gallery to pick images.</string>
 		<array>
 			<string>UIInterfaceOrientationPortrait</string>
 			<string>UIInterfaceOrientationLandscapeLeft</string>
 			<string>UIInterfaceOrientationLandscapeRight</string>
 		</array>
+		<key>NSCameraUsageDescription</key>
+		<string>We need access to your camera to capture photos.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>We need access to your gallery to pick images.</string>
+		<key>FirebaseAppDelegateProxyEnabled</key>
+		<true/>
+		<key>NSUserNotificationUsageDescription</key>
+		<string>UniConnect sends notifications for messages and activity updates.</string>
 		<key>UISupportedInterfaceOrientations~ipad</key>
 		<array>
 			<string>UIInterfaceOrientationPortrait</string>

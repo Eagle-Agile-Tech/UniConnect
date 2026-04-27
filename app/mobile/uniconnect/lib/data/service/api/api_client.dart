@@ -529,7 +529,9 @@ class ApiClient {
     }
   }
 
-  Future<Result<Map<String, dynamic>>> leaveCommunity(String communityId) async {
+  Future<Result<Map<String, dynamic>>> leaveCommunity(
+    String communityId,
+  ) async {
     try {
       final response = await _client.post(
         '/communities/leave',
@@ -823,6 +825,101 @@ class ApiClient {
       await _client.delete('/events/$id');
       return Result.ok(null);
     } on DioException catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  // Notifications
+  Future<Result<Map<String, dynamic>>> fetchNotifications({
+    int limit = 20,
+    bool unreadOnly = false,
+  }) async {
+    try {
+      final response = await _client.get(
+        '/notifications',
+        queryParameters: {'limit': limit, if (unreadOnly) 'unreadOnly': true},
+      );
+      if (response.data is Map<String, dynamic>) {
+        return Result.ok(Map<String, dynamic>.from(response.data as Map));
+      }
+      return Result.error(StateError('Invalid notifications payload'));
+    } on DioException catch (e) {
+      return Result.error(e);
+    } catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<int>> fetchUnreadNotificationCount() async {
+    try {
+      final response = await _client.get('/notifications/unread-count');
+      final payload = _payload(response.data);
+      if (payload is Map<String, dynamic>) {
+        final unreadCount = payload['unreadCount'];
+        if (unreadCount is int) {
+          return Result.ok(unreadCount);
+        }
+        if (unreadCount is num) {
+          return Result.ok(unreadCount.toInt());
+        }
+      }
+      return Result.error(StateError('Invalid unread count payload'));
+    } on DioException catch (e) {
+      return Result.error(e);
+    } catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<Map<String, dynamic>>> markNotificationAsRead(
+    String notificationId,
+  ) async {
+    try {
+      final response = await _client.patch(
+        '/notifications/$notificationId/read',
+      );
+      if (response.data is Map<String, dynamic>) {
+        return Result.ok(Map<String, dynamic>.from(response.data as Map));
+      }
+      return Result.error(StateError('Invalid mark-as-read payload'));
+    } on DioException catch (e) {
+      return Result.error(e);
+    } catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<int>> markAllNotificationsAsRead() async {
+    try {
+      final response = await _client.patch('/notifications/read-all');
+      final payload = _payload(response.data);
+      if (payload is Map<String, dynamic>) {
+        final updatedCount = payload['updatedCount'];
+        if (updatedCount is int) {
+          return Result.ok(updatedCount);
+        }
+        if (updatedCount is num) {
+          return Result.ok(updatedCount.toInt());
+        }
+      }
+      return Result.error(StateError('Invalid mark-all-read payload'));
+    } on DioException catch (e) {
+      return Result.error(e);
+    } catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<void>> updateNotificationDeviceToken(String? fcmToken) async {
+    try {
+      await _client.put(
+        '/notifications/device-token',
+        data: {'fcmToken': fcmToken},
+      );
+      return Result.ok(null);
+    } on DioException catch (e) {
+      return Result.error(e);
+    } catch (e) {
       return Result.error(e);
     }
   }

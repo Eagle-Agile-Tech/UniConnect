@@ -85,6 +85,14 @@ class SocketService {
     _socket?.on('chat:messages:delivered', (data) {
       _notifyListeners('message:delivered', data);
     });
+
+    _socket?.on('notification', (data) {
+      _notifyListeners('notification:received', data);
+    });
+
+    _socket?.on('notification:unread-count', (data) {
+      _notifyListeners('notification:unread-count', data);
+    });
   }
 
   void addEventListener(String event, Function callback) {
