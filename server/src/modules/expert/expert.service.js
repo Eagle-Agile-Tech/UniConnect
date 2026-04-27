@@ -180,7 +180,6 @@ class ExpertService {
 
     return {
       ...userResponse,
-      institution: profile?.institution || null,
     };
   }
 
@@ -348,7 +347,6 @@ class ExpertService {
             otpSent: false,
           }),
       ...userResponse,
-      institution: profile?.institution || null,
     };
   }
 
@@ -388,7 +386,6 @@ class ExpertService {
 
     return {
       ...userResponse,
-      institution: profile.institution || null,
     };
   }
 
@@ -455,7 +452,6 @@ class ExpertService {
 
     return {
       ...userResponse,
-      institution: profile.institution || null,
     };
   }
 

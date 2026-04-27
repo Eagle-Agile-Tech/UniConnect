@@ -52,8 +52,9 @@ function buildUserResponse({
   networkCount,
   networkStatus,
 }) {
+  const role = String(user?.role || '').trim().toUpperCase() || null;
   const resolvedUniversity =
-    user?.role === 'EXPERT'
+    role === 'EXPERT'
       ? expertProfile?.institution?.name || null
       : universityName || profile?.university?.name || profile?.universityName || null;
 
@@ -102,14 +103,14 @@ function buildUserResponse({
     graduationYearValue = isNaN(dateObj.getTime()) ? null : dateObj.toISOString();
   }
 
-
-  response.STUDENT = {
-    degree: normalizeString(profile?.department ?? null),
-    currentYear: normalizeString(currentYearValue),
-    expectedGraduationYear: graduationYearValue,
-    interests: normalizeInterests(profile?.interests),
-
-  };
+  if (role === 'STUDENT') {
+    response.STUDENT = {
+      degree: normalizeString(profile?.department ?? null),
+      currentYear: normalizeString(currentYearValue),
+      expectedGraduationYear: graduationYearValue,
+      interests: normalizeInterests(profile?.interests),
+    };
+  }
 
   if (accessToken !== undefined || refreshToken !== undefined || sessionId !== undefined) {
     response.accessToken = accessToken ?? null;
@@ -138,7 +139,7 @@ function buildUserResponse({
     }
   }
 
-  if (expertProfile || user?.role === 'EXPERT') {
+  if (expertProfile || role === 'EXPERT') {
     response.EXPERT = {
       expertise: normalizeString(expertProfile?.expertise ?? null),
       honor: normalizeString(expertProfile?.honor ?? null),
