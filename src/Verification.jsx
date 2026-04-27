@@ -1,21 +1,22 @@
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import VerificationPage from "./components/verification/page";
-import PendingVerification from "./components/verification/peanding";
-import VerificationWithID from "./components/verification/vid";
+import IdVerificationPage from "./components/verification/verification";
 import VerificationWithEmail from "./components/verification/vemail";
-import UnVerified from "./components/verification/unverified";
+import InstitutionVerification from "./components/verification/instverifay";
+
 
 export default function Verification() {
     return (
         <Routes>
-            <Route path="/" element={<VerificationPage />} />
+            <Route index element={<VerificationPage />} />
             <Route path="verification-overview" element={<VerificationPage />} />
-            <Route path="pending-verification" element={<PendingVerification />} />
-            <Route path="unverified" element={<UnVerified />} />
-            <Route path="verified-id" element={<VerificationWithID />} />
+            <Route path="id-verification" element={<IdVerificationPage />} />
             <Route path="verified-email" element={<VerificationWithEmail />} />
-            <Route path="*" element={<Navigate to="" replace />} />
+            <Route path="Institution-Verification-" element={<InstitutionVerification />} />
+            <Route path="Institution-Verification" element={<InstitutionVerification />} />
+
+            <Route path="*" element={<Navigate to="verification-overview" replace />} />
         </Routes>
     );
 }

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Link } from "react-router-dom";
+import { useAuth } from "../../contexts/useAuth";
 import { Zap,
   LayoutDashboard,
   BarChart3,
@@ -53,10 +54,11 @@ const menuItems = [
     badge: "128",                 // e.g. pending verification requests
     submenu: [
       { id: "verification-overview", label: "Verification Overview" },
+      { id: "id-verification", label: "Id Verification" },
       { id: "verified-email", label: "Verified with Email" },
-      { id: "verified-id", label: "Verified with ID" },
-      { id: "unverified", label: "Unverified" },
-      { id: "pending-verification", label: "Pending Verification" },
+     
+      { id: "Institution-Verification-", label: "Institution Verification" },
+    
     ]
   },
   {
@@ -108,6 +110,7 @@ function Sidebar({ collapsed = false, onToggleSidebar }) {
   const [expandedItem, setExpandedItem] = useState(new Set());
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
 
   const toggleExpand = (itemid) => {
     const newExpanded = new Set(expandedItem);
@@ -148,10 +151,9 @@ function Sidebar({ collapsed = false, onToggleSidebar }) {
   };
 
   return (
-   <div className={`${collapsed ? 'w-16' : 'w-72'} transition-all duration-300 ease-in-out 
-   bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border-r border-slate-200/50 dark:border-slate-700/50 flex flex-col relative z-10`}>
-    {/* logo */}
-    <div className="p-6 border-b border-slate-200/50 dark:border-slate-700/50 ">
+   <div className={`${collapsed ? 'w-16' : 'w-72'} h-screen overflow-x-hidden transition-all duration-300 ease-in-out 
+bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border-r border-slate-200/50 dark:border-slate-700/50 flex flex-col relative z-10`}>{/* logo */}
+    <div className="p-4 border-b border-slate-200/50 dark:border-slate-700/50 ">
 <div className="flex items-center justify-between">
   <div className="flex items-center space-x-3">
     <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
@@ -162,26 +164,15 @@ function Sidebar({ collapsed = false, onToggleSidebar }) {
         <h1 className="text-lg font-bold text-slate-800 dark:text-white">
           Uniconnect
         </h1>
-        <p className="text-xs text-slate-600 dark:text-slate-400">
-          connect
-        </p>
+       
       </div>
     )}
   </div>
-  {collapsed && onToggleSidebar && (
-    <button
-      type="button"
-      onClick={onToggleSidebar}
-      className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-      aria-label="Open sidebar"
-    >
-      <Menu className="w-5 h-5" />
-    </button>
-  )}
+ 
 </div>
     </div>
     {/* navigation */}
-   <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+   <nav className={`flex-1 ${collapsed ? 'p-2' : 'p-4'} space-y-2 overflow-y-auto overflow-x-hidden`}>
   {menuItems.map((item) => {
     const itemActive =
       (item.id === "dashboard" && location.pathname === "/dashboard") ||
@@ -204,7 +195,7 @@ function Sidebar({ collapsed = false, onToggleSidebar }) {
           }`}
           onClick={() => handleItemClick(item)}
         >
-          <div className={`flex items-center ${collapsed ? 'justify-center w-full' : 'space-x-3'}`}>
+          <div className={`min-w-0 flex items-center ${collapsed ? 'justify-center w-full' : 'space-x-3'}`}>
             {React.createElement(item.icon, { className: "w-5 h-5" })}
 
             {collapsed && (
@@ -215,7 +206,7 @@ function Sidebar({ collapsed = false, onToggleSidebar }) {
 
             {!collapsed && (
             <>
-              <span className="font-medium ml-2">
+              <span className="font-medium ml-2 truncate">
                 {item.label}
               </span>
 
@@ -258,11 +249,11 @@ function Sidebar({ collapsed = false, onToggleSidebar }) {
               location.pathname === `/dashboard/${sub.id}` ||
               location.pathname === `/dashboard/verification/${sub.id}`
           )) && (
-          <div className="ml-8 mt-2 space-y-1">
+          <div className="ml-8 mt-2 space-y-1 min-w-0">
             {item.submenu.map((subitem) => (
               <button
                 key={subitem.id}
-    className={`w-full text-left p-2 text-sm rounded-lg transition-all flex items-center space-x-3 ${
+    className={`w-full min-w-0 text-left p-2 text-sm rounded-lg transition-all flex items-center space-x-3 ${
       location.pathname === `/dashboard/${subitem.id}` ||
       location.pathname === `/dashboard/verification/${subitem.id}`
         ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg shadow-blue-500/25 font-bold"
@@ -270,7 +261,7 @@ function Sidebar({ collapsed = false, onToggleSidebar }) {
     }`}
     onClick={() => handleNavigation(item.id, subitem.id)}
   >
-    <span>{subitem.label}</span>
+    <span className="truncate">{subitem.label}</span>
     {subitem.badge && (
       <span className="px-2 py-1 text-xs bg-white/20 dark:bg-white/20 text-white rounded-full">
         {subitem.badge}
@@ -287,29 +278,13 @@ function Sidebar({ collapsed = false, onToggleSidebar }) {
   })}
 </nav>
     {/* user profile */}
-      <div className="p-4 border-t border-slate-200/50 dark:border-slate-700/50">
-  <Link
-    to="/profile"
-    className="w-full flex items-center space-x-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 p-2 text-left hover:bg-slate-100 dark:hover:bg-slate-700/50 transition"
-  >
-    <img
-      src="https://via.placeholder.com/40"
-      alt="Admin"
-      className="w-10 h-10 rounded-full ring-2 ring-blue-500"
-    />
-
-    <div className="flex-1 min-w-0">
-      <p className="text-sm font-medium text-slate-800 dark:text-white truncate">
-        Admin
-      </p>
-      <p className="text-xs text-slate-600 dark:text-slate-400 truncate">
-        Administrator
-      </p>
-    </div>
-  </Link>
-</div>
+    <div className="mt-auto shrink-0  border-t border-slate-200/50 dark:border-slate-700/50">
+    <Link to="/profile" className="w-full flex items-center space-x-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 p-2 text-left hover:bg-slate-100 dark:hover:bg-slate-700/50 transition" > 
+    <img src={user?.profile?.profileImage || "https://via.placeholder.com/40"} alt="Admin" className="w-10 h-10 rounded-full ring-2 ring-blue-500" />
+     <div className="flex-1 min-w-0"> <p className="text-sm font-medium text-slate-800 dark:text-white truncate"> 
+      {user?.profile?.fullName || user?.firstName || "Admin"} </p> 
+      <p className="text-xs text-slate-600 dark:text-slate-400 truncate"> {user?.role || "Administrator"} </p> 
       </div>
-  
-  )
-}
-export default Sidebar
+      
+     </Link> </div> </div> ) }
+       export default Sidebar

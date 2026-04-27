@@ -1,15 +1,22 @@
-import React, { useState } from 'react';
-import Charts from './charts';
-import VerificationChart from './verificationchart'
-export default function VerificationPage() {
+import React from 'react'
+import CircleChart from './circlechart'
+import VerificationStatus from './statuschart';
+
+
+export default function Dashboard() {
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <Charts />
-      {/* VerificationChart (Full width below) */}
-      <div className="xl:col-span-2 xl:w-[75%] w-full :mx-auto">
-      <VerificationChart />
-      </div>
-      </div>
-    );
-    }
+   
+   <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+         <div className="space-y-3">
+           
+   <CircleChart />
+         </div>
+        
+    <div className="xl:col-span-2">
+             <VerificationStatus/>
+        </div>
+       </div>
+        
+     )
+   }
+   

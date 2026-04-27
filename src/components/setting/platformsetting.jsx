@@ -1,6 +1,6 @@
 import { 
-  Settings, User, Shield, Globe, Database, Bell, Lock, CreditCard, 
-  Save, Search, ChevronDown, ToggleRight, CheckCircle 
+  Settings, Shield, Globe, Database,
+  Save, ChevronDown, ToggleRight, CheckCircle 
 } from 'lucide-react';
 import React, { useState } from 'react';
 
@@ -66,7 +66,7 @@ const settingsSections = [
   },
 ];
 
-export default function SettingsPage({ CurrentPage }) {
+export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState('general');
   const [settings, setSettings] = useState({});
 
@@ -81,7 +81,7 @@ export default function SettingsPage({ CurrentPage }) {
       case 'text':
       case 'password':
       case 'number':
-      case 'textarea':
+      case 'textarea': {
         const InputTag = item.type === 'textarea' ? 'textarea' : 'input';
         return (
           <InputTag
@@ -92,6 +92,7 @@ export default function SettingsPage({ CurrentPage }) {
             placeholder={item.label}
           />
         );
+      }
       case 'toggle':
         return (
           <button className={`relative w-14 h-7 rounded-full transition-all duration-300 ${
@@ -143,7 +144,7 @@ export default function SettingsPage({ CurrentPage }) {
   };
 
   return (
-    <div className="flex-1 ml-72 p-8 bg-slate-50 dark:bg-slate-900 min-h-screen">
+    <div className="flex-1 min-w-0 p-8 bg-slate-50 dark:bg-slate-900 min-h-screen">
       <div className="max-w-6xl mx-auto">
         <div className="mb-12">
           <div className="flex items-center gap-4 mb-6">

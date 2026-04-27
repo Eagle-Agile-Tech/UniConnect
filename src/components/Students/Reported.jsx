@@ -53,7 +53,7 @@ export default function Reported() {
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto overflow-y-visible">
+      <div className="overflow-x-auto">
         <table className="w-full min-w-[600px]">
           <thead>
             <tr className="border-b border-slate-200/50 dark:border-slate-700/50">
@@ -82,7 +82,7 @@ export default function Reported() {
                   {/* Profile Card */}
                   {hoveredUser === user.id && (
                     <div
-                      className="absolute top-1/2 left-full ml-3 -translate-y-1/2 w-72 bg-white dark:bg-slate-800 shadow-lg rounded-xl p-4 border border-slate-200 dark:border-slate-700 z-50"
+                      className="absolute top-full left-0 mt-2 w-72 bg-white dark:bg-slate-800 shadow-lg rounded-xl p-4 border border-slate-200 dark:border-slate-700 z-50"
                       onMouseEnter={() => setHoveredUser(user.id)}
                       onMouseLeave={() => setHoveredUser(null)}
                     >

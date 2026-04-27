@@ -1,6 +1,7 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { AuthProvider } from "./contexts/auth-provider";
+import { useAuth } from "./contexts/useAuth";
 import Dashboard from "./dashboard";
 import Signin from "./components/log/signin";
 import Profile from "./components/profile/profile";
@@ -9,7 +10,18 @@ import AddAdmin from "./components/profile/Addadmin";
 
 import Page from "./page";
 function AppContent() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white">
+        <div className="text-center">
+          <p className="text-lg font-semibold">Loading admin session...</p>
+          <p className="text-sm text-slate-400">Connecting to UniConnect backend</p>
+        </div>
+      </div>
+    );
+  }
 
   // If user is NOT logged in
   if (!user) {

@@ -1,7 +1,7 @@
 // components/User/log/signin.jsx
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth } from "../../contexts/useAuth";
 import { Mail, Lock } from "lucide-react";
 
 export default function LoginPage() {
@@ -14,10 +14,9 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const handleGoSignup = () => {
-    setAnimating(true);
-    setTimeout(() => navigate("/signup"), 700);
-  };
+  useEffect(() => {
+    document.title = "Admin Sign In | UniConnect";
+  }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -51,7 +50,7 @@ export default function LoginPage() {
 >
        
 
-        <h2 className="mb-10 text-4xl font-semibold">Welcome Admine</h2>
+        <h2 className="mb-10 text-4xl font-semibold">Welcome Admin</h2>
 
         {/* Error */}
         {error && (

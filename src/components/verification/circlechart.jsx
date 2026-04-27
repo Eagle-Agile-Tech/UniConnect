@@ -2,22 +2,33 @@ import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
 
 const data = [
-  { label: "food", value: 57, color: "#3b82f6", change: "+3.4%", up: true },
-  { label: "house", value: 76, color: "#f59e0b", change: "-1.10%", up: false },
-  { label: "car", value: 21, color: "#a855f7", change: "-15.75%", up: false },
-  { label: "gaiety", value: 34, color: "#22c55e", change: "+10.1%", up: true },
-  { label: "holiday", value: 10, color: "#f97316", change: "+23.1%", up: true },
-    { label: "holiday", value: 10, color: "#f97316", change: "+23.1%", up: true },
+  {
+    label: "ID Verification",
+    value: 80,
+    color: "#3b82f6",
+  },
+  {
+    label: "Email Verification",
+    value: 100,
+    color: "#22c55e",
+  },
+  {
+    label: "Institution Verification",
+    value: 60,
+    color: "#f59e0b",
+  },
 ];
 
 export default function Dashboard() {
   return (
-        <div className="bg-white/80 dark:bg-slate-900 backdrop-blur-xl rounded-b-2xl p-3 border border-slate-200/50 dark:border-slate-700/50">
-      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-8">
+    <div className="bg-white/80 dark:bg-slate-900 h-[570px] backdrop-blur-xl rounded-b-2xl p-6 border border-slate-200/50 dark:border-slate-700/50">
+
+      <div className="grid grid-cols-1  gap-8">
         {data.map((item, index) => (
-          <div key={index} className="text-center">
-            
-            <div className="w-24 h-24">
+          <div key={index} className="flex flex-col items-center">
+
+            {/* Circle */}
+            <div className="w-28 h-18 mb-6">
               <CircularProgressbar
                 value={item.value}
                 text={`${item.value}%`}
@@ -29,14 +40,26 @@ export default function Dashboard() {
               />
             </div>
 
-            <p className="mt-3 text-gray-400">{item.label}</p>
+            {/* Label */}
+            <p className="mt-4  text-sm font-medium text-gray-700 dark:text-gray-300 text-center">
+              {item.label}
+            </p>
 
+            {/* Status */}
             <p
-              className={`text-sm ${
-                item.up ? "text-green-500" : "text-red-500"
+              className={`text-xs mt-1 ${
+                item.value === 100
+                  ? "text-green-500"
+                  : item.value > 50
+                  ? "text-yellow-500"
+                  : "text-red-500"
               }`}
             >
-              {item.change}
+              {item.value === 100
+                ? "Verified"
+                : item.value > 50
+                ? "In Progress"
+                : "Not Verified"}
             </p>
 
           </div>

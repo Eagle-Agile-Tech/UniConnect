@@ -1,76 +1,174 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from "react";
+import {
+  clearAdminSession,
+  createAdmin as createAdminRequest,
+  getAdminProfile,
+  getStoredAccessToken,
+  getStoredRefreshToken,
+  getStoredUser,
+  loginAdmin,
+  logoutAdmin as logoutAdminRequest,
+  refreshAdminSession,
+  storeAdminSession,
+  updateAdminProfile as updateAdminProfileRequest,
+} from "../lib/adminApi";
+import { AuthContext } from "./auth-context";
 
-const AuthContext = createContext();
+const normalizeUser = (profile) => ({
+  id: profile.id,
+  email: profile.email,
+  role: profile.role,
+  createdAt: profile.createdAt,
+  firstName: profile.firstName,
+  lastName: profile.lastName,
+  profile: profile.profile || null,
+});
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
-
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(getStoredUser());
+  const [accessToken, setAccessToken] = useState(getStoredAccessToken());
+  const [refreshToken, setRefreshToken] = useState(getStoredRefreshToken());
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Check if user is logged in on app start
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
+  const saveSession = ({ nextUser, nextAccessToken, nextRefreshToken }) => {
+    setUser(nextUser);
+    setAccessToken(nextAccessToken);
+    setRefreshToken(nextRefreshToken);
+    storeAdminSession({
+      user: nextUser,
+      accessToken: nextAccessToken,
+      refreshToken: nextRefreshToken,
+    });
+  };
+
+  const clearSession = () => {
+    setUser(null);
+    setAccessToken(null);
+    setRefreshToken(null);
+    clearAdminSession();
+  };
+
+  const refreshProfile = useCallback(async (tokenOverride) => {
+    const token = tokenOverride || accessToken || getStoredAccessToken();
+    if (!token) return null;
+
+    const profile = await getAdminProfile(token);
+    const normalizedUser = normalizeUser(profile);
+
+    setUser(normalizedUser);
+    storeAdminSession({
+      user: normalizedUser,
+      accessToken: token,
+      refreshToken: refreshToken || getStoredRefreshToken(),
+    });
+
+    return normalizedUser;
+  }, [accessToken, refreshToken]);
+
+  const tryRestoreSession = useCallback(async () => {
+    const storedAccessToken = getStoredAccessToken();
+    const storedRefreshToken = getStoredRefreshToken();
+
+    if (!storedAccessToken && !storedRefreshToken) {
+      clearSession();
+      setLoading(false);
+      return;
     }
-    setLoading(false);
-  }, []);
+
+    try {
+      if (storedAccessToken) {
+        setAccessToken(storedAccessToken);
+        setRefreshToken(storedRefreshToken);
+        await refreshProfile(storedAccessToken);
+      } else if (storedRefreshToken) {
+        const refreshed = await refreshAdminSession(storedRefreshToken);
+        setAccessToken(refreshed.accessToken);
+        setRefreshToken(refreshed.refreshToken);
+        storeAdminSession({
+          accessToken: refreshed.accessToken,
+          refreshToken: refreshed.refreshToken,
+          user: getStoredUser(),
+        });
+        await refreshProfile(refreshed.accessToken);
+      }
+    } catch {
+      clearSession();
+    } finally {
+      setLoading(false);
+    }
+  }, [refreshProfile]);
+
+  useEffect(() => {
+    void tryRestoreSession();
+  }, [tryRestoreSession]);
 
   const login = async ({ email, password }) => {
-    // Simulate API call
     setLoading(true);
     try {
-      // For demo purposes, accept any email/password
-      // In real app, make API call here
-      const userData = { email, name: email.split('@')[0] };
-      setUser(userData);
-      localStorage.setItem('user', JSON.stringify(userData));
+      const session = await loginAdmin({ email, password });
+      const profile = await getAdminProfile(session.accessToken);
+      const normalizedUser = normalizeUser(profile);
+
+      saveSession({
+        nextUser: normalizedUser,
+        nextAccessToken: session.accessToken,
+        nextRefreshToken: session.refreshToken,
+      });
+
+      return normalizedUser;
     } catch (error) {
-      throw new Error('Invalid credentials');
+      throw new Error(error.message || "Invalid credentials");
     } finally {
       setLoading(false);
     }
   };
 
-  const signup = async ({ name, email, password }) => {
-    // Simulate API call
-    setLoading(true);
+  const logout = async () => {
+    const token = refreshToken || getStoredRefreshToken();
     try {
-      // For demo purposes, create user
-      // In real app, make API call here
-      const userData = { name, email };
-      setUser(userData);
-      localStorage.setItem('user', JSON.stringify(userData));
-    } catch (error) {
-      throw new Error('Signup failed');
+      if (token) {
+        await logoutAdminRequest(token);
+      }
+    } catch {
+      // Best-effort logout. Client session is still cleared below.
     } finally {
-      setLoading(false);
+      clearSession();
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('user');
+  const updateProfile = async (payload) => {
+    const token = accessToken || getStoredAccessToken();
+    if (!token) throw new Error("Not authenticated");
+
+    const updated = await updateAdminProfileRequest(token, payload);
+    const normalizedUser = normalizeUser(updated);
+
+    saveSession({
+      nextUser: normalizedUser,
+      nextAccessToken: token,
+      nextRefreshToken: refreshToken || getStoredRefreshToken(),
+    });
+
+    return normalizedUser;
+  };
+
+  const createAdmin = async (payload) => {
+    const token = accessToken || getStoredAccessToken();
+    if (!token) throw new Error("Not authenticated");
+    return createAdminRequest(token, payload);
   };
 
   const value = {
     user,
+    accessToken,
+    refreshToken,
+    loading,
     login,
-    signup,
     logout,
-    loading
+    refreshProfile,
+    updateProfile,
+    createAdmin,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
-};
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}

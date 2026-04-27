@@ -55,10 +55,10 @@ export default function SalesChart() {
           </PieChart>
         </ResponsiveContainer>
       </div>
-<div className=" space-y-3">
-{weeklyData.map((entry, index) => {
+      <div className=" space-y-3">
+{weeklyData.map((entry) => {
     return (
-  <div className="flex items-center justify-between">
+  <div key={entry.name} className="flex items-center justify-between">
       <div className="flex items-sce space-x-3">
         <div
           className="w-4 h-4 rounded-full"

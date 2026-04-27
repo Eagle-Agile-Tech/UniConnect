@@ -1,4 +1,4 @@
-import React from 'react'
+import React from "react";
 import {
   BarChart,
   Bar,
@@ -10,40 +10,53 @@ import {
 } from "recharts";
 
 const data = [
-  { month: "Jan", revenue: 45000, expenses: 32000 },
-  { month: "Feb", revenue: 52000, expenses: 38000 },
-  { month: "Mar", revenue: 48000, expenses: 35000 },
-  { month: "Apr", revenue: 61000, expenses: 42000 },
-  { month: "May", revenue: 55000, expenses: 40000 },
-  { month: "Jun", revenue: 67000, expenses: 45000 },
-  { month: "Jul", revenue: 72000, expenses: 48000 },
-  { month: "Aug", revenue: 69000, expenses: 46000 },
-  { month: "Sep", revenue: 78000, expenses: 52000 },
-  { month: "Oct", revenue: 74000, expenses: 50000 },
-  { month: "Nov", revenue: 82000, expenses: 55000 },
-  { month: "Dec", revenue: 89000, expenses: 58000 }
+  { month: "Jan", users: 45000, post: 32000 },
+  { month: "Feb", users: 52000, post: 38000 },
+  { month: "Mar", users: 48000, post: 35000 },
+  { month: "Apr", users: 61000, post: 42000 },
+  { month: "May", users: 55000, post: 40000 },
+  { month: "Jun", users: 67000, post: 45000 },
+  { month: "Jul", users: 72000, post: 48000 },
+  { month: "Aug", users: 69000, post: 46000 },
+  { month: "Sep", users: 78000, post: 52000 },
+  { month: "Oct", users: 74000, post: 50000 },
+  { month: "Nov", users: 82000, post: 55000 },
+  { month: "Dec", users: 89000, post: 58000 }
 ];
 
 export default function RevenueChart() {
   return (
     <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-b-2xl border border-slate-200/50 dark:border-slate-700/50 p-6">
+      
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-xl font-bold text-slate-800 dark:text-white">Revenue Chart</h3>
-          <p className="text-sm text-slate-600">Track your revenue over time</p>
+          <h3 className="text-xl font-bold text-slate-800 dark:text-white">
+            Users & Posts Chart
+          </h3>
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            Track users and posts over time
+          </p>
         </div>
+
         <div className="flex space-x-4">
           <div className="flex items-center space-x-2">
             <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-            <span className="text-sm text-slate-600 dark:text-slate-400">Revenue</span>
+            <span className="text-sm text-slate-600 dark:text-slate-400">
+              Users
+            </span>
           </div>
+
           <div className="flex items-center space-x-2">
             <div className="w-3 h-3 rounded-full bg-purple-500"></div>
-            <span className="text-sm text-slate-600 dark:text-slate-400">Expenses</span>
+            <span className="text-sm text-slate-600 dark:text-slate-400">
+              Posts
+            </span>
           </div>
         </div>
       </div>
 
+      {/* Chart */}
       <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
@@ -65,7 +78,7 @@ export default function RevenueChart() {
               fontSize={12}
               tickLine={false}
               axisLine={false}
-              tickFormatter={(value) => `$${value / 1000}k`}
+              tickFormatter={(value) => `${value / 1000}k`}
             />
 
             <Tooltip
@@ -73,36 +86,43 @@ export default function RevenueChart() {
                 backgroundColor: "rgba(255,255,255,0.95)",
                 border: "none",
                 borderRadius: "12px",
-                boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
+                boxShadow: "0 10px 40px rgba(0,0,0,0.1)"
               }}
-              formatter={(value) => [`$${value.toLocaleString()}`, ""]}
+              formatter={(value, name) => [
+                value.toLocaleString(),
+                name === "users" ? "Users" : "Posts"
+              ]}
             />
 
+            {/* Users Bar */}
             <Bar
-              dataKey="revenue"
-              fill="url(#revenueGradient)"
+              dataKey="users"
+              fill="url(#usersGradient)"
               radius={[4, 4, 0, 0]}
               maxBarSize={40}
             />
 
+            {/* Posts Bar */}
             <Bar
-              dataKey="expenses"
-              fill="url(#expensesGradient)"
+              dataKey="post"
+              fill="url(#postsGradient)"
               radius={[4, 4, 0, 0]}
               maxBarSize={40}
             />
 
+            {/* Gradients */}
             <defs>
-              <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id="usersGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#3b82f6" />
                 <stop offset="100%" stopColor="#2563eb" />
               </linearGradient>
 
-              <linearGradient id="expensesGradient" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id="postsGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#a855f7" />
                 <stop offset="100%" stopColor="#7e22ce" />
               </linearGradient>
             </defs>
+
           </BarChart>
         </ResponsiveContainer>
       </div>
