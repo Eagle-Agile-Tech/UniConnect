@@ -7,7 +7,10 @@ const authService = require('../auth/auth.service');
 const mailer = require('../../config/mailer');
 const { getAppUrl } = require('../../lib/appUrl');
 const buildUserResponse = require('../../lib/userResponse');
+const notificationService = require('../notification/notification.service');
 const expertInvitationTemplate = require('../../templates/expertInvitationEmail');
+const institutionVerificationApprovedTemplate = require('../../templates/institutionVerificationApproved');
+const institutionVerificationRejectedTemplate = require('../../templates/institutionVerificationRejected');
 const {
   registerInstitutionSchema,
   updateInstitutionSchema,
@@ -650,7 +653,12 @@ class InstitutionService {
 
     const existing = await prisma.institution.findUnique({
       where: { id: institutionId },
-      select: { id: true },
+      select: {
+        id: true,
+        name: true,
+        userId: true,
+        managedBy: { select: { id: true, email: true } },
+      },
     });
 
     if (!existing) throw new NotFoundError('Institution not found');
@@ -681,6 +689,60 @@ class InstitutionService {
         reviewedAt: new Date(),
       },
     });
+
+    // Notify institution manager (best effort).
+    if (existing.userId) {
+      try {
+        await notificationService.createAndSendNotification({
+          recipientId: existing.userId,
+          actorId: adminId,
+          type: 'SYSTEM',
+          title: isApproved
+            ? 'Institution verified'
+            : 'Institution verification rejected',
+          body: isApproved
+            ? 'Your institution has been verified. Your secret code is ready.'
+            : 'Your institution verification request was rejected.',
+          data: {
+            institutionId: existing.id,
+            institutionName: existing.name,
+            status: parsed.status,
+            ...(isApproved
+              ? { secretCode, secretCodeExpiresAt }
+              : { rejectionReason: parsed.rejectionReason || null }),
+          },
+        });
+      } catch (_err) {
+        // best-effort
+      }
+    }
+
+    // Email the institution manager with the secret code after approval (best effort).
+    // If rejected, email the rejection reason (also best effort).
+    const institutionEmail = existing.managedBy?.email || null;
+    if (institutionEmail) {
+      try {
+        const template = isApproved
+          ? institutionVerificationApprovedTemplate({
+              institutionName: existing.name,
+              secretCode,
+              secretCodeExpiresAt,
+            })
+          : institutionVerificationRejectedTemplate({
+              institutionName: existing.name,
+              rejectionReason: parsed.rejectionReason || null,
+            });
+
+        await mailer.sendEmail({
+          to: institutionEmail,
+          subject: template.subject,
+          text: template.text,
+          html: template.html,
+        });
+      } catch (_err) {
+        // best-effort
+      }
+    }
 
     return {
       institution: await formatInstitutionResponse(updated),

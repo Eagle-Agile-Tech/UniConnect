@@ -1,5 +1,6 @@
 const repo = require("./network.repository");
 const prisma = require("../../lib/prisma");
+const notificationService = require("../notification/notification.service");
 
 function normalizeId(value) {
   if (typeof value !== "string") return value;
@@ -83,6 +84,26 @@ async function sendRequest(senderId, receiverId) {
   const senderState = await syncProfileNetworkState(normalizedSenderId);
   const receiverState = await syncProfileNetworkState(normalizedReceiverId);
 
+  // Notify receiver about incoming request (best effort).
+  try {
+    await notificationService.createAndSendNotification({
+      recipientId: normalizedReceiverId,
+      actorId: normalizedSenderId,
+      type: "FOLLOW",
+      referenceId: normalizedSenderId,
+      referenceType: "USER",
+      title: "Network request",
+      body: "Someone sent you a network request",
+      data: {
+        requestId: request.id,
+        senderId: normalizedSenderId,
+        receiverId: normalizedReceiverId,
+      },
+    });
+  } catch (_err) {
+    // best-effort: don't fail the request flow due to notifications
+  }
+
   return {
     request,
     networkState: {
@@ -116,6 +137,26 @@ async function acceptRequest(requestId, userId) {
   const network = await repo.createNetwork(request.senderId, request.receiverId);
   const senderState = await syncProfileNetworkState(request.senderId);
   const receiverState = await syncProfileNetworkState(request.receiverId);
+
+  // Notify sender that their request was accepted (best effort).
+  try {
+    await notificationService.createAndSendNotification({
+      recipientId: request.senderId,
+      actorId: userId,
+      type: "FOLLOW",
+      referenceId: userId,
+      referenceType: "USER",
+      title: "Network accepted",
+      body: "Your network request was accepted",
+      data: {
+        senderId: request.senderId,
+        receiverId: request.receiverId,
+        requestId,
+      },
+    });
+  } catch (_err) {
+    // best-effort
+  }
 
   return {
     network,

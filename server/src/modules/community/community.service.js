@@ -427,7 +427,7 @@ const joinCommunity = async (communityId, userId) => {
 
     const community = await prisma.Community.findUnique({
         where: { id: communityId },
-        select: { id: true, isDeleted: true },
+        select: { id: true, name: true, createdById: true, isDeleted: true },
     });
 
     if (!community || community.isDeleted) {
@@ -450,6 +450,26 @@ const joinCommunity = async (communityId, userId) => {
             role: "MEMBER",
         },
     });
+
+    // Notify community creator (best effort).
+    try {
+        if (community.createdById && community.createdById !== userId) {
+            await notificationService.createAndSendNotification({
+                recipientId: community.createdById,
+                actorId: userId,
+                type: "COMMUNITY",
+                referenceId: community.id,
+                referenceType: "COMMUNITY",
+                title: "New community member",
+                body: `Someone joined ${community.name}`,
+                data: { communityId: community.id },
+                io: null,
+                onlineUsers: null,
+            });
+        }
+    } catch (_err) {
+        // best-effort
+    }
 
     return { joined: true };
 };
