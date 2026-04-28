@@ -1,10 +1,4 @@
 class NotificationActor {
-  final String id;
-  final String? firstName;
-  final String? lastName;
-  final String? username;
-  final String? profileImage;
-
   const NotificationActor({
     required this.id,
     this.firstName,
@@ -13,38 +7,64 @@ class NotificationActor {
     this.profileImage,
   });
 
+  final String id;
+  final String? firstName;
+  final String? lastName;
+  final String? username;
+  final String? profileImage;
+
   String get displayName {
-    final full = '${firstName ?? ''} ${lastName ?? ''}'.trim();
-    if (full.isNotEmpty) return full;
-    if (username != null && username!.trim().isNotEmpty) return username!.trim();
+    final fullName = [firstName, lastName]
+        .whereType<String>()
+        .map((part) => part.trim())
+        .where((part) => part.isNotEmpty)
+        .join(' ');
+    if (fullName.isNotEmpty) {
+      return fullName;
+    }
+    final uname = username?.trim();
+    if (uname != null && uname.isNotEmpty) {
+      return '@$uname';
+    }
     return 'Someone';
   }
 
-  static NotificationActor? fromJson(dynamic json) {
-    if (json is! Map) return null;
-    final id = json['id']?.toString();
-    if (id == null || id.isEmpty) return null;
-
+  factory NotificationActor.fromJson(Map<String, dynamic> json) {
     final profile = json['profile'];
-    String? username;
-    String? profileImage;
-    if (profile is Map) {
-      username = profile['username']?.toString();
-      profileImage = profile['profileImage']?.toString();
-    }
-
+    final profileMap = profile is Map
+        ? Map<String, dynamic>.from(profile)
+        : const <String, dynamic>{};
     return NotificationActor(
-      id: id,
+      id: (json['id'] ?? '').toString(),
       firstName: json['firstName']?.toString(),
       lastName: json['lastName']?.toString(),
-      username: username,
-      profileImage: profileImage,
+      username: profileMap['username']?.toString(),
+      profileImage: profileMap['profileImage']?.toString(),
     );
   }
 }
 
 class NotificationItem {
+  const NotificationItem({
+    required this.id,
+    required this.recipientId,
+    this.actorId,
+    required this.type,
+    this.referenceId,
+    this.referenceType,
+    required this.title,
+    required this.body,
+    this.data,
+    required this.isRead,
+    required this.isDelivered,
+    required this.createdAt,
+    required this.updatedAt,
+    this.actor,
+  });
+
   final String id;
+  final String recipientId;
+  final String? actorId;
   final String type;
   final String? referenceId;
   final String? referenceType;
@@ -54,21 +74,8 @@ class NotificationItem {
   final bool isRead;
   final bool isDelivered;
   final DateTime createdAt;
+  final DateTime updatedAt;
   final NotificationActor? actor;
-
-  const NotificationItem({
-    required this.id,
-    required this.type,
-    required this.title,
-    required this.body,
-    required this.createdAt,
-    this.referenceId,
-    this.referenceType,
-    this.data,
-    this.isRead = false,
-    this.isDelivered = false,
-    this.actor,
-  });
 
   NotificationItem copyWith({
     bool? isRead,
@@ -76,6 +83,8 @@ class NotificationItem {
   }) {
     return NotificationItem(
       id: id,
+      recipientId: recipientId,
+      actorId: actorId,
       type: type,
       referenceId: referenceId,
       referenceType: referenceType,
@@ -85,35 +94,46 @@ class NotificationItem {
       isRead: isRead ?? this.isRead,
       isDelivered: isDelivered ?? this.isDelivered,
       createdAt: createdAt,
+      updatedAt: updatedAt,
       actor: actor,
     );
   }
 
-  static DateTime _parseDate(dynamic value) {
-    if (value is DateTime) return value;
-    final raw = value?.toString();
-    if (raw == null) return DateTime.now();
-    return DateTime.tryParse(raw) ?? DateTime.now();
-  }
-
-  static NotificationItem? fromJson(dynamic json) {
-    if (json is! Map) return null;
-    final id = json['id']?.toString();
-    if (id == null || id.isEmpty) return null;
+  factory NotificationItem.fromJson(Map<String, dynamic> json) {
+    final rawData = json['data'];
+    final rawActor = json['actor'];
 
     return NotificationItem(
-      id: id,
-      type: (json['type'] ?? 'SYSTEM').toString(),
+      id: (json['id'] ?? '').toString(),
+      recipientId: (json['recipientId'] ?? '').toString(),
+      actorId: json['actorId']?.toString(),
+      type: (json['type'] ?? '').toString(),
       referenceId: json['referenceId']?.toString(),
       referenceType: json['referenceType']?.toString(),
       title: (json['title'] ?? '').toString(),
       body: (json['body'] ?? '').toString(),
-      data: json['data'] is Map ? Map<String, dynamic>.from(json['data'] as Map) : null,
+      data: rawData is Map ? Map<String, dynamic>.from(rawData) : null,
       isRead: json['isRead'] == true,
       isDelivered: json['isDelivered'] == true,
-      createdAt: _parseDate(json['createdAt']),
-      actor: NotificationActor.fromJson(json['actor']),
+      createdAt:
+          DateTime.tryParse((json['createdAt'] ?? '').toString()) ??
+          DateTime.fromMillisecondsSinceEpoch(0),
+      updatedAt:
+          DateTime.tryParse((json['updatedAt'] ?? '').toString()) ??
+          DateTime.fromMillisecondsSinceEpoch(0),
+      actor: rawActor is Map
+          ? NotificationActor.fromJson(Map<String, dynamic>.from(rawActor))
+          : null,
     );
   }
 }
 
+class NotificationFeed {
+  const NotificationFeed({
+    required this.notifications,
+    required this.unreadCount,
+  });
+
+  final List<NotificationItem> notifications;
+  final int unreadCount;
+}
