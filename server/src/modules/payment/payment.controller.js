@@ -2,6 +2,7 @@ const asyncHandler = require("../../middlewares/asyncHandler");
 const prisma = require("../../lib/prisma");
 const { initializePayment, verifyPayment } = require("./payment.service");
 const { getMyPurchasedCourses } = require("./payment.service");
+const notificationService = require("../notification/notification.service");
 
 const getMyCoursesController = asyncHandler(async (req, res) => {
   const user = req.user;
@@ -66,6 +67,30 @@ const verifyPaymentController = asyncHandler(async (req, res) => {
         paid: true,
       },
     });
+
+    // Notify expert (best effort). We don't have COURSE in NotificationReferenceType,
+    // so include courseId in the data payload.
+    try {
+      const course = await prisma.course.findUnique({
+        where: { id: courseId },
+        select: { id: true, title: true, expertId: true },
+      });
+      if (course?.expertId && course.expertId !== user.id) {
+        await notificationService.createAndSendNotification({
+          recipientId: course.expertId,
+          actorId: user.id,
+          type: "SYSTEM",
+          title: "New course purchase",
+          body: `Someone purchased "${course.title}"`,
+          data: {
+            courseId: course.id,
+            buyerId: user.id,
+          },
+        });
+      }
+    } catch (_err) {
+      // best-effort
+    }
 
     return res.status(200).json({
       success: true,
