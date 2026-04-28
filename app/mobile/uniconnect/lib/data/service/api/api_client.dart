@@ -971,4 +971,22 @@ class ApiClient {
       return Result.error(e);
     }
   }
+
+  Future<Result<void>> updatePushToken(String token) async {
+    try {
+      await _client.put('/users/push-token', data: {'token': token});
+      return Result.ok(null);
+    } on DioException catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<void>> removePushToken() async {
+    try {
+      await _client.delete('/users/push-token');
+      return Result.ok(null);
+    } on DioException catch (e) {
+      return Result.error(e);
+    }
+  }
 }

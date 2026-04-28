@@ -1,189 +1,243 @@
-import 'dart:async';
+// import 'dart:async';
+//
+// import 'package:flutter_riverpod/flutter_riverpod.dart';
+//
+// import '../../../data/repository/notification/notification_repository.dart';
+// import '../../../data/repository/notification/notification_repository_remote.dart';
+// import '../../../data/service/local/secure_token_storage.dart';
+// import '../../../data/service/socket/socket_service.dart';
+// import '../../../domain/models/notification/notification_item.dart';
+// import '../../auth/auth_state_provider.dart';
+//
+// class NotificationState {
+//   const NotificationState({
+//     required this.items,
+//     required this.unreadCount,
+//   });
+//
+//   final List<NotificationItem> items;
+//   final int unreadCount;
+//
+//   NotificationState copyWith({
+//     List<NotificationItem>? items,
+//     int? unreadCount,
+//   }) {
+//     return NotificationState(
+//       items: items ?? this.items,
+//       unreadCount: unreadCount ?? this.unreadCount,
+//     );
+//   }
+// }
+//
+// final notificationViewModelProvider =
+//     AsyncNotifierProvider<NotificationViewModel, NotificationState>(
+//       NotificationViewModel.new,
+//     );
+//
+// class NotificationViewModel extends AsyncNotifier<NotificationState> {
+//   late NotificationRepository _repo;
+//   final SocketService _socketService = SocketService();
+//   final SecureTokenStorage _tokenStorage = SecureTokenStorage();
+//
+//   void Function(dynamic data)? _notificationHandler;
+//   void Function(dynamic data)? _unreadCountHandler;
+//   bool _socketBound = false;
+//
+//   @override
+//   FutureOr<NotificationState> build() async {
+//     _repo = ref.watch(notificationRepoProvider);
+//     ref.onDispose(_disposeSocketListeners);
+//
+//     await _initSocketBridge();
+//     final result = await _repo.getNotifications(limit: 50);
+//     return result.fold(
+//       (feed) => NotificationState(
+//         items: feed.notifications,
+//         unreadCount: feed.unreadCount,
+//       ),
+//       (error, stackTrace) =>
+//           Error.throwWithStackTrace(error, stackTrace ?? StackTrace.current),
+//     );
+//   }
+//
+//   Future<void> refresh() async {
+//     final result = await _repo.getNotifications(limit: 50);
+//     result.fold((feed) {
+//       state = AsyncData(
+//         NotificationState(
+//           items: feed.notifications,
+//           unreadCount: feed.unreadCount,
+//         ),
+//       );
+//     }, (error, stackTrace) {
+//       state = AsyncError(error, stackTrace ?? StackTrace.current);
+//     });
+//   }
+//
+//   Future<void> markAsRead(String notificationId) async {
+//     final current = state.value;
+//     if (current == null) {
+//       return;
+//     }
+//
+//     final target = current.items.where((item) => item.id == notificationId);
+//     if (target.isEmpty || target.first.isRead) {
+//       return;
+//     }
+//
+//     final result = await _repo.markAsRead(notificationId);
+//     result.fold((updatedItem) {
+//       final updated = current.items.map((item) {
+//         if (item.id == notificationId) {
+//           return item.copyWith(isRead: updatedItem.isRead);
+//         }
+//         return item;
+//       }).toList();
+//
+//       final nextUnread = (current.unreadCount - 1).clamp(0, 1 << 30);
+//       state = AsyncData(current.copyWith(items: updated, unreadCount: nextUnread));
+//     }, (_, _) {});
+//   }
+//
+//   Future<void> markAllAsRead() async {
+//     final current = state.value;
+//     if (current == null) {
+//       return;
+//     }
+//
+//     final result = await _repo.markAllAsRead();
+//     result.fold((_) {
+//       final updatedItems = current.items
+//           .map((item) => item.isRead ? item : item.copyWith(isRead: true))
+//           .toList();
+//       state = AsyncData(current.copyWith(items: updatedItems, unreadCount: 0));
+//     }, (_, _) {});
+//   }
+//
+//   Future<void> _initSocketBridge() async {
+//     if (_socketBound) {
+//       return;
+//     }
+//
+//     final authState = ref.read(authNotifierProvider).value;
+//     final userId = authState?.user?.id;
+//     final token = await _tokenStorage.read();
+//
+//     if (userId == null || token?.accessToken == null) {
+//       return;
+//     }
+//
+//     _socketService.initialize(userId, token!.accessToken);
+//     _notificationHandler = _onRealtimeNotification;
+//     _unreadCountHandler = _onRealtimeUnreadCount;
+//     _socketService.addEventListener('notification:received', _notificationHandler!);
+//     _socketService.addEventListener(
+//       'notification:unread-count',
+//       _unreadCountHandler!,
+//     );
+//     _socketBound = true;
+//   }
+//
+//   void _onRealtimeNotification(dynamic payload) {
+//     final current = state.value;
+//     if (current == null) {
+//       return;
+//     }
+//
+//     final map = _asMap(payload);
+//     if (map == null) {
+//       return;
+//     }
+//
+//     final incoming = NotificationItem.fromJson(map);
+//     final existingIndex = current.items.indexWhere((item) => item.id == incoming.id);
+//     final updatedItems = List<NotificationItem>.from(current.items);
+//
+//     if (existingIndex >= 0) {
+//       updatedItems[existingIndex] = incoming;
+//       state = AsyncData(current.copyWith(items: updatedItems));
+//       return;
+//     }
+//
+//     updatedItems.insert(0, incoming);
+//     final unreadCount = incoming.isRead
+//         ? current.unreadCount
+//         : current.unreadCount + 1;
+//     state = AsyncData(current.copyWith(items: updatedItems, unreadCount: unreadCount));
+//   }
+//
+//   void _onRealtimeUnreadCount(dynamic payload) {
+//     final current = state.value;
+//     if (current == null) {
+//       return;
+//     }
+//     final map = _asMap(payload);
+//     if (map == null) {
+//       return;
+//     }
+//     final unreadCountRaw = map['unreadCount'];
+//     if (unreadCountRaw is! num) {
+//       return;
+//     }
+//
+//     state = AsyncData(current.copyWith(unreadCount: unreadCountRaw.toInt()));
+//   }
+//
+//   Map<String, dynamic>? _asMap(dynamic payload) {
+//     if (payload is Map<String, dynamic>) {
+//       return payload;
+//     }
+//     if (payload is Map) {
+//       return Map<String, dynamic>.from(payload);
+//     }
+//     return null;
+//   }
+//
+//   void _disposeSocketListeners() {
+//     if (_notificationHandler != null) {
+//       _socketService.removeEventListener(
+//         'notification:received',
+//         _notificationHandler!,
+//       );
+//     }
+//     if (_unreadCountHandler != null) {
+//       _socketService.removeEventListener(
+//         'notification:unread-count',
+//         _unreadCountHandler!,
+//       );
+//     }
+//     _socketBound = false;
+//   }
+// }
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uniconnect/data/repository/user/user_repository_remote.dart';
 
-import '../../../data/service/api/api_client.dart';
-import '../../../data/service/socket/socket_service.dart';
-import '../../../domain/models/notification/notification_item.dart';
+import '../../../domain/models/user/user.dart';
 
-class NotificationState {
-  final List<NotificationItem> items;
-  final int unreadCount;
+final notificationViewModelProvider =
+AsyncNotifierProvider<NotificationViewModel, List<(User user, String requestId)>>(
+  NotificationViewModel.new,
+);
 
-  const NotificationState({
-    required this.items,
-    required this.unreadCount,
-  });
+class NotificationViewModel
+    extends AsyncNotifier<List<(User user, String requestId)>> {
 
-  NotificationState copyWith({
-    List<NotificationItem>? items,
-    int? unreadCount,
-  }) {
-    return NotificationState(
-      items: items ?? this.items,
-      unreadCount: unreadCount ?? this.unreadCount,
+  late UserRepositoryRemote _userRepo;
+
+  @override
+  Future<List<(User user, String requestId)>> build() async {
+    _userRepo = ref.read(userRepoProvider);
+
+    final result = await _userRepo.getIncomingNetworks();
+
+    return result.fold(
+          (data) => data,
+          (error, stackTrace) =>
+          Error.throwWithStackTrace(error, stackTrace ?? StackTrace.current),
     );
   }
 }
 
-final notificationViewModelProvider =
-    AsyncNotifierProvider<NotificationViewModel, NotificationState>(
-  NotificationViewModel.new,
-);
 
-class NotificationViewModel extends AsyncNotifier<NotificationState> {
-  late final ApiClient _api;
-  final SocketService _socket = SocketService();
-
-  StreamSubscription? _socketSub;
-
-  @override
-  FutureOr<NotificationState> build() async {
-    _api = ref.read(apiClientProvider);
-
-    // Load inbox.
-    final initial = await _fetch();
-
-    // Attach socket listeners (best-effort).
-    _attachSocketListeners();
-
-    ref.onDispose(() {
-      _detachSocketListeners();
-    });
-
-    return initial;
-  }
-
-  Future<NotificationState> _fetch() async {
-    final result = await _api.fetchNotifications(limit: 20, unreadOnly: false);
-    return result.fold((data) {
-      final payload = data;
-      final rawNotifications = payload['notifications'];
-      final rawUnread = payload['unreadCount'];
-
-      final items = (rawNotifications is List ? rawNotifications : const [])
-          .map(NotificationItem.fromJson)
-          .whereType<NotificationItem>()
-          .toList();
-
-      final unreadCount = rawUnread is int
-          ? rawUnread
-          : rawUnread is num
-              ? rawUnread.toInt()
-              : 0;
-
-      return NotificationState(items: items, unreadCount: unreadCount);
-    }, (error, _) => throw error);
-  }
-
-  void _attachSocketListeners() {
-    // SocketService is a singleton; listeners are additive, so be careful to remove.
-    void onNotification(dynamic payload) {
-      final item = NotificationItem.fromJson(payload);
-      if (item == null) return;
-
-      final current = state.valueOrNull;
-      if (current == null) return;
-
-      // Deduplicate if we already have it.
-      final exists = current.items.any((n) => n.id == item.id);
-      final nextItems = exists ? current.items : [item, ...current.items];
-      final nextUnread = item.isRead ? current.unreadCount : current.unreadCount + (exists ? 0 : 1);
-      state = AsyncValue.data(current.copyWith(items: nextItems, unreadCount: nextUnread));
-    }
-
-    void onUnreadCount(dynamic payload) {
-      final current = state.valueOrNull;
-      if (current == null) return;
-
-      int? next;
-      if (payload is Map) {
-        final v = payload['unreadCount'];
-        if (v is int) next = v;
-        if (v is num) next = v.toInt();
-      }
-      if (next == null) return;
-
-      state = AsyncValue.data(current.copyWith(unreadCount: next));
-    }
-
-    _socket.addEventListener('notification:received', onNotification);
-    _socket.addEventListener('notification:unread-count', onUnreadCount);
-
-    // Track detach closures via a StreamSubscription-like shim.
-    _socketSub = _SocketDetach(() {
-      _socket.removeEventListener('notification:received', onNotification);
-      _socket.removeEventListener('notification:unread-count', onUnreadCount);
-    });
-  }
-
-  void _detachSocketListeners() {
-    _socketSub?.cancel();
-    _socketSub = null;
-  }
-
-  Future<void> refresh() async {
-    state = const AsyncLoading();
-    state = AsyncValue.data(await _fetch());
-  }
-
-  Future<void> markAsRead(String notificationId) async {
-    final current = state.valueOrNull;
-    if (current == null) return;
-
-    // Optimistic update.
-    final nextItems = current.items
-        .map((n) => n.id == notificationId ? n.copyWith(isRead: true) : n)
-        .toList();
-    final unreadCount = nextItems.where((n) => !n.isRead).length;
-    state = AsyncValue.data(current.copyWith(items: nextItems, unreadCount: unreadCount));
-
-    await _api.markNotificationAsRead(notificationId);
-  }
-
-  Future<void> markAllAsRead() async {
-    final current = state.valueOrNull;
-    if (current == null) return;
-
-    final nextItems = current.items.map((n) => n.copyWith(isRead: true)).toList();
-    state = AsyncValue.data(current.copyWith(items: nextItems, unreadCount: 0));
-
-    await _api.markAllNotificationsAsRead();
-  }
-}
-
-class _SocketDetach implements StreamSubscription<void> {
-  final void Function() _onCancel;
-  bool _isCanceled = false;
-
-  _SocketDetach(this._onCancel);
-
-  @override
-  Future<void> cancel() async {
-    if (_isCanceled) return;
-    _isCanceled = true;
-    _onCancel();
-  }
-
-  @override
-  void onData(void Function(void data)? handleData) {}
-
-  @override
-  void onDone(void Function()? handleDone) {}
-
-  @override
-  void onError(Function? handleError) {}
-
-  @override
-  void pause([Future<void>? resumeSignal]) {}
-
-  @override
-  void resume() {}
-
-  @override
-  bool get isPaused => false;
-
-  @override
-  Future<E> asFuture<E>([E? futureValue]) => Future.value(futureValue);
-}
 

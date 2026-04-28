@@ -73,45 +73,31 @@ class ChatService {
 
   void _setupSocketListeners() {
     _socketService.addEventListener('message:received', (data) {
-      if (data is Map) {
-        _handleNewMessage(Map<String, dynamic>.from(data));
-      }
+      _handleNewMessage(data);
     });
 
     _socketService.addEventListener('message:sent', (data) {
-      if (data is Map) {
-        _handleMessageSent(Map<String, dynamic>.from(data));
-      }
+      _handleMessageSent(data);
     });
 
     _socketService.addEventListener('typing:update', (data) {
-      if (data is Map) {
-        _handleTypingUpdate(Map<String, dynamic>.from(data));
-      }
+      _handleTypingUpdate(data);
     });
 
     _socketService.addEventListener('user:online', (data) {
-      if (data is Map) {
-        _handleUserOnline(Map<String, dynamic>.from(data));
-      }
+      _handleUserOnline(data);
     });
 
     _socketService.addEventListener('user:offline', (data) {
-      if (data is Map) {
-        _handleUserOffline(Map<String, dynamic>.from(data));
-      }
+      _handleUserOffline(data);
     });
 
     _socketService.addEventListener('message:read', (data) {
-      if (data is Map) {
-        _handleMessageRead(Map<String, dynamic>.from(data));
-      }
+      _handleMessageRead(data);
     });
 
     _socketService.addEventListener('message:delivered', (data) {
-      if (data is Map) {
-        _handleMessageDelivered(Map<String, dynamic>.from(data));
-      }
+      _handleMessageDelivered(data);
     });
   }
 
@@ -198,27 +184,8 @@ class ChatService {
   }
 
   void _handleMessageRead(Map<String, dynamic> data) {
-    final currentUserId = _ref.read(authNotifierProvider).value!.user!.id;
     final chatId = data['chatId']?.toString();
     final messageId = data['messageId']?.toString();
-
-    // If this read event is about *me* reading messages, clear the chat room unread badge.
-    final readerId = data['userId']?.toString();
-    if (chatId != null && chatId.isNotEmpty && readerId == currentUserId) {
-      final roomIndex = _chatRooms.indexWhere((r) => r.chatId == chatId);
-      if (roomIndex != -1 && _chatRooms[roomIndex].unreadCount != 0) {
-        _chatRooms[roomIndex] = ChatRoom(
-          chatId: _chatRooms[roomIndex].chatId,
-          userId: _chatRooms[roomIndex].userId,
-          username: _chatRooms[roomIndex].username,
-          avatarUrl: _chatRooms[roomIndex].avatarUrl,
-          latestMessage: _chatRooms[roomIndex].latestMessage,
-          latestMessageTime: _chatRooms[roomIndex].latestMessageTime,
-          unreadCount: 0,
-        );
-        _notifyListeners('chatRoomsChanged', null);
-      }
-    }
 
     if (messageId != null && messageId.isNotEmpty) {
       final messageIndex = _messages.indexWhere((m) => m.messageId == messageId);
@@ -316,10 +283,6 @@ class ChatService {
       _chatRooms[roomIndex] = updatedRoom;
       _chatRooms.sort((a, b) => b.latestMessageTime.compareTo(a.latestMessageTime));
       _notifyListeners('chatRoomsChanged', null);
-    } else {
-      // A message for a chat we haven't loaded yet. Refresh rooms so the new chat shows up.
-      // Best-effort: don't block message delivery.
-      loadChatRooms();
     }
   }
 
@@ -382,34 +345,11 @@ class ChatService {
         _currentPage = 1;
         _hasMoreMessages = true;
         await loadMessages();
-
-        // Mark everything up to the newest message as read and clear the badge locally.
-        if (_messages.isNotEmpty) {
-          final last = _messages.last;
-          _socketService.markMessageAsRead(last.messageId, last.chatId);
-        }
-        _setUnreadCount(_currentChatId!, 0);
       }
     } catch (e) {
       debugPrint("Init chat error: $e");
       rethrow;
     }
-  }
-
-  void _setUnreadCount(String chatId, int unreadCount) {
-    final idx = _chatRooms.indexWhere((r) => r.chatId == chatId);
-    if (idx == -1) return;
-    if (_chatRooms[idx].unreadCount == unreadCount) return;
-    _chatRooms[idx] = ChatRoom(
-      chatId: _chatRooms[idx].chatId,
-      userId: _chatRooms[idx].userId,
-      username: _chatRooms[idx].username,
-      avatarUrl: _chatRooms[idx].avatarUrl,
-      latestMessage: _chatRooms[idx].latestMessage,
-      latestMessageTime: _chatRooms[idx].latestMessageTime,
-      unreadCount: unreadCount,
-    );
-    _notifyListeners('chatRoomsChanged', null);
   }
 
   Future<List<ChatMessage>> loadMessages({int page = 1, int limit = 20}) async {

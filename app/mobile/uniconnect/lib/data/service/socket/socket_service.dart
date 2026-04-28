@@ -86,11 +86,6 @@ class SocketService {
       _notifyListeners('message:delivered', data);
     });
 
-    // Server may emit single-message delivery events as well.
-    _socket?.on('chat:message:delivered', (data) {
-      _notifyListeners('message:delivered', data);
-    });
-
     _socket?.on('notification', (data) {
       _notifyListeners('notification:received', data);
     });

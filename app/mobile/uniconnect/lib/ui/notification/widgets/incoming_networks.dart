@@ -8,7 +8,6 @@ import 'package:uniconnect/ui/auth/auth_state_provider.dart';
 import 'package:uniconnect/ui/profile/view_models/user_provider.dart';
 
 import '../../../routing/routes.dart';
-import '../view_models/incoming_networks_viewmodel.dart';
 import '../view_models/notification_viewmodel.dart';
 
 class NetworksIncomingScreen extends ConsumerWidget {
@@ -16,7 +15,7 @@ class NetworksIncomingScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final notificationAsync = ref.watch(incomingNetworksProvider);
+    final notificationAsync = ref.watch(notificationViewModelProvider);
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: true,
@@ -83,7 +82,6 @@ class NetworksIncomingScreen extends ConsumerWidget {
 
                           result.fold(
                                 (_) {
-                                  ref.invalidate(incomingNetworksProvider);
                                   ref.invalidate(notificationViewModelProvider);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(content: Text('Network request Accepted')),
@@ -107,7 +105,6 @@ class NetworksIncomingScreen extends ConsumerWidget {
 
                           result.fold(
                                 (_) {
-                                  ref.invalidate(incomingNetworksProvider);
                                   ref.invalidate(notificationViewModelProvider);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(content: Text('Network request rejected')),
