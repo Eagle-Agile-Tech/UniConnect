@@ -26,7 +26,7 @@ async function joinUserChatRooms(socket) {
 
 function initSocket(httpServer) {
     const io = new Server(httpServer, {
-        cors: { origin: ['http://localhost:3000' , 'http://localhost:5173'], credentials: true },
+        cors: { origin: '*', credentials: true },
     });
   setIO(io);
 

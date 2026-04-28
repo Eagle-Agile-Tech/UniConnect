@@ -120,7 +120,16 @@ class ChatService {
     final message = ChatMessage.fromMap(data, userId);
 
     if (_currentChatId == message.chatId) {
-      _messages.add(message);
+      // Check for duplicate or temp message replacement
+      final index = _messages.indexWhere((m) =>
+          (m.clientMessageId != null && m.clientMessageId == message.clientMessageId) ||
+          (m.messageId == message.messageId));
+
+      if (index != -1) {
+        _messages[index] = message;
+      } else {
+        _messages.add(message);
+      }
       _notifyListeners('messagesChanged', null);
 
       if (!message.isMine) {
@@ -136,7 +145,10 @@ class ChatService {
     final userId = _ref.read(authNotifierProvider).value!.user!.id;
     final message = ChatMessage.fromMap(data, userId);
 
-    final index = _messages.indexWhere((m) => m.messageId == message.messageId);
+    final index = _messages.indexWhere((m) =>
+        (m.clientMessageId != null && m.clientMessageId == message.clientMessageId) ||
+        (m.messageId == message.messageId));
+
     if (index != -1) {
       _messages[index] = message;
       _notifyListeners('messagesChanged', null);
@@ -218,6 +230,7 @@ class ChatService {
           receiverId: _messages[messageIndex].receiverId,
           content: _messages[messageIndex].content,
           createdAt: _messages[messageIndex].createdAt,
+          clientMessageId: _messages[messageIndex].clientMessageId,
           status: 'read',
           isMine: _messages[messageIndex].isMine,
         );
@@ -238,6 +251,7 @@ class ChatService {
           receiverId: _messages[i].receiverId,
           content: _messages[i].content,
           createdAt: _messages[i].createdAt,
+          clientMessageId: _messages[i].clientMessageId,
           status: 'read',
           isMine: _messages[i].isMine,
         );
@@ -276,6 +290,7 @@ class ChatService {
         receiverId: _messages[i].receiverId,
         content: _messages[i].content,
         createdAt: _messages[i].createdAt,
+        clientMessageId: _messages[i].clientMessageId,
         status: 'delivered',
         isMine: _messages[i].isMine,
       );
@@ -454,6 +469,7 @@ class ChatService {
       receiverId: _currentReceiverId!,
       content: content,
       createdAt: DateTime.now(),
+      clientMessageId: messageId,
       status: 'sent',
       isMine: true,
     );
@@ -467,6 +483,7 @@ class ChatService {
         data: {
           'chatId': _currentChatId,
           'content': content,
+          'clientMessageId': messageId,
         },
       );
 

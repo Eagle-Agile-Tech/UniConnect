@@ -98,6 +98,7 @@ class ChatRealtimeService {
       StreamController<ChatPresenceStateEvent>.broadcast();
   final _typingStateController =
       StreamController<ChatTypingStateEvent>.broadcast();
+  final _errorController = StreamController<Map<String, dynamic>>.broadcast();
   bool _connected = false;
 
   bool get isConnected => _connected;
@@ -110,6 +111,7 @@ class ChatRealtimeService {
   Stream<ChatPresenceStateEvent> get presenceState =>
       _presenceStateController.stream;
   Stream<ChatTypingStateEvent> get typingState => _typingStateController.stream;
+  Stream<Map<String, dynamic>> get errors => _errorController.stream;
 
   Future<void> connect({
     required String token,
@@ -141,6 +143,34 @@ class ChatRealtimeService {
 
     _socket?.onDisconnect((_) {
       _connected = false;
+    });
+
+    // Socket-level errors and server emitted chat errors
+    _socket?.onConnectError((err) {
+      try {
+        _errorController.add({
+          'type': 'connect_error',
+          'message': err?.toString() ?? 'connect_error',
+        });
+      } catch (_) {}
+    });
+
+    _socket?.on('connect_error', (err) {
+      try {
+        _errorController.add({
+          'type': 'connect_error',
+          'message': err?.toString() ?? 'connect_error',
+        });
+      } catch (_) {}
+    });
+
+    _socket?.on('chat:error', (payload) {
+      final map = _asMap(payload) ?? {'message': payload?.toString()};
+      try {
+        _errorController.add(Map<String, dynamic>.from(map));
+      } catch (_) {
+        _errorController.add({'message': payload?.toString()});
+      }
     });
 
     _socket?.on('chat:message:new', (payload) => _onMessage(payload));
@@ -327,5 +357,6 @@ class ChatRealtimeService {
     _deliveredController.close();
     _presenceStateController.close();
     _typingStateController.close();
+    _errorController.close();
   }
 }

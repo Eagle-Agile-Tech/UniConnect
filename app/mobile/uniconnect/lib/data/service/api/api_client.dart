@@ -211,7 +211,7 @@ class ApiClient {
   Future<Result<List<Map<String, dynamic>>>> fetchFeed(String userId) async {
     try {
       final response = await _client.get('/v1/posts/feed/$userId');
-      final List data = response.data['data'];
+      final List data = response.data;
       return Result.ok(data.cast<Map<String, dynamic>>());
     } on DioException catch (e) {
       return Result.error(e);
@@ -441,8 +441,14 @@ class ApiClient {
 
   Future<Result<List<Map<String, dynamic>>>> searchPosts(String keyWord) async {
     try {
-      final response = await _client.get('/searchPosts/$keyWord');
-      List data = response.data;
+      final response = await _client.get(
+        '/v1/posts/search',
+        queryParameters: {
+          'q': keyWord,
+          'limit': 10,
+        },
+      );
+      final List data = response.data;
       return Result.ok(data.cast<Map<String, dynamic>>());
     } on DioException catch (e) {
       return Result.error(e);

@@ -104,3 +104,36 @@ class HomeViewmodelProvider extends AsyncNotifier<List<Post>> {
     });
   }
 }
+
+
+final feedProvider =
+AsyncNotifierProvider<FeedProvider, List<Post>>(
+  FeedProvider.new,
+);
+
+class FeedProvider extends AsyncNotifier<List<Post>> {
+  late PostRepository _postRepo;
+
+  @override
+  FutureOr<List<Post>> build() {
+    _postRepo = ref.watch(postRemoteProvider);
+    return _fetchPosts();
+  }
+
+  Future<List<Post>> _fetchPosts() async {
+    final result = await _postRepo.getFeed(ref
+        .read(authNotifierProvider)
+        .value!
+        .user!
+        .id);
+
+    return result.fold(
+          (posts) => posts,
+          (error, stackTrace) =>
+          Error.throwWithStackTrace(
+            error,
+            stackTrace ?? StackTrace.current,
+          ),
+    );
+  }
+}

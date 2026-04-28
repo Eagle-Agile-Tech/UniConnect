@@ -14,7 +14,7 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final postAsync = ref.watch(homeViewModelProvider(ref.read(authNotifierProvider).value!.user!.id));
+    final postAsync = ref.watch(feedProvider);
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 0,

@@ -15,6 +15,7 @@ abstract class ChatMessage with _$ChatMessage {
     required String receiverId,
     required String content,
     required DateTime createdAt,
+    String? clientMessageId,
     @Default('sent') String status,
     @Default(false) bool isMine,
   }) = _ChatMessage;
@@ -34,6 +35,7 @@ abstract class ChatMessage with _$ChatMessage {
       senderId: senderId,
       receiverId: receiverId,
       content: map['content'] ?? map['message'] ?? '',
+      clientMessageId: map['clientMessageId'],
       createdAt: DateTime.parse(
         map['createdAt'] ??
             map['timestamp'] ??

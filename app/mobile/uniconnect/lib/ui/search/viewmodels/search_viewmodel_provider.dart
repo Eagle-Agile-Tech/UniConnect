@@ -35,11 +35,12 @@ class SearchUserViewModel extends AsyncNotifier<List<(String id, String username
   }
 }
 
-final postSearchProvider = AsyncNotifierProvider<PostUserViewModel, List<Post>>(
-  PostUserViewModel.new,
+final postSearchProvider =
+AsyncNotifierProvider<PostSearchViewModel, List<Post>>(
+  PostSearchViewModel.new,
 );
 
-class PostUserViewModel extends AsyncNotifier<List<Post>> {
+class PostSearchViewModel extends AsyncNotifier<List<Post>> {
   late PostRepository _postRepo;
 
   @override
@@ -49,13 +50,19 @@ class PostUserViewModel extends AsyncNotifier<List<Post>> {
   }
 
   Future<void> searchPost(String keyWord) async {
+    if (keyWord.isEmpty) {
+      state = const AsyncValue.data([]);
+      return;
+    }
+
     state = const AsyncValue.loading();
 
     final result = await _postRepo.searchPosts(keyWord);
 
     state = result.fold(
-      (data) => AsyncValue.data(data),
-      (error, _) => AsyncValue.error(error, StackTrace.current),
+          (posts) => AsyncValue.data(posts),
+          (error, stackTrace) =>
+          AsyncValue.error(error, stackTrace ?? StackTrace.current),
     );
   }
 }
