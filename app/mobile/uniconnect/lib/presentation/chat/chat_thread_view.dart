@@ -1,12 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:uniconnect/data/chat_api.dart';
 import 'package:uniconnect/data/chat_realtime_service.dart';
 import 'package:uniconnect/data/repository/chat/chat_repository.dart';
-import 'package:uniconnect/data/repository/chat/chat_repository_remote.dart';
+import 'package:uniconnect/data/service/api/token_refresher.dart';
 import 'package:uniconnect/domain/models/chat/chat_message_model.dart';
+import 'package:uniconnect/ui/auth/auth_state_provider.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
 
 import '../../data/service/local/secure_token_storage.dart';
@@ -14,16 +16,16 @@ import 'chat_session.dart';
 import 'chat_thread_state.dart';
 import 'chat_viewmodels.dart';
 
-class ChatThreadView extends StatefulWidget {
+class ChatThreadView extends ConsumerStatefulWidget {
   const ChatThreadView({super.key, required this.args});
 
   final ChatThreadArgs args;
 
   @override
-  State<ChatThreadView> createState() => _ChatThreadViewState();
+  ConsumerState<ChatThreadView> createState() => _ChatThreadViewState();
 }
 
-class _ChatThreadViewState extends State<ChatThreadView> {
+class _ChatThreadViewState extends ConsumerState<ChatThreadView> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final ChatRealtimeService _realtime = ChatRealtimeService();
@@ -39,8 +41,10 @@ class _ChatThreadViewState extends State<ChatThreadView> {
   StreamSubscription<ChatDeliveredEvent>? _deliveredSub;
   StreamSubscription<ChatPresenceStateEvent>? _presenceStateSub;
   StreamSubscription<ChatTypingStateEvent>? _typingStateSub;
+  StreamSubscription<ChatMessageAckEvent>? _ackSub;
   StreamSubscription<Map<String, dynamic>>? _socketErrorSub;
   Timer? _typingDebounceTimer;
+  final Map<String, Timer> _sendTimeouts = {};
 
   ChatThreadState? _thread;
   String? _currentUserId;
@@ -52,21 +56,46 @@ class _ChatThreadViewState extends State<ChatThreadView> {
   @override
   void initState() {
     super.initState();
+    unawaited(_initializeThread());
+  }
+
+  Future<void> _initializeThread() async {
+    await _bindChatSessionFromAuth();
     _currentUserId = ChatSession.instance.currentUserId;
     if (!ChatSession.instance.isAuthenticated) {
-      _isLoading = false;
-      _loadError = 'Not authenticated';
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isLoading = false;
+        _loadError = 'Not authenticated';
+      });
       return;
     }
+
     _chatRepository = ChatSession.instance.createChatRepository();
     _chatApi = ChatSession.instance.createChatApi();
 
     if (widget.args.chatId != null && widget.args.chatId!.isNotEmpty) {
       _activeChatId = widget.args.chatId;
-      unawaited(_connectRealtime(widget.args.chatId!));
+      await _connectRealtime(widget.args.chatId!);
     }
 
-    unawaited(_loadInitialThread());
+    await _loadInitialThread();
+  }
+
+  Future<void> _bindChatSessionFromAuth() async {
+    final userId = ref.read(authNotifierProvider).value?.user?.id;
+    if (userId == null || userId.isEmpty) {
+      return;
+    }
+
+    final token = await SecureTokenStorage().read();
+    ChatSession.instance.bind(
+      userId: userId,
+      token: token?.accessToken,
+      dio: ref.read(dioProvider),
+    );
   }
 
   @override
@@ -88,7 +117,12 @@ class _ChatThreadViewState extends State<ChatThreadView> {
     _deliveredSub?.cancel();
     _presenceStateSub?.cancel();
     _typingStateSub?.cancel();
+    _ackSub?.cancel();
     _socketErrorSub?.cancel();
+    for (final timer in _sendTimeouts.values) {
+      timer.cancel();
+    }
+    _sendTimeouts.clear();
     _realtime.dispose();
     super.dispose();
   }
@@ -139,11 +173,12 @@ class _ChatThreadViewState extends State<ChatThreadView> {
                           _headerPresenceText(thread),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: thread.isPartnerTyping
-                                ? Theme.of(context).colorScheme.primary
-                                : null,
-                          ),
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(
+                                color: thread.isPartnerTyping
+                                    ? Theme.of(context).colorScheme.primary
+                                    : null,
+                              ),
                         ),
                       ],
                     ),
@@ -307,7 +342,9 @@ class _ChatThreadViewState extends State<ChatThreadView> {
 
     await _connectRealtime(thread.chatId);
     await _markChatAsRead(thread.chatId);
-    unawaited(ChatConversationService.instance.markConversationRead(thread.chatId));
+    unawaited(
+      ChatConversationService.instance.markConversationRead(thread.chatId),
+    );
   }
 
   Future<void> _connectRealtime(String chatId) async {
@@ -335,6 +372,7 @@ class _ChatThreadViewState extends State<ChatThreadView> {
     _deliveredSub ??= _realtime.deliveredUpdates.listen(_handleDeliveredUpdate);
     _presenceStateSub ??= _realtime.presenceState.listen(_handlePresenceState);
     _typingStateSub ??= _realtime.typingState.listen(_handleTypingState);
+    _ackSub ??= _realtime.messageAcks.listen(_handleMessageAck);
     _socketErrorSub ??= _realtime.errors.listen((payload) {
       final thread = _thread;
       final message = payload['message']?.toString() ?? 'Chat socket error';
@@ -365,7 +403,7 @@ class _ChatThreadViewState extends State<ChatThreadView> {
       return;
     }
 
-    if (message.chatId != thread.chatId || _messageExists(thread.messages, message)) {
+    if (message.chatId != thread.chatId) {
       return;
     }
 
@@ -373,39 +411,111 @@ class _ChatThreadViewState extends State<ChatThreadView> {
       return;
     }
 
+    final existingIndex = thread.messages.indexWhere(
+      (item) =>
+          item.id == message.id ||
+          (item.clientMessageId != null &&
+              item.clientMessageId == message.clientMessageId),
+    );
+
+    if (existingIndex != -1) {
+      final next = [...thread.messages];
+      next[existingIndex] = message.copyWith(
+        isPending: false,
+        isFailed: false,
+        isMine: next[existingIndex].isMine || message.isMine,
+      );
+      if (message.clientMessageId != null) {
+        _clearSendTimeout(message.clientMessageId!);
+      }
+      setState(() {
+        _thread = thread.copyWith(
+          messages: next,
+          isSending: false,
+          clearError: true,
+        );
+      });
+      return;
+    }
+
     setState(() {
-      _thread = thread.copyWith(messages: [...thread.messages, message]);
+      _thread = thread.copyWith(
+        messages: [...thread.messages, message],
+        isSending: false,
+        clearError: true,
+      );
     });
 
     final currentUserId = _currentUserId;
     if (currentUserId != null) {
       ChatConversationService.instance.applyMessageUpdate(
-            message: message,
-            currentUserId: currentUserId,
-            fallbackPartnerId: widget.args.receiverId,
-            fallbackPartnerName: widget.args.receiverName,
-            fallbackPartnerAvatarUrl: widget.args.receiverAvatar,
-            markAsRead: !message.isMine,
-          );
+        message: message,
+        currentUserId: currentUserId,
+        fallbackPartnerId: widget.args.receiverId,
+        fallbackPartnerName: widget.args.receiverName,
+        fallbackPartnerAvatarUrl: widget.args.receiverAvatar,
+        markAsRead: !message.isMine,
+      );
     }
 
     if (!message.isMine) {
       _realtime.markDelivered(chatId: thread.chatId, messageId: message.id);
       _realtime.markRead(chatId: thread.chatId, messageId: message.id);
       unawaited(_markChatAsRead(thread.chatId, messageId: message.id));
-      unawaited(ChatConversationService.instance.markConversationRead(thread.chatId));
+      unawaited(
+        ChatConversationService.instance.markConversationRead(thread.chatId),
+      );
     }
+  }
+
+  void _handleMessageAck(ChatMessageAckEvent event) {
+    final thread = _thread;
+    if (thread == null || event.chatId != thread.chatId) {
+      return;
+    }
+
+    final index = thread.messages.indexWhere(
+      (message) => message.clientMessageId == event.clientMessageId,
+    );
+    if (index == -1) {
+      return;
+    }
+
+    final next = [...thread.messages];
+    final current = next[index];
+    next[index] = current.copyWith(
+      id: event.messageId,
+      isPending: false,
+      isFailed: false,
+      status: 'sent',
+    );
+    _clearSendTimeout(event.clientMessageId);
+
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _thread = thread.copyWith(
+        messages: next,
+        isSending: false,
+        clearError: true,
+      );
+    });
   }
 
   void _handlePresenceUpdate(ChatPresenceEvent event) {
     final thread = _thread;
-    if (thread == null || event.chatId != thread.chatId || event.userId != widget.args.receiverId) {
+    if (thread == null ||
+        event.chatId != thread.chatId ||
+        event.userId != widget.args.receiverId) {
       return;
     }
     setState(() {
       _thread = thread.copyWith(
         isPartnerOnline: event.status == 'ONLINE',
-        isPartnerTyping: event.status == 'ONLINE' ? thread.isPartnerTyping : false,
+        isPartnerTyping: event.status == 'ONLINE'
+            ? thread.isPartnerTyping
+            : false,
         partnerLastSeenAt: event.lastSeenAt,
       );
     });
@@ -413,7 +523,9 @@ class _ChatThreadViewState extends State<ChatThreadView> {
 
   void _handleTypingUpdate(ChatTypingEvent event) {
     final thread = _thread;
-    if (thread == null || event.chatId != thread.chatId || event.userId != widget.args.receiverId) {
+    if (thread == null ||
+        event.chatId != thread.chatId ||
+        event.userId != widget.args.receiverId) {
       return;
     }
     setState(() {
@@ -423,13 +535,17 @@ class _ChatThreadViewState extends State<ChatThreadView> {
 
   void _handleReadUpdate(ChatReadEvent event) {
     final thread = _thread;
-    if (thread == null || event.chatId != thread.chatId || event.userId != widget.args.receiverId) {
+    if (thread == null ||
+        event.chatId != thread.chatId ||
+        event.userId != widget.args.receiverId) {
       return;
     }
 
     final messageIndex = event.messageId == null
         ? thread.messages.length - 1
-        : thread.messages.indexWhere((message) => message.id == event.messageId);
+        : thread.messages.indexWhere(
+            (message) => message.id == event.messageId,
+          );
     if (messageIndex < 0) {
       return;
     }
@@ -462,7 +578,9 @@ class _ChatThreadViewState extends State<ChatThreadView> {
     }
 
     final next = thread.messages.map((message) {
-      if (!message.isMine || !targets.contains(message.id) || message.status == 'read') {
+      if (!message.isMine ||
+          !targets.contains(message.id) ||
+          message.status == 'read') {
         return message;
       }
       return message.copyWith(status: 'delivered');
@@ -545,6 +663,43 @@ class _ChatThreadViewState extends State<ChatThreadView> {
       );
     });
 
+    if (_realtime.isConnected) {
+      _realtime.sendMessage(
+        chatId: thread.chatId,
+        content: content,
+        clientMessageId: clientMessageId,
+      );
+      _sendTimeouts[clientMessageId]?.cancel();
+      _sendTimeouts[clientMessageId] = Timer(const Duration(seconds: 12), () {
+        final snapshot = _thread;
+        if (snapshot == null || !mounted) {
+          return;
+        }
+        final nextMessages = snapshot.messages.map((message) {
+          if (message.clientMessageId != clientMessageId &&
+              message.id != clientMessageId) {
+            return message;
+          }
+          if (!message.isPending) {
+            return message;
+          }
+          return message.copyWith(
+            isPending: false,
+            isFailed: true,
+            status: 'failed',
+          );
+        }).toList();
+        setState(() {
+          _thread = snapshot.copyWith(
+            isSending: false,
+            errorMessage: 'Message send timed out',
+            messages: nextMessages,
+          );
+        });
+      });
+      return;
+    }
+
     final result = await _chatRepository.sendMessage(
       chatId: thread.chatId,
       content: content,
@@ -571,7 +726,8 @@ class _ChatThreadViewState extends State<ChatThreadView> {
     if (serverMessage != null) {
       final nextMessages = snapshot.messages.map((message) {
         final sameOptimistic =
-            message.clientMessageId == clientMessageId || message.id == clientMessageId;
+            message.clientMessageId == clientMessageId ||
+            message.id == clientMessageId;
         return sameOptimistic
             ? serverMessage!.copyWith(
                 isMine: true,
@@ -588,27 +744,25 @@ class _ChatThreadViewState extends State<ChatThreadView> {
           messages: nextMessages,
         );
       });
+      _clearSendTimeout(clientMessageId);
 
       ChatConversationService.instance.applyMessageUpdate(
-            message: serverMessage!.copyWith(isMine: true),
-            currentUserId: currentUserId,
-            fallbackPartnerId: widget.args.receiverId,
-            fallbackPartnerName: widget.args.receiverName,
-            fallbackPartnerAvatarUrl: widget.args.receiverAvatar,
-            markAsRead: true,
-          );
+        message: serverMessage!.copyWith(isMine: true),
+        currentUserId: currentUserId,
+        fallbackPartnerId: widget.args.receiverId,
+        fallbackPartnerName: widget.args.receiverName,
+        fallbackPartnerAvatarUrl: widget.args.receiverAvatar,
+        markAsRead: true,
+      );
       return;
     }
 
     final nextMessages = snapshot.messages.map((message) {
       final sameOptimistic =
-          message.clientMessageId == clientMessageId || message.id == clientMessageId;
+          message.clientMessageId == clientMessageId ||
+          message.id == clientMessageId;
       return sameOptimistic
-          ? message.copyWith(
-              isPending: false,
-              isFailed: true,
-              status: 'failed',
-            )
+          ? message.copyWith(isPending: false, isFailed: true, status: 'failed')
           : message;
     }).toList();
 
@@ -619,6 +773,7 @@ class _ChatThreadViewState extends State<ChatThreadView> {
         messages: nextMessages,
       );
     });
+    _clearSendTimeout(clientMessageId);
   }
 
   void _onComposerChanged(String value) {
@@ -651,7 +806,7 @@ class _ChatThreadViewState extends State<ChatThreadView> {
 
   Future<void> _markChatAsRead(String chatId, {String? messageId}) async {
     try {
-      // await _chatApi.markAsRead(chatId: chatId, messageId: messageId);
+      await _chatApi.markAsRead(chatId: chatId, messageId: messageId);
     } catch (_) {
       // Keep UI responsive even if read sync fails.
     }
@@ -675,7 +830,10 @@ class _ChatThreadViewState extends State<ChatThreadView> {
     _pendingMessages.add(message);
   }
 
-  bool _messageExists(List<ChatMessageModel> messages, ChatMessageModel candidate) {
+  bool _messageExists(
+    List<ChatMessageModel> messages,
+    ChatMessageModel candidate,
+  ) {
     return messages.any(
       (message) =>
           message.id == candidate.id ||
@@ -710,6 +868,11 @@ class _ChatThreadViewState extends State<ChatThreadView> {
     }
     return 'off for a bit';
   }
+
+  void _clearSendTimeout(String clientMessageId) {
+    final timer = _sendTimeouts.remove(clientMessageId);
+    timer?.cancel();
+  }
 }
 
 class _MessageBubble extends StatelessWidget {
@@ -719,7 +882,9 @@ class _MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final align = message.isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start;
+    final align = message.isMine
+        ? CrossAxisAlignment.end
+        : CrossAxisAlignment.start;
     final bubbleColor = message.isMine
         ? Theme.of(context).colorScheme.primary
         : Theme.of(context).colorScheme.surfaceContainerHighest;

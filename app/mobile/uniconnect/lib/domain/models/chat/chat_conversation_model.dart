@@ -22,14 +22,19 @@ abstract class ChatConversationModel with _$ChatConversationModel {
     Map<String, dynamic> json,
     String currentUserId,
   ) {
+    String participantUserId(Map participant) {
+      final rawUser = participant['user'];
+      final nestedUser = rawUser is Map ? rawUser : null;
+      return (participant['userId'] ?? nestedUser?['id'] ?? '').toString();
+    }
+
     final participants = (json['participants'] as List<dynamic>? ?? const [])
         .whereType<Map>()
         .toList();
 
     final otherParticipant = participants.firstWhere(
-      (item) => item['userId']?.toString() != currentUserId,
-      orElse: () =>
-          participants.isNotEmpty ? participants.first : const {},
+      (item) => participantUserId(item) != currentUserId,
+      orElse: () => participants.isNotEmpty ? participants.first : const {},
     );
     final user = otherParticipant['user'] as Map?;
     final profile = user?['profile'] as Map?;
@@ -38,37 +43,30 @@ abstract class ChatConversationModel with _$ChatConversationModel {
         .whereType<Map>()
         .toList();
 
-    final latest = messages.isNotEmpty
-        ? messages.first
-        : const {};
+    final latest = messages.isNotEmpty ? messages.first : const {};
 
-    final unreadCount = messages.where((message) {
-      final senderId = (message['senderId'] ?? '').toString();
-      if (senderId == currentUserId) {
-        return false;
-      }
-      final receipts = (message['receipts'] as List<dynamic>? ?? const [])
-          .whereType<Map>()
-          .toList();
-      final myReceipt = receipts.firstWhere(
-        (receipt) => receipt['userId']?.toString() == currentUserId,
-        orElse: () => const {},
-      );
-      return myReceipt.isNotEmpty && myReceipt['readAt'] == null;
-    }).length;
+    final countMap = json['_count'] as Map<String, dynamic>?;
+    final unreadCountRaw = countMap?['unreadMessages'] ?? countMap?['messages'];
+    final unreadCount = unreadCountRaw is num ? unreadCountRaw.toInt() : 0;
 
-    String partnerName = (user?['name'] ?? user?['username'])?.toString() ?? 'Unknown user';
+    String partnerName =
+        (user?['name'] ?? user?['username'])?.toString() ?? 'Unknown user';
     if (partnerName == 'Unknown user') {
-      partnerName = (profile?['fullName'] ?? profile?['username'])?.toString() ?? 'Unknown user';
+      partnerName =
+          (profile?['fullName'] ?? profile?['username'])?.toString() ??
+          'Unknown user';
     }
+
+    final conversationAvatar =
+        (user?['avatarUrl'] ?? profile?['profileImage'] ?? user?['profilePic'])
+            ?.toString();
+    final partnerId = participantUserId(otherParticipant);
 
     return ChatConversationModel(
       chatId: (json['id'] ?? json['_id'] ?? '').toString(),
-      partnerId: (otherParticipant['userId'] ?? otherParticipant['id'] ?? '').toString(),
+      partnerId: partnerId,
       partnerName: partnerName,
-      partnerAvatarUrl:
-          (user?['avatarUrl'] ?? profile?['profileImage'] ?? user?['profilePic'])
-              ?.toString(),
+      partnerAvatarUrl: conversationAvatar,
       lastMessage: (latest['content'] ?? 'No messages yet').toString(),
       lastMessageAt: DateTime.tryParse((latest['createdAt'] ?? '').toString()),
       unreadCount: unreadCount,

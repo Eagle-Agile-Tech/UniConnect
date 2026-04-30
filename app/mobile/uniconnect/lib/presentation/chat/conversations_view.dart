@@ -1,30 +1,62 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:uniconnect/data/service/api/token_refresher.dart';
+import 'package:uniconnect/data/service/local/secure_token_storage.dart';
 import 'package:uniconnect/routing/routes.dart';
+import 'package:uniconnect/ui/auth/auth_state_provider.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
 import 'package:uniconnect/utils/helper_functions.dart';
 
 import 'chat_session.dart';
 import 'chat_viewmodels.dart';
 
-class ConversationsView extends StatefulWidget {
+class ConversationsView extends ConsumerStatefulWidget {
   const ConversationsView({super.key});
 
   @override
-  State<ConversationsView> createState() => _ConversationsViewState();
+  ConsumerState<ConversationsView> createState() => _ConversationsViewState();
 }
 
-class _ConversationsViewState extends State<ConversationsView> {
+class _ConversationsViewState extends ConsumerState<ConversationsView> {
   final ChatConversationService _service = ChatConversationService.instance;
 
   @override
   void initState() {
     super.initState();
-    if (ChatSession.instance.isAuthenticated) {
-      unawaited(_service.initialize());
+    unawaited(_initializeChat());
+    ref.listenManual(authNotifierProvider, (_, next) {
+      final userId = next.value?.user?.id;
+      if (userId != null && userId.isNotEmpty) {
+        unawaited(_initializeChat());
+      }
+    });
+  }
+
+  Future<void> _initializeChat() async {
+    await _bindChatSessionFromAuth();
+    if (!mounted) {
+      return;
     }
+    if (ChatSession.instance.isAuthenticated) {
+      await _service.initialize();
+    }
+  }
+
+  Future<void> _bindChatSessionFromAuth() async {
+    final userId = ref.read(authNotifierProvider).value?.user?.id;
+    if (userId == null || userId.isEmpty) {
+      return;
+    }
+
+    final token = await SecureTokenStorage().read();
+    ChatSession.instance.bind(
+      userId: userId,
+      token: token?.accessToken,
+      dio: ref.read(dioProvider),
+    );
   }
 
   @override
@@ -187,5 +219,4 @@ class _ConversationsViewState extends State<ConversationsView> {
       },
     );
   }
-
 }

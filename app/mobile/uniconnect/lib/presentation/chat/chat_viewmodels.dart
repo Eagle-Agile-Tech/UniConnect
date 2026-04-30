@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:uniconnect/data/chat_api.dart';
 import 'package:uniconnect/data/chat_realtime_service.dart';
 import 'package:uniconnect/data/repository/chat/chat_repository_remote.dart';
 import 'package:uniconnect/domain/models/chat/chat_conversation_model.dart';
@@ -38,7 +37,8 @@ class ChatConversationService extends ChangeNotifier {
 
   bool get isLoading => _isLoading;
   String? get error => _error;
-  List<ChatConversationModel> get conversations => List.unmodifiable(_conversations);
+  List<ChatConversationModel> get conversations =>
+      List.unmodifiable(_conversations);
 
   bool isPartnerOnline(String userId) => _onlineByUserId[userId] ?? false;
   bool isTyping(String chatId) => _typingByChatId[chatId] ?? false;
@@ -122,7 +122,9 @@ class ChatConversationService extends ChangeNotifier {
   }
 
   Future<void> markConversationRead(String chatId) async {
-    final index = _conversations.indexWhere((conversation) => conversation.chatId == chatId);
+    final index = _conversations.indexWhere(
+      (conversation) => conversation.chatId == chatId,
+    );
     if (index == -1) {
       return;
     }
@@ -139,7 +141,9 @@ class ChatConversationService extends ChangeNotifier {
     String? fallbackPartnerAvatarUrl,
     bool markAsRead = false,
   }) {
-    final index = _conversations.indexWhere((item) => item.chatId == message.chatId);
+    final index = _conversations.indexWhere(
+      (item) => item.chatId == message.chatId,
+    );
     if (index == -1) {
       final partnerId = message.senderId == currentUserId
           ? (fallbackPartnerId ?? '')
@@ -239,7 +243,10 @@ class ChatConversationService extends ChangeNotifier {
   Future<void> _connectRealtime() async {
     final token = ChatSession.instance.accessToken;
     final currentUserId = _currentUserId;
-    if (token == null || token.isEmpty || currentUserId == null || currentUserId.isEmpty) {
+    if (token == null ||
+        token.isEmpty ||
+        currentUserId == null ||
+        currentUserId.isEmpty) {
       return;
     }
 
@@ -257,6 +264,7 @@ class ChatConversationService extends ChangeNotifier {
 
   void _queryPresenceAndTyping(List<ChatConversationModel> conversations) {
     for (final conversation in conversations) {
+      _realtime.joinChat(conversation.chatId);
       _realtime.queryPresence(chatId: conversation.chatId);
       _realtime.queryTyping(chatId: conversation.chatId);
     }
@@ -325,5 +333,3 @@ class ChatConversationService extends ChangeNotifier {
     });
   }
 }
-
-

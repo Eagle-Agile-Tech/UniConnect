@@ -13,7 +13,9 @@ class ChatApi {
 
   final Dio _dio;
 
-  Future<Map<String, dynamic>> getOrCreateConversation(String otherUserId) async {
+  Future<Map<String, dynamic>> getOrCreateConversation(
+    String otherUserId,
+  ) async {
     try {
       final response = await _dio.get('/chats/$otherUserId');
       return Map<String, dynamic>.from(response.data as Map);
@@ -25,11 +27,16 @@ class ChatApi {
   Future<List<Map<String, dynamic>>> listConversations({
     int limit = 20,
     int offset = 0,
+    String? type,
   }) async {
     try {
       final response = await _dio.get(
         '/chats',
-        queryParameters: {'limit': limit, 'offset': offset},
+        queryParameters: {
+          'limit': limit,
+          'offset': offset,
+          if (type != null) 'type': type,
+        },
       );
 
       final dynamic responseData = response.data;
@@ -38,7 +45,12 @@ class ChatApi {
       if (responseData is List) {
         chatsRaw = responseData;
       } else if (responseData is Map) {
-        chatsRaw = (responseData['chats'] ?? responseData['data'] ?? responseData['conversations'] ?? const []) as List<dynamic>;
+        chatsRaw =
+            (responseData['chats'] ??
+                    responseData['data'] ??
+                    responseData['conversations'] ??
+                    const [])
+                as List<dynamic>;
       }
 
       return chatsRaw
@@ -67,7 +79,9 @@ class ChatApi {
       if (responseData is List) {
         messagesRaw = responseData;
       } else if (responseData is Map) {
-        messagesRaw = (responseData['messages'] ?? responseData['data'] ?? const []) as List<dynamic>;
+        messagesRaw =
+            (responseData['messages'] ?? responseData['data'] ?? const [])
+                as List<dynamic>;
       }
 
       return messagesRaw
@@ -188,10 +202,7 @@ class ChatApi {
 
   Future<void> deleteMessage(String messageId) async {
     try {
-      await _dio.delete(
-        '/chats/messages',
-        data: {'messageId': messageId},
-      );
+      await _dio.delete('/chats/messages', data: {'messageId': messageId});
     } catch (error) {
       throw ChatFailure.fromException(error);
     }
@@ -212,20 +223,42 @@ class ChatApi {
     }
   }
 
-  Future<void> markAsDelivered({required String chatId, String? messageId}) async {
+  Future<void> markAsDelivered({
+    required String chatId,
+    String? messageId,
+  }) async {
     try {
-      await _dio.post('/chats/delivered', data: {'chatId': chatId, 'messageId': messageId});
+      await _dio.post(
+        '/chats/delivered',
+        data: {'chatId': chatId, if (messageId != null) 'messageId': messageId},
+      );
     } catch (error) {
       throw ChatFailure.fromException(error);
     }
   }
 
-  Future<void> sendTyping({required String chatId, required bool isTyping}) async {
+  Future<void> markAsRead({required String chatId, String? messageId}) async {
     try {
-      await _dio.post('/chats/typing', data: {'chatId': chatId, 'isTyping': isTyping});
+      await _dio.post(
+        '/chats/read',
+        data: {'chatId': chatId, if (messageId != null) 'messageId': messageId},
+      );
+    } catch (error) {
+      throw ChatFailure.fromException(error);
+    }
+  }
+
+  Future<void> sendTyping({
+    required String chatId,
+    required bool isTyping,
+  }) async {
+    try {
+      await _dio.post(
+        '/chats/typing',
+        data: {'chatId': chatId, 'isTyping': isTyping},
+      );
     } catch (error) {
       throw ChatFailure.fromException(error);
     }
   }
 }
-

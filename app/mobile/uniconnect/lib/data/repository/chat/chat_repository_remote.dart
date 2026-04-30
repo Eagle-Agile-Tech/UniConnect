@@ -44,7 +44,8 @@ class ChatRepositoryRemote implements ChatRepository {
           .reversed
           .toList();
 
-      final chatId = (data['chatId'] ?? data['id'] ?? data['_id'] ?? '').toString();
+      final chatId = (data['chatId'] ?? data['id'] ?? data['_id'] ?? '')
+          .toString();
       return Result.ok((chatId, messages));
     } catch (error, stackTrace) {
       return Result.error(ChatFailure.fromException(error), stackTrace);
@@ -54,7 +55,7 @@ class ChatRepositoryRemote implements ChatRepository {
   @override
   Future<Result<List<ChatConversationModel>>> listConversations() async {
     try {
-      final chats = await _chatApi.listConversations();
+      final chats = await _chatApi.listConversations(type: 'DIRECT');
       final conversations = chats
           .map((chat) => ChatConversationModel.fromApi(chat, _currentUserId))
           .toList();
