@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:uniconnect/data/repository/event/event_repository_remote.dart';
 import 'package:uniconnect/ui/events/events_provider.dart';
+import 'package:uniconnect/utils/helper_functions.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../auth/auth_state_provider.dart';
@@ -194,14 +195,29 @@ class EventDetailScreen extends ConsumerWidget {
                   padding: const EdgeInsets.all(16.0),
                   child: ElevatedButton(
                     onPressed: () async {
-                      await ref.read(eventRepoProvider).deleteEvent(event.id);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Event deleted successfully"),
-                        ),
+                      final result = await ref
+                          .read(eventRepoProvider)
+                          .deleteEvent(event.id);
+                      result.fold(
+                        (_) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Event deleted successfully"),
+                            ),
+                          );
+                          context.pop();
+                          ref.invalidate(eventProvider(event.authorId));
+                        },
+                        (error, _) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                UCHelperFunctions.getErrorMessage(error),
+                              ),
+                            ),
+                          );
+                        },
                       );
-                      context.pop();
-                      ref.invalidate(eventProvider(event.authorId));
                     },
                     child: const Text("Delete"),
                   ),

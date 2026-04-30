@@ -33,9 +33,10 @@ class ChatRepositoryRemote implements ChatRepository {
       final data = await _chatApi.getOrCreateConversation(otherUserId);
       final messagesRaw = (data['messages'] as List<dynamic>? ?? const []);
       final messages = messagesRaw
+          .whereType<Map>()
           .map(
             (item) => ChatMessageModel.fromApi(
-              Map<String, dynamic>.from(item as Map),
+              Map<String, dynamic>.from(item),
               currentUserId,
             ),
           )
@@ -43,7 +44,8 @@ class ChatRepositoryRemote implements ChatRepository {
           .reversed
           .toList();
 
-      return Result.ok(((data['chatId'] as String), messages));
+      final chatId = (data['chatId'] ?? data['id'] ?? data['_id'] ?? '').toString();
+      return Result.ok((chatId, messages));
     } catch (error, stackTrace) {
       return Result.error(ChatFailure.fromException(error), stackTrace);
     }

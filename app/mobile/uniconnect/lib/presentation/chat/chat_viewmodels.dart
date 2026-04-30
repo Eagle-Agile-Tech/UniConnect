@@ -32,7 +32,7 @@ class ChatConversationService extends ChangeNotifier {
   StreamSubscription<Map<String, dynamic>>? _socketErrorSub;
 
   bool _initialized = false;
-  bool _isLoading = true;
+  bool _isLoading = false;
   String? _error;
   Future<void>? _initializing;
 

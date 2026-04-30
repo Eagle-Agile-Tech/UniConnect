@@ -7,6 +7,7 @@ import 'package:uniconnect/ui/core/common/styles/spacing_style.dart';
 import 'package:uniconnect/ui/core/common/widgets/app_bar.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
 
+import 'package:uniconnect/utils/helper_functions.dart';
 import '../../../../utils/validator.dart';
 import '../../onboarding/view_models/onboarding_viewmodel_provider.dart';
 
@@ -98,7 +99,7 @@ class _VerifyEmailScreen extends ConsumerState<ForgetEmailScreen>{
                   if (status != null) {
                     ScaffoldMessenger.of(
                       context,
-                    ).showSnackBar(SnackBar(content: Text(status.toString())));
+                    ).showSnackBar(SnackBar(content: Text(UCHelperFunctions.getErrorMessage(status))));
                   } else {
                     ScaffoldMessenger.of(
                       context,

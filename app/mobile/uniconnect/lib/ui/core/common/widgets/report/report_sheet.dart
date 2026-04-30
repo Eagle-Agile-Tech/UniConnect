@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../utils/enums.dart';
+import '../../../../../utils/helper_functions.dart';
 import '../../../../../utils/result.dart';
 
 typedef ReportSubmitCallback =
@@ -128,7 +129,9 @@ class _ReportSheetState extends ConsumerState<ReportSheet> {
       (error, _) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(error.toString())));
+        ).showSnackBar(
+          SnackBar(content: Text(UCHelperFunctions.getErrorMessage(error))),
+        );
       },
     );
 

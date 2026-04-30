@@ -16,6 +16,7 @@ import 'package:uniconnect/ui/auth/onboarding/view_models/onboarding_viewmodel_p
 import 'package:uniconnect/ui/core/common/styles/spacing_style.dart';
 import 'package:uniconnect/ui/core/common/widgets/app_bar.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
+import 'package:uniconnect/utils/helper_functions.dart';
 import 'package:uniconnect/utils/validator.dart';
 
 class CreateProfile extends ConsumerStatefulWidget {
@@ -256,7 +257,11 @@ class _CreateProfileState extends ConsumerState<CreateProfile> {
                             context.go(Routes.home);
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(result.error.toString())),
+                              SnackBar(
+                                content: Text(
+                                  UCHelperFunctions.getErrorMessage(result),
+                                ),
+                              ),
                             );
                           }
                         },

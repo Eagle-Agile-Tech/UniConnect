@@ -235,6 +235,7 @@ class CommentNotifier extends AsyncNotifier<List<Comment>> {
           createdComment,
         ];
         _refreshState();
+        build();
       },
       (error, stackTrace) {
         if (parentCommentId == null) {

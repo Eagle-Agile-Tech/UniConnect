@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uniconnect/ui/auth/auth_state_provider.dart';
 import 'package:uniconnect/ui/community/view_models/community_viewmodel.dart';
+import 'package:uniconnect/utils/helper_functions.dart';
 
 import '../../config/assets.dart';
 import '../../domain/models/community/community.dart';
@@ -11,6 +12,7 @@ import '../../domain/models/user/user.dart';
 import '../../routing/routes.dart';
 import '../core/common/widgets/post_card/post_card.dart';
 import '../core/theme/dimens.dart';
+import '../home/view_models/home_viewmodel_provider.dart';
 
 class CommunityScreen extends ConsumerWidget {
   const CommunityScreen({
@@ -40,7 +42,7 @@ class CommunityScreen extends ConsumerWidget {
         },
         error: (error, stackTrace) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Action failed: $error')),
+            SnackBar(content: Text(UCHelperFunctions.getErrorMessage(error))),
           );
         },
       );
@@ -159,7 +161,9 @@ class CommunityScreen extends ConsumerWidget {
                     padding: const EdgeInsets.only(top: 10),
                     itemCount: data.length,
                     itemBuilder: (context, index) =>
-                        UCPostCard(post: data[index]),
+                        UCPostCard(post: data[index], onLike: () => ref.read(homeViewModelProvider(ref.read(authNotifierProvider).value!.user!.id).notifier).toggleLike(postId: data[index].id),
+                          onBookmark: () => ref.read(homeViewModelProvider(ref.read(authNotifierProvider).value!.user!.id).notifier).bookmarkPost(postId: data[index].id)
+                          ),
                   );
                 },
                 error: (Object error, StackTrace stackTrace) =>

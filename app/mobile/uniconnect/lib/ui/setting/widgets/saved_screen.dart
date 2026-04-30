@@ -4,6 +4,9 @@ import 'package:uniconnect/ui/core/common/widgets/post_card/post_card.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
 import 'package:uniconnect/ui/setting/view_models/bookmark_provider.dart';
 
+import '../../auth/auth_state_provider.dart';
+import '../../home/view_models/home_viewmodel_provider.dart';
+
 
 class SavedScreen extends ConsumerWidget {
   const SavedScreen({super.key});
@@ -32,7 +35,10 @@ class SavedScreen extends ConsumerWidget {
               itemBuilder: (context, index) {
                 return UCPostCard(
                   post: data[index],
-                );
+                    onLike: () => ref.read(homeViewModelProvider(ref.read(authNotifierProvider).value!.user!.id).notifier).toggleLike(postId: data[index].id),
+                    onBookmark: () => ref.read(homeViewModelProvider(ref.read(authNotifierProvider).value!.user!.id).notifier).bookmarkPost(postId: data[index].id
+                    )
+                    );
               },
             );
           },

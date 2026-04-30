@@ -6,6 +6,7 @@ import 'package:uniconnect/ui/core/theme/dimens.dart';
 import 'package:uniconnect/ui/network/viewmodels/network_provider.dart';
 import 'package:uniconnect/ui/auth/auth_state_provider.dart';
 import 'package:uniconnect/ui/profile/view_models/user_provider.dart';
+import 'package:uniconnect/utils/helper_functions.dart';
 
 import '../../../routing/routes.dart';
 import '../view_models/notification_viewmodel.dart';
@@ -89,7 +90,11 @@ class NetworksIncomingScreen extends ConsumerWidget {
                             },
                                 (error, _) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(error.toString())),
+                                SnackBar(
+                                  content: Text(
+                                    UCHelperFunctions.getErrorMessage(error),
+                                  ),
+                                ),
                               );
                             },
                           );
@@ -112,7 +117,11 @@ class NetworksIncomingScreen extends ConsumerWidget {
                             },
                                 (error, _) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(error.toString())),
+                                SnackBar(
+                                  content: Text(
+                                    UCHelperFunctions.getErrorMessage(error),
+                                  ),
+                                ),
                               );
                             },
                           );

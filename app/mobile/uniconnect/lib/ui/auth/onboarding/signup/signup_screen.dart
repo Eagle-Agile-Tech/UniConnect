@@ -7,6 +7,7 @@ import 'package:uniconnect/ui/core/common/styles/spacing_style.dart';
 import 'package:uniconnect/ui/core/common/widgets/signin_with_button.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
 import 'package:uniconnect/utils/enums.dart';
+import 'package:uniconnect/utils/helper_functions.dart';
 import 'package:uniconnect/utils/validator.dart';
 
 import '../../../../routing/routes.dart';
@@ -141,7 +142,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   );
                   if (status != null){
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(status.toString()))
+                      SnackBar(content: Text(UCHelperFunctions.getErrorMessage(status)))
                     );
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(

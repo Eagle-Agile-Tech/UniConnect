@@ -29,9 +29,10 @@ abstract class ChatMessageModel with _$ChatMessageModel {
     final sender = json['sender'] as Map<String, dynamic>?;
     final senderId =
         (json['senderId'] ?? sender?['id'] ?? sender?['userId'] ?? '')
-            as String;
+            .toString();
     final receipts = (json['receipts'] as List<dynamic>? ?? const [])
-        .map((item) => Map<String, dynamic>.from(item as Map))
+        .whereType<Map>()
+        .map((item) => Map<String, dynamic>.from(item))
         .toList();
     final isMine = senderId == currentUserId;
     final status = _deriveStatus(
@@ -42,12 +43,18 @@ abstract class ChatMessageModel with _$ChatMessageModel {
 
     final chat = json['chat'] as Map<String, dynamic>?;
 
+    String? senderName = (sender?['name'] ?? sender?['username'])?.toString();
+    if (senderName == null) {
+      final profile = sender?['profile'] as Map?;
+      senderName = (profile?['fullName'] ?? profile?['username'])?.toString();
+    }
+
     return ChatMessageModel(
       id: (json['id'] ?? json['messageId'] ?? json['clientMessageId'] ?? '')
           .toString(),
       chatId: (json['chatId'] ?? chat?['id'] ?? '').toString(),
       senderId: senderId,
-      senderName: (sender?['username'] ?? sender?['name'])?.toString(),
+      senderName: senderName,
       content: (json['content'] ?? '').toString(),
       createdAt:
           DateTime.tryParse((json['createdAt'] ?? '').toString()) ??

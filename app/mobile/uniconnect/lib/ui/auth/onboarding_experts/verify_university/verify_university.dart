@@ -7,6 +7,7 @@ import '../../../../routing/routes.dart';
 import '../../onboarding/verify_email/widets/otp_form.dart';
 import '../../onboarding/view_models/onboarding_viewmodel_provider.dart';
 import '../../onboarding_experts/viewmodel/expert_onboarding_provider.dart';
+import '../../../../utils/helper_functions.dart';
 import '../../../core/common/styles/spacing_style.dart';
 import '../../../core/common/widgets/app_bar.dart';
 import '../../../core/theme/dimens.dart';
@@ -70,7 +71,11 @@ class _ExpertVerifyUniState extends ConsumerState<ExpertVerifyUni> {
                   if (status != null) {
                     ScaffoldMessenger.of(
                       context,
-                    ).showSnackBar(SnackBar(content: Text(status.toString())));
+                    ).showSnackBar(
+                      SnackBar(
+                        content: Text(UCHelperFunctions.getErrorMessage(status)),
+                      ),
+                    );
                     return;
                   }
 

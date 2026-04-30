@@ -10,22 +10,26 @@ class ChatSession {
 
   String? currentUserId;
   String? accessToken;
+  Dio? _dio;
 
   bool get isAuthenticated =>
-      currentUserId != null && currentUserId!.isNotEmpty &&
-      accessToken != null && accessToken!.isNotEmpty;
+      currentUserId != null && currentUserId!.isNotEmpty;
 
-  void bind({required String userId, required String token}) {
+  void bind({required String userId, String? token, Dio? dio}) {
     currentUserId = userId;
     accessToken = token;
+    if (dio != null) _dio = dio;
   }
 
   void clear() {
     currentUserId = null;
     accessToken = null;
+    _dio = null;
   }
 
   Dio createAuthedDio() {
+    if (_dio != null) return _dio!;
+
     final token = accessToken;
     if (token == null || token.isEmpty) {
       throw StateError('Chat session is not authenticated');

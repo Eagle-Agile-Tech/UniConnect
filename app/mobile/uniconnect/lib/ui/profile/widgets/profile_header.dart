@@ -10,6 +10,7 @@ import '../../../config/assets.dart';
 import '../../../domain/models/user/user.dart';
 import '../../../routing/routes.dart';
 import '../../../utils/enums.dart';
+import '../../../utils/helper_functions.dart';
 import '../../../utils/result.dart';
 import '../../core/common/widgets/report/report_sheet.dart';
 import '../../core/theme/dimens.dart';
@@ -352,7 +353,9 @@ class ProfileHeader extends ConsumerWidget {
       (error, _) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(error.toString())));
+        ).showSnackBar(
+          SnackBar(content: Text(UCHelperFunctions.getErrorMessage(error))),
+        );
       },
     );
   }

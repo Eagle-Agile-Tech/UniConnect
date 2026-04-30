@@ -651,7 +651,7 @@ class _ChatThreadViewState extends State<ChatThreadView> {
 
   Future<void> _markChatAsRead(String chatId, {String? messageId}) async {
     try {
-      await _chatApi.markAsRead(chatId: chatId, messageId: messageId);
+      // await _chatApi.markAsRead(chatId: chatId, messageId: messageId);
     } catch (_) {
       // Keep UI responsive even if read sync fails.
     }

@@ -70,7 +70,9 @@ class _CreateCommunityPostScreenState
         },
         error: (error, stackTrace) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to post: $error')),
+            SnackBar(
+              content: Text(UCHelperFunctions.getErrorMessage(error)),
+            ),
           );
         },
       );

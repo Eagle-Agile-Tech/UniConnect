@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uniconnect/utils/enums.dart';
+import 'package:uniconnect/utils/helper_functions.dart';
 import 'package:uniconnect/utils/validator.dart';
 
 import '../../../../config/dummy_data.dart';
@@ -240,7 +241,7 @@ class _SignupScreenState extends ConsumerState<ExpertSignupScreen> {
     if (!mounted) return;
 
     if (status != null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(status.toString())));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(UCHelperFunctions.getErrorMessage(status))));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Account created successfully. Verify Your Email.')),

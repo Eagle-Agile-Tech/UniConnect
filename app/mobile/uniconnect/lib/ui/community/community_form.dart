@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 import 'package:uniconnect/ui/community/view_models/community_onboard_viewmodel.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
+import 'package:uniconnect/utils/helper_functions.dart';
 import 'package:uniconnect/utils/validator.dart';
 
 import '../../domain/models/user/user.dart';
@@ -58,7 +59,9 @@ class _CreateCommunityScreenState extends ConsumerState<CreateCommunityScreen> {
         },
         error: (error, stackTrace) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to create community: $error')),
+            SnackBar(
+              content: Text(UCHelperFunctions.getErrorMessage(error)),
+            ),
           );
         },
       );

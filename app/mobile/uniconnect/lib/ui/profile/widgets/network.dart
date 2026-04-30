@@ -173,7 +173,7 @@ class OthersNetwork extends ConsumerWidget {
       },
       (error, _) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error.toString())),
+          SnackBar(content: Text(UCHelperFunctions.getErrorMessage(error))),
         );
       },
     );

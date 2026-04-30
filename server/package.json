@@ -13,7 +13,7 @@
     "ml:sync:id": "PYTHONPATH=. python3 ml/pipelines/sync_id_embeddings.py --checkpoint ml/two_tower/checkpoints/id_two_tower_run",
     "ai:pipeline:id": "PYTHONPATH=. python3 ml/pipelines/run_id_pipeline.py",
     "rec:benchmark": "PYTHONPATH=. python3 ml/pipelines/benchmark_recommenders.py",
-  
+
     "db:seed": "node src/scripts/seedDatabase.js",
     "db:seed:list": "node src/scripts/seedDatabase.js --list"
   },

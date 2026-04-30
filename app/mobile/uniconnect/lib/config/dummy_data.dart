@@ -65,6 +65,26 @@ abstract final class UCDummyData {
     'Nursing',
   ];
 
+  static final List<String> honor = [
+    'Masters Degree',
+    'PhD',
+    'Postdoctoral Research',
+    'Distinguished Professor',
+    'Nobel Laureate',
+    'Fields Medalist',
+    'Turing Award Winner',
+    'Pulitzer Prize Winner',
+    'MacArthur Fellow',
+    'Bachelor\'s Degree',
+  ];
+
+  static final List<DropdownMenuEntry<String>> honorEntries =
+  UnmodifiableListView<DropdownMenuEntry<String>>(
+    honor.map(
+          (degree) => DropdownMenuEntry<String>(value: degree, label: degree),
+    ),
+  );
+
   static final List<DropdownMenuEntry<String>> degreeEntries =
       UnmodifiableListView<DropdownMenuEntry<String>>(
         degree.map(
@@ -111,35 +131,4 @@ abstract final class UCDummyData {
   static const String postCaption2 =
       '''Had a fantastic time at the university's welcome event! Met so many amazing people and got to know more about the clubs and activities on campus. The energy was contagious, and I can't wait to get involved in all the fun stuff happening here.''';
 
-  // static final user = User(
-  //   id: '123',
-  //   firstName: 'Feysel',
-  //   lastName: 'Teshome',
-  //   username: 'feisel',
-  //   email: 'feyselteshome05@gmail.com',
-  //   university: 'Jimma University',
-  //   degree: 'Software Engineering',
-  //   currentYear: '4',
-  //   expectedGraduationYear: DateTime(2026, 6, 1),
-  //   bio: 'Grind || Blind || Leave the world Behind',
-  //   interests: ['Flutter', 'Dart', 'Mobile Development'],
-  //   createdAt: DateTime.now(),
-  //   updatedAt: DateTime.now(),
-  //   profilePicture:
-  //       'https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d',
-  // );
-
-  // static final post = Post(
-  //   id: '123',
-  //   authorId: user.id,
-  //   content: postCaption1,
-  //   createdAt: DateTime.now(),
-  //   likeCount: 123,
-  //   commentCount: 214,
-  //   mediaUrls: [
-  //     'https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d',
-  //     'https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d',
-  //     'https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d',
-  //   ], authorName: 'Feysel Teshome',
-  // );
 }

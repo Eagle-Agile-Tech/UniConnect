@@ -93,7 +93,6 @@ class _CommentInputAreaState extends ConsumerState<CommentInputArea> {
                     if (value.isNotEmpty) {
                       notifier.submitComment(content: value);
                       _controller.clear();
-                      ref.invalidate(commentProvider(widget.postId));
                     }
                   },
                   icon: const Icon(Icons.send),

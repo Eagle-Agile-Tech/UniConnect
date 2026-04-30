@@ -14,14 +14,14 @@ class UCPostCard extends ConsumerStatefulWidget {
   const UCPostCard({
     required this.post,
     super.key,
-    this.onLike,
-    this.onBookmark,
+    required this.onLike,
+    required this.onBookmark,
     this.onDelete,
   });
 
   final Post post;
-  final VoidCallback? onLike;
-  final VoidCallback? onBookmark;
+  final VoidCallback onLike;
+  final VoidCallback onBookmark;
   final VoidCallback? onDelete;
 
   @override

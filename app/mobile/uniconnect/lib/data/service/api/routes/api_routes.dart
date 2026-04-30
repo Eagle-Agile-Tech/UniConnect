@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 
 String get baseUrl {
   // Use your Ubuntu machine's local IP address for physical devices
-  const String machineIp = '10.141.130.200'; 
+  const String machineIp = '10.141.130.200';
   
   if (kIsWeb) return 'http://localhost:3000/api';
   if (Platform.isAndroid) {

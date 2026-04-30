@@ -5,14 +5,9 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:uniconnect/data/repository/user/user_repository_remote.dart';
 
 import '../../data/repository/auth/auth_repository_remote.dart';
-import '../../data/service/api/token_refresher.dart';
-import '../../data/service/local/secure_token_storage.dart';
 import '../../data/service/socket/chat_service.dart';
 import '../../domain/models/user/user.dart';
 import '../../utils/result.dart';
-import '../../presentation/chat/chat_session.dart';
-import '../../presentation/chat/chat_viewmodels.dart';
-import '../../data/service/push/push_notification_service.dart';
 import 'onboarding/view_models/onboarding_viewmodel_provider.dart';
 import 'onboarding_experts/viewmodel/expert_onboarding_provider.dart';
 
@@ -32,60 +27,33 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   late final AuthRepositoryRemote _repo;
   late final UserRepositoryRemote _userRepo;
   late final ChatService _chat;
-  late final PushNotificationService _push;
   late final ExpertOnboardingViewModel _onBoardExpert;
   late final OnboardingViewmodel _onborader;
 
-  Future<void> _syncChatSession(User? user) async {
-    if (user == null) {
-      ChatSession.instance.clear();
-      await ChatConversationService.instance.shutdown();
-      return;
-    }
 
-    final token = await SecureTokenStorage().read();
-    final accessToken = token?.accessToken;
-    if (accessToken == null || accessToken.isEmpty) {
-      ChatSession.instance.clear();
-      await ChatConversationService.instance.shutdown();
-      return;
-    }
-
-    ChatSession.instance.bind(userId: user.id, token: accessToken);
-    await ChatConversationService.instance.initialize();
-  }
 
   @override
   Future<AuthState> build() async {
     try {
       _userRepo = ref.read(userRepoProvider);
       _repo = ref.read(authProvider);
-      _chat = ChatService(ref.read(dioProvider), ref);
-      _push = ref.read(pushNotificationServiceProvider);
       _onborader = ref.read(onboardingProvider.notifier);
-      _onBoardExpert = ref.read(expertOnboardingProvider.notifier);
-
 
       final isAuth = await _repo.isAuthenticated;
       if (!isAuth) return const AuthState(user: null);
 
       final result = await _userRepo.getCurrentUser();
-      final authState = result.fold(
-        (user) => AuthState(user: user),
-        (_, _) => const AuthState(user: null),
-      );
-      if (authState.user != null) {
-        await _push.initializeForAuthenticatedUser(userId: authState.user!.id);
-        await _syncChatSession(authState.user);
-      }
-      return authState;
+
+      return result.fold((user) {
+        return AuthState(user: user);
+      }, (_, _) => const AuthState(user: null));
     } catch (e) {
       return const AuthState(user: null);
     }
   }
 
   Future<Result> sendOtp(String email) async {
-    final result = await _repo.sendOtp(email);
+    final result =  await _repo.sendOtp(email);
     return result.fold((data) async {
       return Result.ok('');
     }, (error, stackTrace) => Result.error(error));
@@ -96,13 +64,14 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
 
     final result = await _repo.login(email, password);
 
-    result.fold((user) async {
-      state = AsyncData(AuthState(user: user));
-      await Future.delayed(Duration(milliseconds: 500));
-      _chat.initialize();
-      await _push.initializeForAuthenticatedUser(userId: user.id);
-      await _syncChatSession(user);
-    }, (_, _) => state = const AsyncData(AuthState(user: null)));
+    result.fold(
+          (user) async {
+        state = AsyncData(AuthState(user: user));
+        await Future.delayed(Duration(milliseconds: 500));
+        _chat.initialize();
+      },
+          (_, _) => state = const AsyncData(AuthState(user: null)),
+    );
   }
 
   Future<Result<String?>> signInWithGoogle() async {
@@ -120,7 +89,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
 
       final GoogleSignInAccount googleUser = await signIn.authenticate();
 
-      final auth = googleUser.authentication;
+      final auth = await googleUser.authentication;
 
       final idToken = auth.idToken;
 
@@ -132,20 +101,18 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       final result = await _onborader.signInWithGoogle(idToken);
 
       return result.fold(
-        (user) async {
+            (user) async {
           if (user != null) {
             state = AsyncData(AuthState(user: user));
             await Future.delayed(const Duration(milliseconds: 500));
             _chat.initialize();
-            await _push.initializeForAuthenticatedUser(userId: user.id);
-            await _syncChatSession(user);
             return Result.ok(null);
           } else {
             state = const AsyncData(AuthState(user: null));
             return Result.ok('Proceed');
           }
         },
-        (error, _) {
+            (error, _) {
           state = const AsyncData(AuthState(user: null));
           return Result.error(error);
         },
@@ -156,25 +123,30 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     }
   }
 
+  Future<bool> logout() async {
+    final result = await _repo.logout();
+    if (result) {
+      state = AsyncData(AuthState(user: null));
+    }
+    return result;
+  }
+
   Future<Err?> registerStudent() async {
     final result = await _onborader.completeOnboarding();
     return result.fold((user) async {
       state = AsyncData(AuthState(user: user));
       await Future.delayed(Duration(milliseconds: 500));
       await _chat.initialize();
-      await _push.initializeForAuthenticatedUser(userId: user.id);
-      await _syncChatSession(user);
       return null;
     }, (error, stackTrace) => Result.error(error) as Err);
   }
 
-  Future<Err?> registerExpert(
-    String expertise,
-    String honor,
-    String username,
-    String? bio,
-    File? profilePicture,
-  ) async {
+  Future<Err?> registerExpert(String expertise,
+      String honor,
+      String username,
+      String? bio,
+      File? profilePicture,) async {
+    _onBoardExpert = ref.read(expertOnboardingProvider.notifier);
     final result = await _onBoardExpert.createExpertProfile(
       expertise,
       honor,
@@ -182,10 +154,8 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       bio,
       profilePicture,
     );
-    return result.fold((user) async {
+    return result.fold((user) {
       state = AsyncData(AuthState(user: user));
-      await _push.initializeForAuthenticatedUser(userId: user.id);
-      await _syncChatSession(user);
       return null;
     }, (error, stackTrace) => Result.error(error) as Err);
   }
@@ -209,25 +179,11 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     return result.fold((data) async {
       final updatedUser = await _userRepo.getCurrentUser();
       updatedUser.fold(
-        (data) => state = AsyncData(AuthState(user: data)),
-        (error, stackTrace) => state = const AsyncData(AuthState(user: null)),
+            (data) => state = AsyncData(AuthState(user: data)),
+            (error, stackTrace) =>
+        state = const AsyncData(AuthState(user: null)),
       );
-      if (state.value?.user != null) {
-        await _syncChatSession(state.value!.user);
-      }
       return Result.ok('Profile updated');
     }, (error, _) => Result.error(error));
-  }
-
-  Future<bool> logout() async {
-    await _push.clearDeviceTokenOnServer();
-    await _push.teardown();
-    final result = await _repo.logout();
-    ChatSession.instance.clear();
-    await ChatConversationService.instance.shutdown();
-    if (result) {
-      state = AsyncData(AuthState(user: null));
-    }
-    return result;
   }
 }

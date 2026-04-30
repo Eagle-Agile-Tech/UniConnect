@@ -113,10 +113,15 @@ AsyncNotifierProvider<FeedProvider, List<Post>>(
 
 class FeedProvider extends AsyncNotifier<List<Post>> {
   late PostRepository _postRepo;
-
+  late String userId;
   @override
   FutureOr<List<Post>> build() {
     _postRepo = ref.watch(postRemoteProvider);
+     userId = ref
+        .read(authNotifierProvider)
+        .value!
+        .user!
+        .id;
     return _fetchPosts();
   }
 
@@ -135,5 +140,72 @@ class FeedProvider extends AsyncNotifier<List<Post>> {
             stackTrace ?? StackTrace.current,
           ),
     );
+  }
+
+  Future<void> toggleLike({required String postId}) async {
+    final previous = state.value;
+    if (previous == null) return;
+    final updatedPost = previous.map((post) {
+      if (post.id == postId) {
+        final isLiked = post.isLikedByMe;
+        return post.copyWith(
+          isLikedByMe: !isLiked,
+          likeCount: isLiked ? post.likeCount - 1 : post.likeCount + 1,
+        );
+      }
+      return post;
+    }).toList();
+
+    state = AsyncValue.data(updatedPost);
+    final result = await _postRepo.likePost(postId: postId, userId: userId);
+    result.fold((success) => null, (error, _) {
+      state = AsyncValue.data(state.value!);
+    });
+  }
+
+  Future<void> refreshFeed() async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(_fetchPosts);
+  }
+
+  Future<void> removePost(String postId) async {
+    final previous = state.value;
+    if (previous == null) return;
+
+    state = AsyncValue.data(previous.where((post) => post.id != postId).toList());
+    final result = await _postRepo.deletePost(postId: postId);
+    result.fold(
+          (_) => null,
+          (error, _) => state = AsyncValue.data(previous),
+    );
+  }
+
+  Future<void> addPostToFeed(Post post) async {
+    final previous = state.value ?? const <Post>[];
+    state = AsyncValue.data([post, ...previous]);
+  }
+
+  Future<Post?> fetchSinglePost(String postId) async {
+    final result = await _postRepo.getPostById(postId);
+    return result.fold((post) => post, (_, __) => null);
+  }
+
+  Future<void> bookmarkPost({required String postId}) async {
+    final previous = state.value;
+    if (previous == null) return;
+    final bookmarkedPost = previous.map((post) {
+      if (post.id == postId) {
+        final isBookmarked = post.isBookmarkedByMe;
+        return post.copyWith(isBookmarkedByMe: !isBookmarked);
+      }
+      return post;
+    }).toList();
+    state = AsyncValue.data(bookmarkedPost);
+    final result = await _postRepo.bookmarkPost(postId: postId);
+
+    return result.fold((data) => null, (error, _) {
+      state = AsyncValue.data(previous);
+      AsyncValue.error(error, StackTrace.current);
+    });
   }
 }

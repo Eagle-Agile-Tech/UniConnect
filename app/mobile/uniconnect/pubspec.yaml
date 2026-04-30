@@ -31,8 +31,8 @@ dependencies:
   shared_preferences: ^2.5.5
   flutter_svg: ^2.2.4
   google_sign_in: ^7.2.0
-  firebase_core: ^4.1.1
-  firebase_messaging: ^16.0.1
+#  firebase_core: ^4.1.1
+#  firebase_messaging: ^16.0.1
   flutter_launcher_icons: ^0.14.4
 dev_dependencies:
   flutter_test:

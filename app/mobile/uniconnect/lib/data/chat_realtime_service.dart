@@ -58,6 +58,46 @@ class ChatDeliveredEvent {
   final DateTime? deliveredAt;
 }
 
+class ChatMessageAckEvent {
+  const ChatMessageAckEvent({
+    required this.chatId,
+    required this.clientMessageId,
+    required this.messageId,
+    this.duplicate = false,
+  });
+
+  final String chatId;
+  final String clientMessageId;
+  final String messageId;
+  final bool duplicate;
+}
+
+class ChatMessageDeletedEvent {
+  const ChatMessageDeletedEvent({
+    required this.chatId,
+    required this.messageId,
+  });
+
+  final String chatId;
+  final String messageId;
+}
+
+class ChatReactionEvent {
+  const ChatReactionEvent({
+    required this.id,
+    required this.messageId,
+    required this.userId,
+    required this.type,
+    this.user,
+  });
+
+  final String id;
+  final String messageId;
+  final String userId;
+  final String type;
+  final Map<String, dynamic>? user;
+}
+
 class ChatPresenceUserState {
   const ChatPresenceUserState({
     required this.userId,
@@ -98,6 +138,10 @@ class ChatRealtimeService {
       StreamController<ChatPresenceStateEvent>.broadcast();
   final _typingStateController =
       StreamController<ChatTypingStateEvent>.broadcast();
+  final _ackController = StreamController<ChatMessageAckEvent>.broadcast();
+  final _updatedController = StreamController<ChatMessageModel>.broadcast();
+  final _deletedController = StreamController<ChatMessageDeletedEvent>.broadcast();
+  final _reactionController = StreamController<ChatReactionEvent>.broadcast();
   final _errorController = StreamController<Map<String, dynamic>>.broadcast();
   bool _connected = false;
 
@@ -111,6 +155,10 @@ class ChatRealtimeService {
   Stream<ChatPresenceStateEvent> get presenceState =>
       _presenceStateController.stream;
   Stream<ChatTypingStateEvent> get typingState => _typingStateController.stream;
+  Stream<ChatMessageAckEvent> get messageAcks => _ackController.stream;
+  Stream<ChatMessageModel> get updatedMessages => _updatedController.stream;
+  Stream<ChatMessageDeletedEvent> get deletedMessages => _deletedController.stream;
+  Stream<ChatReactionEvent> get reactions => _reactionController.stream;
   Stream<Map<String, dynamic>> get errors => _errorController.stream;
 
   Future<void> connect({
@@ -174,6 +222,10 @@ class ChatRealtimeService {
     });
 
     _socket?.on('chat:message:new', (payload) => _onMessage(payload));
+    _socket?.on('chat:message:ack', (payload) => _onMessageAck(payload));
+    _socket?.on('chat:message:updated', (payload) => _onMessageUpdated(payload));
+    _socket?.on('chat:message:deleted', (payload) => _onMessageDeleted(payload));
+    _socket?.on('chat:message:reaction', (payload) => _onReaction(payload));
     _socket?.on('chat:presence', (payload) => _onPresence(payload));
     _socket?.on('chat:typing', (payload) => _onTyping(payload));
     _socket?.on('chat:read', (payload) => _onRead(payload));
@@ -210,6 +262,38 @@ class ChatRealtimeService {
     _socket?.emit('chat:typing:query', {'chatId': chatId});
   }
 
+  void sendMessage({
+    required String chatId,
+    String? content,
+    List<String>? mediaIds,
+    String? clientMessageId,
+  }) {
+    _socket?.emit('chat:send', {
+      'chatId': chatId,
+      if (content != null) 'content': content,
+      if (mediaIds != null) 'mediaIds': mediaIds,
+      if (clientMessageId != null) 'clientMessageId': clientMessageId,
+    });
+  }
+
+  void updateMessage({required String messageId, required String content}) {
+    _socket?.emit('chat:message:update', {
+      'messageId': messageId,
+      'content': content,
+    });
+  }
+
+  void deleteMessage({required String messageId}) {
+    _socket?.emit('chat:message:delete', {'messageId': messageId});
+  }
+
+  void reactToMessage({required String messageId, required String type}) {
+    _socket?.emit('chat:reaction', {
+      'messageId': messageId,
+      'type': type,
+    });
+  }
+
   void _onMessage(dynamic payload) {
     final data = _extractPayloadMap(payload);
     final currentUserId = _currentUserId;
@@ -217,6 +301,45 @@ class ChatRealtimeService {
       return;
     }
     _incomingController.add(ChatMessageModel.fromApi(data, currentUserId));
+  }
+
+  void _onMessageAck(dynamic payload) {
+    final data = _asMap(payload);
+    if (data == null) return;
+    _ackController.add(ChatMessageAckEvent(
+      chatId: (data['chatId'] ?? '').toString(),
+      clientMessageId: (data['clientMessageId'] ?? '').toString(),
+      messageId: (data['messageId'] ?? '').toString(),
+      duplicate: data['duplicate'] == true,
+    ));
+  }
+
+  void _onMessageUpdated(dynamic payload) {
+    final data = _extractPayloadMap(payload);
+    final currentUserId = _currentUserId;
+    if (data == null || currentUserId == null) return;
+    _updatedController.add(ChatMessageModel.fromApi(data, currentUserId));
+  }
+
+  void _onMessageDeleted(dynamic payload) {
+    final data = _asMap(payload);
+    if (data == null) return;
+    _deletedController.add(ChatMessageDeletedEvent(
+      chatId: (data['chatId'] ?? '').toString(),
+      messageId: (data['messageId'] ?? '').toString(),
+    ));
+  }
+
+  void _onReaction(dynamic payload) {
+    final data = _asMap(payload);
+    if (data == null) return;
+    _reactionController.add(ChatReactionEvent(
+      id: (data['id'] ?? '').toString(),
+      messageId: (data['messageId'] ?? '').toString(),
+      userId: (data['userId'] ?? '').toString(),
+      type: (data['type'] ?? '').toString(),
+      user: _asMap(data['user']),
+    ));
   }
 
   void _onPresence(dynamic payload) {
@@ -357,6 +480,10 @@ class ChatRealtimeService {
     _deliveredController.close();
     _presenceStateController.close();
     _typingStateController.close();
+    _ackController.close();
+    _updatedController.close();
+    _deletedController.close();
+    _reactionController.close();
     _errorController.close();
   }
 }

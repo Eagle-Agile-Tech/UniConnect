@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:uniconnect/ui/auth/onboarding_experts/viewmodel/expert_onboarding_provider.dart';
 import 'package:uniconnect/ui/core/common/styles/spacing_style.dart';
 import 'package:uniconnect/ui/core/common/widgets/app_bar.dart';
+import 'package:uniconnect/utils/helper_functions.dart';
 
 import '../../../config/dummy_data.dart';
 import '../../../routing/routes.dart';
@@ -153,7 +154,7 @@ class _ExpertAcademicProfileScreenState
                   requestFocusOnTap: true,
                   enableSearch: true,
                   label: const Text('Honor'),
-                  dropdownMenuEntries: UCDummyData.degreeEntries,
+                  dropdownMenuEntries: UCDummyData.honorEntries,
                 ),
                 const SizedBox(height: Dimens.defaultSpace),
                 TextFormField(
@@ -208,7 +209,9 @@ class _ExpertAcademicProfileScreenState
 
                     if (status != null) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(status.toString())),
+                        SnackBar(
+                          content: Text(UCHelperFunctions.getErrorMessage(status)),
+                        ),
                       );
                       return;
                     }

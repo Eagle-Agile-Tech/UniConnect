@@ -52,7 +52,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
         },
         error: (error, stackTrace) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to share post: $error')),
+            SnackBar(content: Text('Failed to share post: ${UCHelperFunctions.getErrorMessage(error)}')),
           );
         },
       );

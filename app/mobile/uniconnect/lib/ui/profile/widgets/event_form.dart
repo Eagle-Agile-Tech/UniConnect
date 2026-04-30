@@ -5,7 +5,9 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:uniconnect/domain/models/event/event.dart';
 import 'package:uniconnect/ui/auth/auth_state_provider.dart';
-import 'package:uniconnect/ui/setting/view_models/create_event_provider.dart';
+import 'package:uniconnect/utils/helper_functions.dart';
+
+import '../../setting/view_models/create_event_provider.dart';
 
 class EventFormPage extends ConsumerStatefulWidget {
   const EventFormPage({super.key});
@@ -146,7 +148,7 @@ class _EventFormPageState extends ConsumerState<EventFormPage> {
       if (state.hasError) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(state.error.toString())));
+        ).showSnackBar(SnackBar(content: Text(UCHelperFunctions.getErrorMessage(state.error))));
         return;
       }
 

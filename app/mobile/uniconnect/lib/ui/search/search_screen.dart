@@ -9,6 +9,9 @@ import 'package:uniconnect/ui/core/common/widgets/post_card/post_card.dart';
 import 'package:uniconnect/ui/core/theme/dimens.dart';
 import 'package:uniconnect/ui/search/viewmodels/search_viewmodel_provider.dart';
 
+import '../auth/auth_state_provider.dart';
+import '../home/view_models/home_viewmodel_provider.dart';
+
 enum SearchTab {
   users,
   posts,
@@ -273,7 +276,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         }
         return ListView(
           children: data.map((post) {
-            return UCPostCard(post: post);
+            return UCPostCard(post: post, onLike: () => ref.read(homeViewModelProvider(ref.read(authNotifierProvider).value!.user!.id).notifier).toggleLike(postId: post.id),
+                onBookmark: () => ref.read(homeViewModelProvider(ref.read(authNotifierProvider).value!.user!.id).notifier).bookmarkPost(postId: post.id)
+                );
           }).toList(),
         );
       },

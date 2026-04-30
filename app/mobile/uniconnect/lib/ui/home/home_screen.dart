@@ -41,15 +41,17 @@ class HomeScreen extends ConsumerWidget {
         ),
       ),
       drawer: Drawer(
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.zero,
-        ),
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         elevation: 4,
         width: MediaQuery.of(context).size.width * 0.8,
         child: const DrawerContent(),
       ),
       body: RefreshIndicator(
-        onRefresh: () => ref.watch(homeViewModelProvider(ref.read(authNotifierProvider).value!.user!.id).notifier).refreshFeed(),
+        onRefresh: () => ref
+            .watch(
+              feedProvider.notifier,
+            )
+            .refreshFeed(),
         child: postAsync.when(
           data: (posts) {
             if (posts.isEmpty) {
@@ -68,6 +70,16 @@ class HomeScreen extends ConsumerWidget {
               itemBuilder: (context, index) {
                 return UCPostCard(
                   post: posts[index],
+                  onLike: () => ref
+                      .read(
+                        feedProvider.notifier,
+                      )
+                      .toggleLike(postId: posts[index].id),
+                  onBookmark: () => ref
+                      .read(
+                        feedProvider.notifier,
+                      )
+                      .bookmarkPost(postId: posts[index].id),
                 );
               },
             );

@@ -1,7 +1,38 @@
+import 'package:dio/dio.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:uniconnect/utils/result.dart';
 
 abstract final class UCHelperFunctions {
+  static String getErrorMessage(Object? error) {
+    if (error == null) return 'An unknown error occurred';
+    if (error is String) return error;
+
+    Object actualError = error;
+    if (error is Err) {
+      actualError = error.error;
+    }
+
+    if (actualError is DioException) {
+      final response = actualError.response;
+      if (response != null && response.data is Map<String, dynamic>) {
+        final message = response.data['message'];
+        if (message is String) return message;
+      }
+      switch (actualError.type) {
+        case DioExceptionType.connectionTimeout:
+          return 'Connection timeout. Please check your internet.';
+        case DioExceptionType.receiveTimeout:
+          return 'Server is taking too long to respond.';
+        case DioExceptionType.connectionError:
+          return 'No internet connection.';
+        default:
+          return 'Something went wrong. Please try again.';
+      }
+    }
+    return actualError.toString();
+  }
+
   static List<String>? extractHashtags(String content) {
     final regex = RegExp(r'#\w+');
     final matches = regex.allMatches(content);

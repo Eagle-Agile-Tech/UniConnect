@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:uniconnect/ui/auth/auth_state_provider.dart';
 
 import '../../../routing/routes.dart';
+import '../../../utils/helper_functions.dart';
 import '../../../utils/validator.dart';
 import '../../core/theme/dimens.dart';
 
@@ -232,7 +233,11 @@ class _ManageProfileState extends ConsumerState<ManageProfile> {
                           ),
                           (error, stackTrace) =>
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(error.toString())),
+                                SnackBar(
+                                  content: Text(
+                                    UCHelperFunctions.getErrorMessage(error),
+                                  ),
+                                ),
                               ),
                         );
                       },

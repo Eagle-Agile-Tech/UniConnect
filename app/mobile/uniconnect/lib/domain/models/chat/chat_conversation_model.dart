@@ -23,40 +23,51 @@ abstract class ChatConversationModel with _$ChatConversationModel {
     String currentUserId,
   ) {
     final participants = (json['participants'] as List<dynamic>? ?? const [])
-        .cast<Map<dynamic, dynamic>>();
-    final otherParticipant = participants.cast<Map>().firstWhere(
-      (item) => item['userId'] != currentUserId,
+        .whereType<Map>()
+        .toList();
+
+    final otherParticipant = participants.firstWhere(
+      (item) => item['userId']?.toString() != currentUserId,
       orElse: () =>
-          participants.isNotEmpty ? participants.first : <dynamic, dynamic>{},
+          participants.isNotEmpty ? participants.first : const {},
     );
-    final user = otherParticipant['user'] as Map<dynamic, dynamic>?;
+    final user = otherParticipant['user'] as Map?;
+    final profile = user?['profile'] as Map?;
 
     final messages = (json['messages'] as List<dynamic>? ?? const [])
-        .cast<Map>();
+        .whereType<Map>()
+        .toList();
+
     final latest = messages.isNotEmpty
         ? messages.first
-        : const <dynamic, dynamic>{};
+        : const {};
+
     final unreadCount = messages.where((message) {
       final senderId = (message['senderId'] ?? '').toString();
       if (senderId == currentUserId) {
         return false;
       }
       final receipts = (message['receipts'] as List<dynamic>? ?? const [])
-          .cast<Map>();
-      final myReceipt = receipts.cast<Map>().firstWhere(
+          .whereType<Map>()
+          .toList();
+      final myReceipt = receipts.firstWhere(
         (receipt) => receipt['userId']?.toString() == currentUserId,
-        orElse: () => const <dynamic, dynamic>{},
+        orElse: () => const {},
       );
       return myReceipt.isNotEmpty && myReceipt['readAt'] == null;
     }).length;
 
+    String partnerName = (user?['name'] ?? user?['username'])?.toString() ?? 'Unknown user';
+    if (partnerName == 'Unknown user') {
+      partnerName = (profile?['fullName'] ?? profile?['username'])?.toString() ?? 'Unknown user';
+    }
+
     return ChatConversationModel(
-      chatId: (json['id'] ?? '').toString(),
-      partnerId: (otherParticipant['userId'] ?? '').toString(),
-      partnerName: (user?['username'] ?? user?['name'] ?? 'Unknown user')
-          .toString(),
+      chatId: (json['id'] ?? json['_id'] ?? '').toString(),
+      partnerId: (otherParticipant['userId'] ?? otherParticipant['id'] ?? '').toString(),
+      partnerName: partnerName,
       partnerAvatarUrl:
-          (user?['avatarUrl'] ?? user?['profilePic'] ?? user?['profileImage'])
+          (user?['avatarUrl'] ?? profile?['profileImage'] ?? user?['profilePic'])
               ?.toString(),
       lastMessage: (latest['content'] ?? 'No messages yet').toString(),
       lastMessageAt: DateTime.tryParse((latest['createdAt'] ?? '').toString()),

@@ -4,6 +4,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../config/assets.dart';
+import '../../../../utils/helper_functions.dart';
 import '../../../../routing/routes.dart';
 import '../../../auth/auth_state_provider.dart';
 import '../../theme/dimens.dart';
@@ -27,7 +28,7 @@ class SignInWith extends ConsumerWidget {
             context.go(Routes.home);
           }
         },
-          (error, stackTrace) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString()))),
+          (error, stackTrace) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(UCHelperFunctions.getErrorMessage(error)))),
         );
       },
       child: Row(
