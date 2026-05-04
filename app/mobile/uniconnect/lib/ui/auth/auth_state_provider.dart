@@ -38,6 +38,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       _userRepo = ref.read(userRepoProvider);
       _repo = ref.read(authProvider);
       _onborader = ref.read(onboardingProvider.notifier);
+      _chat = ref.read(chatServiceProvider);
 
       final isAuth = await _repo.isAuthenticated;
       if (!isAuth) return const AuthState(user: null);

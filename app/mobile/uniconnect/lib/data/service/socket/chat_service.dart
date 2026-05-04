@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uniconnect/data/service/api/token_refresher.dart';
 import 'package:uniconnect/data/service/local/secure_token_storage.dart';
 import '../../../../ui/chat/viewmodels/chat_provider.dart';
 import '../../../domain/models/chat/chat_message/chat_message.dart';
@@ -11,6 +12,10 @@ import '../../../domain/models/chat/user_status/user_status.dart';
 import '../../../ui/auth/auth_state_provider.dart';
 import '../api/routes/api_routes.dart';
 import 'socket_service.dart';
+
+final chatServiceProvider = Provider(
+      (ref) => ChatService(ref.watch(dioProvider), ref),
+);
 
 class ChatService {
   final Dio _client;

@@ -87,7 +87,7 @@ class UserRepositoryRemote implements UserRepository {
       try {
         final users = await Future.wait(
           data.map((item) async {
-            final otherUserId = item['userBId'];
+            final otherUserId = item['userBId'] == userId ? item['userAId'] : item['userBId'];
 
             final userResult = await _client.fetchUser(otherUserId);
 
