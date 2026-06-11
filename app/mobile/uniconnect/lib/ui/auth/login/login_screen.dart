@@ -27,6 +27,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authNotifierProvider.notifier);
+    final authState = ref.watch(authNotifierProvider);
     return Padding(
       padding: UCSpacingStyle.paddingWithAppBarHeight,
       child: SingleChildScrollView(
@@ -46,14 +47,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 validator: (value) =>
                     UCValidator.validateEmptyText('password', value),
                 obscureText: _isPassVisible,
-                decoration: InputDecoration(labelText: 'Password',suffixIcon: IconButton(
-                  onPressed: () {
-                    setState(() {
-                      _isPassVisible = !_isPassVisible;
-                    });
-                  },
-                  icon: Icon(_isPassVisible ? Icons.visibility : Icons.visibility_off),
-                )),
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  suffixIcon: IconButton(
+                    onPressed: () {
+                      setState(() {
+                        _isPassVisible = !_isPassVisible;
+                      });
+                    },
+                    icon: Icon(
+                      _isPassVisible ? Icons.visibility : Icons.visibility_off,
+                    ),
+                  ),
+                ),
               ),
               SizedBox(height: Dimens.sm),
               Align(
@@ -61,28 +67,45 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 child: TextButton(
                   child: Text('Forgot Password?'),
                   onPressed: () {
-                    if(_email.text.trim().isEmpty){
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Please enter your email')));
+                    if (_email.text.trim().isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Please enter your email')),
+                      );
                       return;
                     }
                     auth.sendOtp(_email.text.trim());
-                    context.push(Routes.forgetEmailPath, extra: _email.text.trim());
+                    context.push(
+                      Routes.forgetEmailPath,
+                      extra: _email.text.trim(),
+                    );
                   },
                 ),
               ),
               SizedBox(height: Dimens.defaultSpace),
               ElevatedButton(
-                onPressed: () async {
-                  if (!_key.currentState!.validate()) return;
-                  await auth.login(
-                    _email.text.trim(),
-                    _password.text.trim(),
-                  );
-                },
+                onPressed: authState.isLoading
+                    ? null
+                    : () async {
+                        if (!_key.currentState!.validate()) return;
+
+                        await auth.login(
+                          _email.text.trim(),
+                          _password.text.trim(),
+                        );
+                      },
                 style: ElevatedButton.styleFrom(
-                  minimumSize: Size(double.infinity, 48),
+                  minimumSize: const Size(double.infinity, 48),
                 ),
-                child: Text('Log in'),
+                child: authState.isLoading
+                    ? SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Theme.of(context).primaryColor,
+                        ),
+                      )
+                    : const Text('Log in'),
               ),
               SizedBox(height: Dimens.spaceBtwSections),
 
@@ -102,9 +125,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         color: Colors.blue,
                       ),
                       recognizer: TapGestureRecognizer()
-                  ..onTap = () {
-                    DefaultTabController.of(context).animateTo(1);
-                  },
+                        ..onTap = () {
+                          DefaultTabController.of(context).animateTo(1);
+                        },
                     ),
                   ],
                 ),

@@ -153,7 +153,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 },
                 style: ElevatedButton.styleFrom(
                   minimumSize: Size(double.infinity, 48),
-                  side: BorderSide(color: onboard.isLoading ? Colors.grey : Theme.of(context).primaryColor),
                 ),
                 child: onboard.isLoading ? SizedBox(
                   width: 20,
@@ -190,12 +189,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   ],
                 ),
               ),
-              SizedBox(height: Dimens.spaceBtwSections),
-              OutlinedButton.icon(
-                onPressed: () => context.push(Routes.expertSignup),
-                icon: Icon(Icons.workspace_premium),
-                label: Text("Register as Expert"),
-              )
+              // SizedBox(height: Dimens.spaceBtwSections),
+              // OutlinedButton.icon(
+              //   onPressed: () => context.push(Routes.expertSignup),
+              //   icon: Icon(Icons.workspace_premium),
+              //   label: Text("Register as Expert"),
+              // )
             ],
           ),
         ),

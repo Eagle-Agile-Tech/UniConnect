@@ -58,41 +58,43 @@ class ProfileScreen extends ConsumerWidget {
             return DefaultTabController(
               length: user.isExpert ? 2 : 1,
               child: Scaffold(
-                body: RefreshIndicator(
-                  onRefresh: () => ref.refresh(profileViewModelProvider(activeId).future),
-                  child: NestedScrollView(
-                    headerSliverBuilder: (context, innerBoxIsScrolled) {
-                      return [
-                        SliverToBoxAdapter(
-                          child: Padding(
-                            padding: EdgeInsets.only(top: Dimens.sm),
-                            child: ProfileHeader(user: user, isMe: isMe),
-                          ),
-                        ),
-                        // if (user.isExpert || (user.role == UserRole.INSTITUTION && user.institution!.affiliatedExperts.isNotEmpty))
-                        if (user.isExpert)
-                          SliverPersistentHeader(
-                            pinned: true,
-                            delegate: _HeaderDelegate(
-                              TabBar(
-                                labelPadding: EdgeInsets.zero,
-                                indicatorSize: TabBarIndicatorSize.tab,
-                                tabs: [
-                                  const Tab(text: 'Posts'),
-                                  if (user.isExpert) const Tab(text: 'Courses'),
-                                  // if (user.role == UserRole.INSTITUTION && user.institution!.affiliatedExperts.isNotEmpty) const Tab(text: 'Affiliates'),
-                                ],
-                              ),
+                body: SafeArea(
+                  child: RefreshIndicator(
+                    onRefresh: () => ref.refresh(profileViewModelProvider(activeId).future),
+                    child: NestedScrollView(
+                      headerSliverBuilder: (context, innerBoxIsScrolled) {
+                        return [
+                          SliverToBoxAdapter(
+                            child: Padding(
+                              padding: EdgeInsets.only(top: Dimens.sm),
+                              child: ProfileHeader(user: user, isMe: isMe),
                             ),
                           ),
-                      ];
-                    },
-                    body: TabBarView(
-                      children: [
-                        _buildPostList(postsAsync, postsNotifier),
-                        if (user.isExpert) _buildCourseGrid(courseAsync),
-                        // if (user.role == UserRole.INSTITUTION && user.institution!.affiliatedExperts.isNotEmpty) _buildAffiliatesList(user.institution!.affiliatedExperts), // Placeholder for affiliates
-                      ],
+                          // if (user.isExpert || (user.role == UserRole.INSTITUTION && user.institution!.affiliatedExperts.isNotEmpty))
+                          if (user.isExpert)
+                            SliverPersistentHeader(
+                              pinned: true,
+                              delegate: _HeaderDelegate(
+                                TabBar(
+                                  labelPadding: EdgeInsets.zero,
+                                  indicatorSize: TabBarIndicatorSize.tab,
+                                  tabs: [
+                                    const Tab(text: 'Posts'),
+                                    if (user.isExpert) const Tab(text: 'Courses'),
+                                    // if (user.role == UserRole.INSTITUTION && user.institution!.affiliatedExperts.isNotEmpty) const Tab(text: 'Affiliates'),
+                                  ],
+                                ),
+                              ),
+                            ),
+                        ];
+                      },
+                      body: TabBarView(
+                        children: [
+                          _buildPostList(postsAsync, postsNotifier),
+                          if (user.isExpert) _buildCourseGrid(courseAsync),
+                          // if (user.role == UserRole.INSTITUTION && user.institution!.affiliatedExperts.isNotEmpty) _buildAffiliatesList(user.institution!.affiliatedExperts), // Placeholder for affiliates
+                        ],
+                      ),
                     ),
                   ),
                 ),
